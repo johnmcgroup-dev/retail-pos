@@ -9,9 +9,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreditCard, DollarSign, Smartphone, Building2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CreditCard, DollarSign, Smartphone, Building2, WifiOff } from "lucide-react";
 
-export default function CheckoutDialog({ open, onClose, total, onComplete, isProcessing }) {
+export default function CheckoutDialog({ open, onClose, total, onComplete, isProcessing, isOffline = false }) {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountReceived, setAmountReceived] = useState("");
 
@@ -36,10 +37,24 @@ export default function CheckoutDialog({ open, onClose, total, onComplete, isPro
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Complete Payment</DialogTitle>
+          <DialogTitle className="text-2xl flex items-center justify-between">
+            Complete Payment
+            {isOffline && (
+              <Badge variant="destructive" className="ml-2">
+                <WifiOff className="w-3 h-3 mr-1" />
+                Offline Mode
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {isOffline && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              ⚠️ Sale will be saved locally and synced when connection returns
+            </div>
+          )}
+
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
             <p className="text-sm text-slate-600 mb-1">Total Amount</p>
             <p className="text-3xl font-bold text-slate-900">${total.toFixed(2)}</p>
@@ -101,7 +116,7 @@ export default function CheckoutDialog({ open, onClose, total, onComplete, isPro
             disabled={isProcessing || (paymentMethod === "cash" && (!amountReceived || change < 0))}
             className="bg-green-600 hover:bg-green-700"
           >
-            {isProcessing ? "Processing..." : "Complete Sale"}
+            {isProcessing ? "Processing..." : isOffline ? "Save Offline" : "Complete Sale"}
           </Button>
         </DialogFooter>
       </DialogContent>

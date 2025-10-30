@@ -9,39 +9,101 @@ import {
   Search,
   ShoppingCart,
   Plus,
-  Minus,
-  Trash2,
   DollarSign,
-  User,
-  CreditCard,
-  Smartphone
+  AlertCircle
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
 import CheckoutDialog from "../components/pos/CheckoutDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
+import ConnectionStatus from "../components/shared/ConnectionStatus";
+import { offlineCache, CACHE_KEYS } from "@/utils/offlineCache";
+import { useOnlineStatus } from "@/utils/connectionStatus";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function POS() {
   const queryClient = useQueryClient();
+  const { isOnline, wasOffline } = useOnlineStatus();
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [usingCachedData, setUsingCachedData] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
+    enabled: isOnline,
   });
 
-  const { data: products = [] } = useQuery({
+  // Products query with offline support
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
-    queryFn: () => base44.entities.Product.filter({ status: "active" }),
+    queryFn: async () => {
+      if (!isOnline) {
+        // Try to load from cache when offline
+        const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
+        if (cached) {
+          setUsingCachedData(true);
+          return cached;
+        }
+        return [];
+      }
+
+      // Fetch from server when online
+      const data = await base44.entities.Product.filter({ status: "active" });
+      // Cache the data
+      offlineCache.set(CACHE_KEYS.PRODUCTS, data);
+      offlineCache.updateLastSync();
+      setUsingCachedData(false);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    initialData: () => {
+      // Try to load from cache immediately
+      const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
+      if (cached) {
+        setUsingCachedData(true);
+        return cached;
+      }
+      return [];
+    }
   });
 
+  // Customers query with offline support
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
-    queryFn: () => base44.entities.Customer.list(),
+    queryFn: async () => {
+      if (!isOnline) {
+        const cached = offlineCache.get(CACHE_KEYS.CUSTOMERS);
+        return cached || [];
+      }
+
+      const data = await base44.entities.Customer.list();
+      offlineCache.set(CACHE_KEYS.CUSTOMERS, data);
+      return data;
+    },
+    enabled: isOnline,
+    initialData: () => offlineCache.get(CACHE_KEYS.CUSTOMERS) || []
+  });
+
+  // Inventory query with offline support
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: async () => {
+      if (!isOnline) {
+        const cached = offlineCache.get(CACHE_KEYS.INVENTORY);
+        return cached || [];
+      }
+
+      const data = await base44.entities.Inventory.list();
+      offlineCache.set(CACHE_KEYS.INVENTORY, data);
+      return data;
+    },
+    enabled: isOnline,
+    initialData: () => offlineCache.get(CACHE_KEYS.INVENTORY) || []
   });
 
   useEffect(() => {
@@ -49,6 +111,52 @@ export default function POS() {
       setSelectedCompany(companies[0]);
     }
   }, [companies, selectedCompany]);
+
+  // Sync pending sales when back online
+  useEffect(() => {
+    if (wasOffline && isOnline) {
+      syncOfflineSales();
+    }
+  }, [wasOffline, isOnline]);
+
+  // Check for pending sales on mount
+  useEffect(() => {
+    const pending = offlineCache.getPendingOfflineSales();
+    setPendingSyncCount(pending.length);
+  }, []);
+
+  const syncOfflineSales = async () => {
+    const pendingSales = offlineCache.getPendingOfflineSales();
+    
+    for (const sale of pendingSales) {
+      try {
+        await base44.entities.Sale.create(sale);
+        offlineCache.markSaleSynced(sale.offlineTimestamp);
+        
+        // Update inventory
+        for (const item of sale.items) {
+          const inventoryRecords = await base44.entities.Inventory.filter({
+            product_id: item.product_id,
+            company_id: selectedCompany.id
+          });
+          
+          if (inventoryRecords.length > 0) {
+            const inv = inventoryRecords[0];
+            await base44.entities.Inventory.update(inv.id, {
+              quantity: inv.quantity - item.quantity
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error syncing offline sale:", error);
+      }
+    }
+
+    // Refresh data after sync
+    queryClient.invalidateQueries(["sales"]);
+    queryClient.invalidateQueries(["inventory"]);
+    setPendingSyncCount(0);
+  };
 
   const filteredProducts = products.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,6 +216,14 @@ export default function POS() {
 
   const createSaleMutation = useMutation({
     mutationFn: async (saleData) => {
+      if (!isOnline) {
+        // Save to offline queue
+        offlineCache.saveOfflineSale(saleData);
+        setPendingSyncCount(prev => prev + 1);
+        return { offline: true };
+      }
+
+      // Process online
       const sale = await base44.entities.Sale.create(saleData);
       
       // Update inventory
@@ -140,7 +256,7 @@ export default function POS() {
     const invoiceNumber = `INV-${Date.now()}`;
     
     const saleData = {
-      company_id: selectedCompany.id,
+      company_id: selectedCompany?.id || companies[0]?.id,
       invoice_number: invoiceNumber,
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || "Walk-in Customer",
@@ -154,7 +270,7 @@ export default function POS() {
       payment_status: "paid",
       amount_paid: totals.total,
       amount_due: 0,
-      cashier: (await base44.auth.me()).email
+      cashier: isOnline ? (await base44.auth.me()).email : "offline_user"
     };
 
     await createSaleMutation.mutateAsync(saleData);
@@ -166,6 +282,21 @@ export default function POS() {
     <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-slate-50">
       {/* Left Panel - Products */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Connection Status Bar */}
+        <div className="p-4 bg-white border-b border-slate-200">
+          <ConnectionStatus usingCache={usingCachedData && isOnline} />
+          
+          {pendingSyncCount > 0 && (
+            <Alert className="mb-2 bg-yellow-50 border-yellow-300">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                <span className="font-semibold">{pendingSyncCount} offline sale(s)</span> waiting to sync
+                {isOnline && " - Syncing now..."}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         {/* Search Bar */}
         <div className="p-4 bg-white border-b border-slate-200 shadow-sm">
           <div className="relative">
@@ -179,6 +310,11 @@ export default function POS() {
               autoFocus
             />
           </div>
+          {usingCachedData && (
+            <p className="text-xs text-slate-500 mt-2">
+              Last synced: {new Date(offlineCache.getLastSync()).toLocaleString()}
+            </p>
+          )}
         </div>
 
         {/* Products Grid */}
@@ -259,8 +395,14 @@ export default function POS() {
             onClick={() => setShowCheckout(true)}
           >
             <DollarSign className="w-5 h-5 mr-2" />
-            Complete Sale
+            Complete Sale {!isOnline && "(Offline)"}
           </Button>
+          
+          {!isOnline && cart.length > 0 && (
+            <p className="text-xs text-center text-slate-500 mt-2">
+              Sale will be saved locally and synced when online
+            </p>
+          )}
         </div>
       </div>
 
@@ -271,6 +413,7 @@ export default function POS() {
         total={totals.total}
         onComplete={handleCheckout}
         isProcessing={createSaleMutation.isPending}
+        isOffline={!isOnline}
       />
     </div>
   );

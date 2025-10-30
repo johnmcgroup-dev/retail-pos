@@ -1,14 +1,18 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { offlineCache } from "@/utils/offlineCache";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
+  const [cacheInfo, setCacheInfo] = useState({});
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -21,7 +25,18 @@ export default function Settings() {
       setUser(currentUser);
     };
     loadUser();
+    
+    // Load cache info
+    setCacheInfo(offlineCache.getCacheInfo());
   }, []);
+
+  const handleClearCache = () => {
+    if (confirm("Are you sure you want to clear all offline cache? This will remove locally stored product data.")) {
+      offlineCache.clearAll();
+      setCacheInfo(offlineCache.getCacheInfo());
+      alert("Cache cleared successfully!");
+    }
+  };
 
   const company = companies[0];
 
@@ -45,6 +60,10 @@ export default function Settings() {
           <TabsTrigger value="users">
             <Users className="w-4 h-4 mr-2" />
             Users & Roles
+          </TabsTrigger>
+          <TabsTrigger value="offline">
+            <Database className="w-4 h-4 mr-2" />
+            Offline Cache
           </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className="w-4 h-4 mr-2" />
@@ -166,6 +185,77 @@ export default function Settings() {
                 <p className="text-sm text-slate-500 mt-4">
                   To manage users and roles, contact your system administrator.
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="offline">
+          <Card>
+            <CardHeader>
+              <CardTitle>Offline Cache Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    <Database className="w-5 h-5" />
+                    About Offline Cache
+                  </h4>
+                  <p className="text-sm text-blue-800">
+                    The POS system caches products, customers, and inventory data locally to enable offline functionality. 
+                    Cached data remains valid for 24 hours and automatically syncs when online.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-slate-900">Cache Storage Usage</h4>
+                  
+                  {Object.entries(cacheInfo).map(([key, value]) => {
+                    if (key === 'TOTAL') {
+                      return (
+                        <div key={key} className="p-4 bg-slate-100 border-2 border-slate-300 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-900">Total Storage Used</span>
+                            <span className="text-lg font-bold text-blue-600">{value}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div key={key} className="p-3 border rounded-lg flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-slate-900">{key.replace(/_/g, ' ')}</p>
+                          <p className="text-xs text-slate-500">Last updated: {value.lastUpdate}</p>
+                        </div>
+                        <Badge variant="outline">{value.size}</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {offlineCache.getLastSync() && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800">
+                      <span className="font-semibold">Last synchronized:</span>{' '}
+                      {new Date(offlineCache.getLastSync()).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  variant="destructive"
+                  onClick={handleClearCache}
+                  className="w-full"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All Cache
+                </Button>
+
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
+                  ⚠️ Clearing cache will require re-downloading all data when online. Only do this if experiencing issues.
+                </div>
               </div>
             </CardContent>
           </Card>
