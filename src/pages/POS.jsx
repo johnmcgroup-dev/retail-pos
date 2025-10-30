@@ -16,8 +16,7 @@ import CartPanel from "../components/pos/CartPanel";
 import CheckoutDialog from "../components/pos/CheckoutDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
-import { offlineCache, CACHE_KEYS } from "@/utils/offlineCache";
-import { useOnlineStatus } from "@/utils/connectionStatus";
+import { offlineCache, CACHE_KEYS, useOnlineStatus } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function POS() {
@@ -334,7 +333,6 @@ export default function POS() {
 
       {/* Right Panel - Cart */}
       <div className="w-full md:w-[450px] bg-white border-l border-slate-200 flex flex-col shadow-2xl">
-        {/* Cart Header */}
         <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600">
           <div className="flex items-center justify-between text-white">
             <div>
@@ -357,7 +355,6 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Customer Selector */}
         <div className="p-4 border-b border-slate-200 bg-slate-50">
           <CustomerSelector
             customers={customers}
@@ -366,7 +363,6 @@ export default function POS() {
           />
         </div>
 
-        {/* Cart Items */}
         <div className="flex-1 overflow-auto">
           <CartPanel
             cart={cart}
@@ -375,7 +371,6 @@ export default function POS() {
           />
         </div>
 
-        {/* Cart Footer */}
         <div className="border-t border-slate-200 p-6 bg-slate-50">
           <div className="space-y-3 mb-4">
             <div className="flex justify-between text-sm">
@@ -415,7 +410,6 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Checkout Dialog */}
       <CheckoutDialog
         open={showCheckout}
         onClose={() => setShowCheckout(false)}
