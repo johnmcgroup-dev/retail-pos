@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { offlineCache } from "../utils/offlineCache";
+import { offlineCache } from "@/utils/offlineCache";
 
 export default function Settings() {
   const [user, setUser] = useState(null);

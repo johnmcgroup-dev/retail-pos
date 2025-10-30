@@ -16,8 +16,8 @@ import CartPanel from "../components/pos/CartPanel";
 import CheckoutDialog from "../components/pos/CheckoutDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
-import { offlineCache, CACHE_KEYS } from "../utils/offlineCache";
-import { useOnlineStatus } from "../utils/connectionStatus";
+import { offlineCache, CACHE_KEYS } from "@/utils/offlineCache";
+import { useOnlineStatus } from "@/utils/connectionStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function POS() {
