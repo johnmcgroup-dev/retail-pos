@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
@@ -17,8 +16,8 @@ import CartPanel from "../components/pos/CartPanel";
 import CheckoutDialog from "../components/pos/CheckoutDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
-import { offlineCache, CACHE_KEYS } from "@/utils/offlineCache";
-import { useOnlineStatus } from "@/utils/connectionStatus";
+import { offlineCache, CACHE_KEYS } from "../utils/offlineCache";
+import { useOnlineStatus } from "../utils/connectionStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function POS() {
@@ -137,7 +136,7 @@ export default function POS() {
         for (const item of sale.items) {
           const inventoryRecords = await base44.entities.Inventory.filter({
             product_id: item.product_id,
-            company_id: selectedCompany.id
+            company_id: selectedCompany?.id || companies[0]?.id
           });
           
           if (inventoryRecords.length > 0) {
@@ -255,6 +254,16 @@ export default function POS() {
     const totals = calculateTotals();
     const invoiceNumber = `INV-${Date.now()}`;
     
+    let cashierEmail = "offline_user";
+    if (isOnline) {
+      try {
+        const currentUser = await base44.auth.me();
+        cashierEmail = currentUser.email;
+      } catch (error) {
+        console.error("Error getting user:", error);
+      }
+    }
+    
     const saleData = {
       company_id: selectedCompany?.id || companies[0]?.id,
       invoice_number: invoiceNumber,
@@ -270,7 +279,7 @@ export default function POS() {
       payment_status: "paid",
       amount_paid: totals.total,
       amount_due: 0,
-      cashier: isOnline ? (await base44.auth.me()).email : "offline_user"
+      cashier: cashierEmail
     };
 
     await createSaleMutation.mutateAsync(saleData);
@@ -310,7 +319,7 @@ export default function POS() {
               autoFocus
             />
           </div>
-          {usingCachedData && (
+          {usingCachedData && offlineCache.getLastSync() && (
             <p className="text-xs text-slate-500 mt-2">
               Last synced: {new Date(offlineCache.getLastSync()).toLocaleString()}
             </p>

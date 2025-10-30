@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Wifi, WifiOff, RefreshCw, Database } from 'lucide-react';
-import { useOnlineStatus } from '@/utils/connectionStatus';
+import { useOnlineStatus } from '../../utils/connectionStatus';
 import { Badge } from '@/components/ui/badge';
 
 export default function ConnectionStatus({ showWhenOnline = false, usingCache = false }) {
