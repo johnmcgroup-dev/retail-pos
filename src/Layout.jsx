@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -48,7 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import NotificationCenter from "../components/notifications/NotificationCenter";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 const navigationItems = [
   {
@@ -112,7 +111,6 @@ const navigationItems = [
     title: "My Loyalty",
     url: createPageUrl("MyLoyalty"),
     icon: Award,
-    badge: "New"
   },
   {
     title: "Loyalty Manager",
