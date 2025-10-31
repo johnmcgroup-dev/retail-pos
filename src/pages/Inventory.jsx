@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import AlertBanner from "../components/notifications/AlertBanner";
-import { generateInventoryAlerts, createAlertsIfNeeded } from "../utils/alertManager";
+import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
 
 export default function Inventory() {
   const queryClient = useQueryClient();
