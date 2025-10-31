@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -224,6 +225,50 @@ export default function POS() {
       // Process online
       const sale = await base44.entities.Sale.create(saleData);
       
+      // Award loyalty points if customer is registered
+      if (saleData.customer_id && selectedCompany) {
+        const loyaltyPrograms = await base44.entities.LoyaltyProgram.filter({
+          company_id: selectedCompany.id,
+          active: true
+        });
+
+        if (loyaltyPrograms.length > 0) {
+          const program = loyaltyPrograms[0];
+          const pointsEarned = Math.floor(saleData.total_amount * program.points_per_dollar);
+          
+          if (pointsEarned > 0) {
+            // Find customer
+            const customer = customers.find(c => c.id === saleData.customer_id);
+            if (customer) {
+              const newBalance = (customer.loyalty_points || 0) + pointsEarned;
+              
+              // Create loyalty transaction
+              await base44.entities.LoyaltyTransaction.create({
+                company_id: selectedCompany.id,
+                customer_id: customer.id,
+                transaction_type: "earned",
+                points: pointsEarned,
+                reference_type: "sale",
+                reference_id: sale.id,
+                description: `Earned from purchase ${sale.invoice_number}`,
+                balance_after: newBalance,
+                transaction_date: new Date().toISOString()
+              });
+
+              // Update customer points
+              await base44.entities.Customer.update(customer.id, {
+                loyalty_points: newBalance
+              });
+
+              // Update sale with loyalty points info
+              await base44.entities.Sale.update(sale.id, {
+                loyalty_points_earned: pointsEarned
+              });
+            }
+          }
+        }
+      }
+      
       // Update inventory
       for (const item of cart) {
         const inventoryRecords = await base44.entities.Inventory.filter({
@@ -244,6 +289,8 @@ export default function POS() {
     onSuccess: () => {
       queryClient.invalidateQueries(["sales"]);
       queryClient.invalidateQueries(["inventory"]);
+      queryClient.invalidateQueries(["customers"]);
+      queryClient.invalidateQueries(["loyaltyTransactions"]);
       clearCart();
       setShowCheckout(false);
     },

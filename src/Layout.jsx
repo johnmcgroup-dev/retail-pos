@@ -18,7 +18,9 @@ import {
   LogOut,
   Menu,
   ChevronDown,
-  Building2
+  Building2,
+  Award,
+  Gift
 } from "lucide-react";
 import {
   Sidebar,
@@ -96,6 +98,18 @@ const navigationItems = [
     icon: BarChart3,
   },
   {
+    title: "My Loyalty",
+    url: createPageUrl("MyLoyalty"),
+    icon: Award,
+    badge: "New"
+  },
+  {
+    title: "Loyalty Manager",
+    url: createPageUrl("LoyaltyManagement"),
+    icon: Gift,
+    adminOnly: true
+  },
+  {
     title: "Settings",
     url: createPageUrl("Settings"),
     icon: Settings,
@@ -130,6 +144,13 @@ export default function Layout({ children, currentPageName }) {
     base44.auth.logout();
   };
 
+  const filteredNavItems = navigationItems.filter(item => {
+    if (item.adminOnly) {
+      return user?.role === 'admin';
+    }
+    return true;
+  });
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
@@ -159,7 +180,7 @@ export default function Layout({ children, currentPageName }) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navigationItems.map((item) => (
+                  {filteredNavItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton 
                         asChild 
@@ -174,6 +195,9 @@ export default function Layout({ children, currentPageName }) {
                           <span className="font-medium">{item.title}</span>
                           {item.highlight && (
                             <Badge className="ml-auto bg-green-500 text-white">Quick</Badge>
+                          )}
+                          {item.badge && (
+                            <Badge className="ml-auto bg-purple-500 text-white">{item.badge}</Badge>
                           )}
                         </Link>
                       </SidebarMenuButton>

@@ -9,6 +9,8 @@ import Purchases from './pages/Purchases';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import MyLoyalty from './pages/MyLoyalty';
+import LoyaltyManagement from './pages/LoyaltyManagement';
 import Layout from './Layout.jsx';
 
 
@@ -24,6 +26,8 @@ export const PAGES = {
     "Expenses": Expenses,
     "Reports": Reports,
     "Settings": Settings,
+    "MyLoyalty": MyLoyalty,
+    "LoyaltyManagement": LoyaltyManagement,
 }
 
 export const pagesConfig = {
