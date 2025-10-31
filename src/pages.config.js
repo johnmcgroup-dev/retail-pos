@@ -11,6 +11,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import MyLoyalty from './pages/MyLoyalty';
 import LoyaltyManagement from './pages/LoyaltyManagement';
+import CRM from './pages/CRM';
 import Layout from './Layout.jsx';
 
 
@@ -28,6 +29,7 @@ export const PAGES = {
     "Settings": Settings,
     "MyLoyalty": MyLoyalty,
     "LoyaltyManagement": LoyaltyManagement,
+    "CRM": CRM,
 }
 
 export const pagesConfig = {

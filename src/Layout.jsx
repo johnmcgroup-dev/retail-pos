@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -22,7 +23,8 @@ import {
   Building2,
   Award,
   Gift,
-  Bell
+  Bell,
+  UserCog
 } from "lucide-react";
 import {
   Sidebar,
@@ -84,6 +86,12 @@ const navigationItems = [
     title: "Customers",
     url: createPageUrl("Customers"),
     icon: Users,
+  },
+  {
+    title: "CRM",
+    url: createPageUrl("CRM"),
+    icon: UserCog,
+    adminOnly: true
   },
   {
     title: "Vendors",
