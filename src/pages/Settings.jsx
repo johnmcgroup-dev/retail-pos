@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2 } from "lucide-react";
+import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2, AlertCircle, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { offlineCache } from "@/utils";
 
@@ -51,6 +52,10 @@ export default function Settings() {
           <TabsTrigger value="company">
             <Building2 className="w-4 h-4 mr-2" />
             Company
+          </TabsTrigger>
+          <TabsTrigger value="payments">
+            <CreditCard className="w-4 h-4 mr-2" />
+            Payments
           </TabsTrigger>
           <TabsTrigger value="subscription">
             <CreditCard className="w-4 h-4 mr-2" />
@@ -104,6 +109,76 @@ export default function Settings() {
               ) : (
                 <p className="text-slate-500">No company information available</p>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Gateway Configuration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    Payment Integration Setup
+                  </h4>
+                  <p className="text-sm text-blue-800 mb-3">
+                    To enable real payment processing with Stripe or PayPal, you need to configure backend functions.
+                  </p>
+                  <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+                    <li>Go to Dashboard → Settings → Backend Functions</li>
+                    <li>Enable Backend Functions for your app</li>
+                    <li>Add Stripe or PayPal integration packages</li>
+                    <li>Configure API keys securely</li>
+                    <li>Deploy and test payment processing</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-3">Available Payment Methods</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-6 h-6 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-slate-900">Stripe</p>
+                          <p className="text-xs text-slate-500">Credit/Debit Cards, Apple Pay, Google Pay</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">Demo Mode</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-6 h-6 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-slate-900">PayPal</p>
+                          <p className="text-xs text-slate-500">PayPal Balance, Cards</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">Demo Mode</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="w-6 h-6 text-green-600" />
+                        <div>
+                          <p className="font-medium text-slate-900">Cash</p>
+                          <p className="text-xs text-slate-500">Manual cash handling</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700">Active</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                  <strong>Security Note:</strong> Never store credit card numbers in your database. Payment gateways handle card details securely and return tokens for processing.
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

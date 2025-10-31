@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
-import CheckoutDialog from "../components/pos/CheckoutDialog";
+import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
 import { offlineCache, CACHE_KEYS, useOnlineStatus } from "@/utils";
@@ -43,7 +42,6 @@ export default function POS() {
     queryKey: ["products"],
     queryFn: async () => {
       if (!isOnline) {
-        // Try to load from cache when offline
         const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
         if (cached) {
           setUsingCachedData(true);
@@ -52,17 +50,14 @@ export default function POS() {
         return [];
       }
 
-      // Fetch from server when online
       const data = await base44.entities.Product.filter({ status: "active" });
-      // Cache the data
       offlineCache.set(CACHE_KEYS.PRODUCTS, data);
       offlineCache.updateLastSync();
       setUsingCachedData(false);
       return data;
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
     initialData: () => {
-      // Try to load from cache immediately
       const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
       if (cached) {
         setUsingCachedData(true);
@@ -72,7 +67,6 @@ export default function POS() {
     }
   });
 
-  // Customers query with offline support
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     queryFn: async () => {
@@ -89,7 +83,6 @@ export default function POS() {
     initialData: () => offlineCache.get(CACHE_KEYS.CUSTOMERS) || []
   });
 
-  // Inventory query with offline support
   const { data: inventory = [] } = useQuery({
     queryKey: ["inventory"],
     queryFn: async () => {
@@ -124,14 +117,12 @@ export default function POS() {
     }
   }, [companies, selectedCompany]);
 
-  // Sync pending sales when back online
   useEffect(() => {
     if (wasOffline && isOnline) {
       syncOfflineSales();
     }
   }, [wasOffline, isOnline]);
 
-  // Check for pending sales on mount
   useEffect(() => {
     const pending = offlineCache.getPendingOfflineSales();
     setPendingSyncCount(pending.length);
@@ -145,7 +136,6 @@ export default function POS() {
         await base44.entities.Sale.create(sale);
         offlineCache.markSaleSynced(sale.offlineTimestamp);
         
-        // Update inventory
         for (const item of sale.items) {
           const inventoryRecords = await base44.entities.Inventory.filter({
             product_id: item.product_id,
@@ -164,7 +154,6 @@ export default function POS() {
       }
     }
 
-    // Refresh data after sync
     queryClient.invalidateQueries(["sales"]);
     queryClient.invalidateQueries(["inventory"]);
     setPendingSyncCount(0);
@@ -228,17 +217,41 @@ export default function POS() {
 
   const createSaleMutation = useMutation({
     mutationFn: async (saleData) => {
+      if (!isOnline && saleData.payment_method !== 'cash') {
+        throw new Error("Card payments require internet connection");
+      }
+
       if (!isOnline) {
-        // Save to offline queue
         offlineCache.saveOfflineSale(saleData);
         setPendingSyncCount(prev => prev + 1);
         return { offline: true };
       }
 
-      // Process online
+      // Create sale
       const sale = await base44.entities.Sale.create(saleData);
       
-      // Award loyalty points if customer is registered
+      // Create payment record
+      if (saleData.payment_data) {
+        await base44.entities.Payment.create({
+          company_id: saleData.company_id,
+          reference_type: "sale",
+          reference_id: sale.id,
+          payer_type: "customer",
+          payer_id: saleData.customer_id,
+          payer_name: saleData.customer_name,
+          payment_date: new Date().toISOString(),
+          amount: saleData.total_amount,
+          payment_method: saleData.payment_data.method,
+          payment_gateway: saleData.payment_data.gateway,
+          transaction_id: saleData.payment_data.transaction_id,
+          transaction_reference: saleData.payment_data.transaction_reference,
+          payment_status: saleData.payment_data.payment_status,
+          card_last_four: saleData.payment_data.card_last_four,
+          card_brand: saleData.payment_data.card_brand
+        });
+      }
+      
+      // Award loyalty points
       if (saleData.customer_id && selectedCompany) {
         const loyaltyPrograms = await base44.entities.LoyaltyProgram.filter({
           company_id: selectedCompany.id,
@@ -250,12 +263,10 @@ export default function POS() {
           const pointsEarned = Math.floor(saleData.total_amount * program.points_per_dollar);
           
           if (pointsEarned > 0) {
-            // Find customer
             const customer = customers.find(c => c.id === saleData.customer_id);
             if (customer) {
               const newBalance = (customer.loyalty_points || 0) + pointsEarned;
               
-              // Create loyalty transaction
               await base44.entities.LoyaltyTransaction.create({
                 company_id: selectedCompany.id,
                 customer_id: customer.id,
@@ -268,12 +279,10 @@ export default function POS() {
                 transaction_date: new Date().toISOString()
               });
 
-              // Update customer points
               await base44.entities.Customer.update(customer.id, {
                 loyalty_points: newBalance
               });
 
-              // Update sale with loyalty points info
               await base44.entities.Sale.update(sale.id, {
                 loyalty_points_earned: pointsEarned
               });
@@ -304,6 +313,7 @@ export default function POS() {
       queryClient.invalidateQueries(["inventory"]);
       queryClient.invalidateQueries(["customers"]);
       queryClient.invalidateQueries(["loyaltyTransactions"]);
+      queryClient.invalidateQueries(["payments"]);
       clearCart();
       setShowCheckout(false);
     },
@@ -335,10 +345,11 @@ export default function POS() {
       discount_amount: totals.discountAmount,
       total_amount: totals.total,
       payment_method: paymentData.method,
-      payment_status: "paid",
-      amount_paid: totals.total,
+      payment_status: paymentData.payment_status || "paid",
+      amount_paid: paymentData.amount || totals.total,
       amount_due: 0,
-      cashier: cashierEmail
+      cashier: cashierEmail,
+      payment_data: paymentData
     };
 
     await createSaleMutation.mutateAsync(saleData);
@@ -350,11 +361,9 @@ export default function POS() {
     <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-slate-50">
       {/* Left Panel - Products */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Connection Status Bar */}
         <div className="p-4 bg-white border-b border-slate-200">
           <ConnectionStatus usingCache={usingCachedData && isOnline} />
           
-          {/* Alert Banners */}
           <AlertBanner 
             alerts={alerts.filter(a => a.severity === 'critical')} 
             onDismiss={(id) => dismissAlertMutation.mutate(id)}
@@ -372,7 +381,6 @@ export default function POS() {
           )}
         </div>
 
-        {/* Search Bar */}
         <div className="p-4 bg-white border-b border-slate-200 shadow-sm">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -392,7 +400,6 @@ export default function POS() {
           )}
         </div>
 
-        {/* Products Grid */}
         <div className="flex-1 overflow-auto p-4">
           <ProductGrid products={filteredProducts} onAddToCart={addToCart} />
         </div>
@@ -466,18 +473,12 @@ export default function POS() {
             onClick={() => setShowCheckout(true)}
           >
             <DollarSign className="w-5 h-5 mr-2" />
-            Complete Sale {!isOnline && "(Offline)"}
+            Complete Sale {!isOnline && "(Cash Only)"}
           </Button>
-          
-          {!isOnline && cart.length > 0 && (
-            <p className="text-xs text-center text-slate-500 mt-2">
-              Sale will be saved locally and synced when online
-            </p>
-          )}
         </div>
       </div>
 
-      <CheckoutDialog
+      <PaymentGatewayDialog
         open={showCheckout}
         onClose={() => setShowCheckout(false)}
         total={totals.total}
