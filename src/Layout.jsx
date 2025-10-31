@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -20,7 +21,8 @@ import {
   ChevronDown,
   Building2,
   Award,
-  Gift
+  Gift,
+  Bell
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import NotificationCenter from "../components/notifications/NotificationCenter";
 
 const navigationItems = [
   {
@@ -121,6 +124,13 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [company, setCompany] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
+    refetchInterval: 60000, // Refetch every minute
+  });
 
   useEffect(() => {
     const loadUser = async () => {
@@ -150,6 +160,9 @@ export default function Layout({ children, currentPageName }) {
     }
     return true;
   });
+
+  const unreadAlerts = alerts.filter(a => !a.is_read).length;
+  const criticalAlerts = alerts.filter(a => a.severity === "critical").length;
 
   return (
     <SidebarProvider>
@@ -239,12 +252,34 @@ export default function Layout({ children, currentPageName }) {
         </Sidebar>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-slate-200 px-6 py-4 lg:hidden shadow-sm">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200">
-                <Menu className="w-5 h-5" />
-              </SidebarTrigger>
-              <h1 className="text-xl font-bold text-slate-900">RetailPro POS</h1>
+          <header className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 lg:hidden">
+                <SidebarTrigger className="hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200">
+                  <Menu className="w-5 h-5" />
+                </SidebarTrigger>
+                <h1 className="text-xl font-bold text-slate-900">RetailPro POS</h1>
+              </div>
+
+              {/* Notification Bell */}
+              <div className="ml-auto">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                  onClick={() => setShowNotifications(true)}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadAlerts > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadAlerts > 9 ? '9+' : unreadAlerts}
+                    </span>
+                  )}
+                  {criticalAlerts > 0 && (
+                    <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                  )}
+                </Button>
+              </div>
             </div>
           </header>
 
@@ -253,6 +288,11 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </main>
       </div>
+
+      <NotificationCenter 
+        open={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
     </SidebarProvider>
   );
 }

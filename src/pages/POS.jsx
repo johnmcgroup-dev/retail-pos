@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +19,7 @@ import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
 import { offlineCache, CACHE_KEYS, useOnlineStatus } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AlertBanner from "../components/notifications/AlertBanner";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -102,6 +104,18 @@ export default function POS() {
     },
     enabled: isOnline,
     initialData: () => offlineCache.get(CACHE_KEYS.INVENTORY) || []
+  });
+
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
+  });
+
+  const dismissAlertMutation = useMutation({
+    mutationFn: (alertId) => base44.entities.Alert.update(alertId, { is_dismissed: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["alerts"]);
+    },
   });
 
   useEffect(() => {
@@ -339,6 +353,13 @@ export default function POS() {
         {/* Connection Status Bar */}
         <div className="p-4 bg-white border-b border-slate-200">
           <ConnectionStatus usingCache={usingCachedData && isOnline} />
+          
+          {/* Alert Banners */}
+          <AlertBanner 
+            alerts={alerts.filter(a => a.severity === 'critical')} 
+            onDismiss={(id) => dismissAlertMutation.mutate(id)}
+            onViewAll={() => {}}
+          />
           
           {pendingSyncCount > 0 && (
             <Alert className="mb-2 bg-yellow-50 border-yellow-300">

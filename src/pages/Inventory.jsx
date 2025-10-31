@@ -1,15 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Search, Calendar, MapPin } from "lucide-react";
+import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import AlertBanner from "../components/notifications/AlertBanner";
+import { generateInventoryAlerts, createAlertsIfNeeded } from "../utils/alertManager";
 
 export default function Inventory() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isGeneratingAlerts, setIsGeneratingAlerts] = useState(false);
   
   const { data: inventory = [] } = useQuery({
     queryKey: ["inventory"],
@@ -20,6 +24,73 @@ export default function Inventory() {
     queryKey: ["products"],
     queryFn: () => base44.entities.Product.list(),
   });
+
+  const { data: sales = [] } = useQuery({
+    queryKey: ["sales"],
+    queryFn: () => base44.entities.Sale.list(),
+  });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => base44.entities.Company.list(),
+  });
+
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
+  });
+
+  const dismissAlertMutation = useMutation({
+    mutationFn: (alertId) => base44.entities.Alert.update(alertId, { is_dismissed: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["alerts"]);
+    },
+  });
+
+  // Auto-generate alerts on component mount
+  useEffect(() => {
+    const checkAndGenerateAlerts = async () => {
+      if (companies.length > 0 && inventory.length > 0 && products.length > 0) {
+        setIsGeneratingAlerts(true);
+        try {
+          const newAlerts = await generateInventoryAlerts(
+            companies[0].id,
+            inventory,
+            products,
+            sales
+          );
+          await createAlertsIfNeeded(newAlerts);
+          queryClient.invalidateQueries(["alerts"]);
+        } catch (error) {
+          console.error("Error generating alerts:", error);
+        } finally {
+          setIsGeneratingAlerts(false);
+        }
+      }
+    };
+
+    checkAndGenerateAlerts();
+  }, [inventory.length, products.length, sales.length]);
+
+  const handleRefreshAlerts = async () => {
+    if (companies.length === 0) return;
+    
+    setIsGeneratingAlerts(true);
+    try {
+      const newAlerts = await generateInventoryAlerts(
+        companies[0].id,
+        inventory,
+        products,
+        sales
+      );
+      await createAlertsIfNeeded(newAlerts);
+      queryClient.invalidateQueries(["alerts"]);
+    } catch (error) {
+      console.error("Error generating alerts:", error);
+    } finally {
+      setIsGeneratingAlerts(false);
+    }
+  };
 
   const getProductDetails = (productId) => {
     return products.find(p => p.id === productId);
@@ -51,10 +122,28 @@ export default function Inventory() {
 
   return (
     <div className="p-6 md:p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
-        <p className="text-slate-500 mt-1">Track and manage stock levels</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
+          <p className="text-slate-500 mt-1">Track and manage stock levels</p>
+        </div>
+        <Button
+          onClick={handleRefreshAlerts}
+          disabled={isGeneratingAlerts}
+          variant="outline"
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isGeneratingAlerts ? 'animate-spin' : ''}`} />
+          {isGeneratingAlerts ? 'Checking...' : 'Check Alerts'}
+        </Button>
       </div>
+
+      {/* Alert Banners */}
+      <AlertBanner 
+        alerts={alerts} 
+        onDismiss={(id) => dismissAlertMutation.mutate(id)}
+        onViewAll={() => {}} 
+      />
 
       {/* Stats */}
       <div className="grid md:grid-cols-4 gap-4">
@@ -196,7 +285,7 @@ export default function Inventory() {
                           </Badge>
                         )}
                         {isExpiringSoon && (
-                          <Badge variant="warning" className="bg-yellow-100 text-yellow-700">
+                          <Badge variant="warning" className="bg-yellow-100 text-yellow-700 ml-1">
                             Expiring
                           </Badge>
                         )}
