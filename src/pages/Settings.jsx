@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"; // Added useQueryClient, useMutation
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -9,17 +9,46 @@ import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2, AlertCircle, DollarSign, CheckCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { offlineCache } from "@/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert"; // Added import for Alert components
-import PasswordChangeDialog from "../components/settings/PasswordChangeDialog"; // Added import for PasswordChangeDialog
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import PasswordChangeDialog from "../components/settings/PasswordChangeDialog";
+import { Input } from "@/components/ui/input"; // Added Input import
 
 export default function Settings() {
   const [user, setUser] = useState(null);
   const [cacheInfo, setCacheInfo] = useState({});
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false); // Added state for password change dialog
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [companyForm, setCompanyForm] = useState({
+    name: "",
+    type: "retail_store",
+    address: "",
+    phone: "",
+    email: "",
+    tax_id: "",
+    goodwill_message: "Thank you for your business!"
+  });
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
+  });
+
+  const queryClient = useQueryClient(); // Initialized queryClient
+
+  const updateCompanyMutation = useMutation({
+    mutationFn: (data) => {
+      if (companies[0]?.id) {
+        return base44.entities.Company.update(companies[0].id, data);
+      }
+      return Promise.reject("No company found");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["companies"]);
+      alert("Company information updated successfully!");
+    },
+    onError: (error) => {
+      console.error("Failed to update company:", error);
+      alert("Failed to update company information.");
+    }
   });
 
   useEffect(() => {
@@ -33,6 +62,20 @@ export default function Settings() {
     setCacheInfo(offlineCache.getCacheInfo());
   }, []);
 
+  useEffect(() => {
+    if (companies[0]) {
+      setCompanyForm({
+        name: companies[0].name || "",
+        type: companies[0].type || "retail_store",
+        address: companies[0].address || "",
+        phone: companies[0].phone || "",
+        email: companies[0].email || "",
+        tax_id: companies[0].tax_id || "",
+        goodwill_message: companies[0].goodwill_message || "Thank you for your business!"
+      });
+    }
+  }, [companies]);
+
   const handleClearCache = () => {
     if (confirm("Are you sure you want to clear all offline cache? This will remove locally stored product data.")) {
       offlineCache.clearAll();
@@ -42,44 +85,50 @@ export default function Settings() {
   };
 
   const company = companies[0];
-  const isSuperAdmin = user?.email === 'johnmcgroup@gmail.com'; // Added isSuperAdmin check
-  const isTrialExpired = company?.trial_ends_at && new Date(company.trial_ends_at) < new Date(); // Added isTrialExpired check
+  const isSuperAdmin = user?.email === 'johnmcgroup@gmail.com';
+  const isTrialExpired = company?.trial_ends_at && new Date(company.trial_ends_at) < new Date();
   const daysLeftInTrial = company?.trial_ends_at 
     ? Math.ceil((new Date(company.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
-    : 0; // Added daysLeftInTrial calculation
+    : 0;
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500 mt-1">Manage your account and preferences</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Company Setup</h1>
+        <p className="text-slate-500 mt-1">Manage your company and system preferences</p>
       </div>
 
       <Tabs defaultValue="company" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="company">
-            <Building2 className="w-4 h-4 mr-2" />
-            Company
+        <TabsList className="flex flex-wrap justify-start gap-2">
+          <TabsTrigger value="company" className="flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Company Info</span>
+            <span className="sm:hidden">Company</span>
           </TabsTrigger>
-          <TabsTrigger value="payments">
-            <CreditCard className="w-4 h-4 mr-2" />
-            Payments
+          <TabsTrigger value="payments" className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span className="hidden sm:inline">Payments</span>
+            <span className="sm:hidden">Pay</span>
           </TabsTrigger>
-          <TabsTrigger value="subscription">
-            <CreditCard className="w-4 h-4 mr-2" />
-            Subscription
+          <TabsTrigger value="subscription" className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span className="hidden sm:inline">Subscription</span>
+            <span className="sm:hidden">Sub</span>
           </TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="w-4 h-4 mr-2" />
-            Users & Security {/* Changed from "Users & Roles" */}
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Security</span>
+            <span className="sm:hidden">Sec</span>
           </TabsTrigger>
-          <TabsTrigger value="offline">
-            <Database className="w-4 h-4 mr-2" />
-            Offline Cache
+          <TabsTrigger value="offline" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            <span className="hidden sm:inline">Offline</span>
+            <span className="sm:hidden">Cache</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="w-4 h-4 mr-2" />
-            Notifications
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            <span className="hidden sm:inline">Alerts</span>
+            <span className="sm:hidden">Bell</span>
           </TabsTrigger>
         </TabsList>
 
@@ -89,34 +138,84 @@ export default function Settings() {
               <CardTitle>Company Information</CardTitle>
             </CardHeader>
             <CardContent>
-              {company ? (
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-sm font-semibold text-slate-700">Company Name</label>
-                      <p className="text-lg text-slate-900 mt-1">{company.name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-slate-700">Type</label>
-                      <p className="text-lg text-slate-900 mt-1 capitalize">{company.type?.replace(/_/g, ' ')}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-slate-700">Email</label>
-                      <p className="text-lg text-slate-900 mt-1">{company.email || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-slate-700">Phone</label>
-                      <p className="text-lg text-slate-900 mt-1">{company.phone || '-'}</p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-sm font-semibold text-slate-700">Address</label>
-                      <p className="text-lg text-slate-900 mt-1">{company.address || '-'}</p>
-                    </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Company Name *</label>
+                    <Input
+                      value={companyForm.name}
+                      onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Business Type</label>
+                    <select
+                      value={companyForm.type}
+                      onChange={(e) => setCompanyForm({ ...companyForm, type: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="retail_store">Retail Store</option>
+                      <option value="warehouse">Warehouse</option>
+                      <option value="restaurant">Restaurant</option>
+                      <option value="pharmacy">Pharmacy</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Address</label>
+                    <Input
+                      value={companyForm.address}
+                      onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })}
+                      className="mt-1"
+                      placeholder="Street address, City, State, ZIP"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Phone</label>
+                    <Input
+                      value={companyForm.phone}
+                      onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })}
+                      className="mt-1"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Email</label>
+                    <Input
+                      type="email"
+                      value={companyForm.email}
+                      onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Tax ID / Registration Number</label>
+                    <Input
+                      value={companyForm.tax_id}
+                      onChange={(e) => setCompanyForm({ ...companyForm, tax_id: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Invoice Footer Message</label>
+                    <Input
+                      value={companyForm.goodwill_message}
+                      onChange={(e) => setCompanyForm({ ...companyForm, goodwill_message: e.target.value })}
+                      className="mt-1"
+                      placeholder="Thank you for your business!"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">This message will appear at the bottom of customer invoices</p>
                   </div>
                 </div>
-              ) : (
-                <p className="text-slate-500">No company information available</p>
-              )}
+                <Button 
+                  onClick={() => updateCompanyMutation.mutate(companyForm)}
+                  disabled={updateCompanyMutation.isPending || !companyForm.name}
+                  className="w-full md:w-auto"
+                >
+                  {updateCompanyMutation.isPending ? "Saving..." : "Save Company Information"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -131,7 +230,7 @@ export default function Settings() {
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                     <AlertCircle className="w-5 h-5" />
-                    Multi-Tenant Payment Processing {/* Updated title */}
+                    Multi-Tenant Payment Processing
                   </h4>
                   <p className="text-sm text-blue-800 mb-3">
                     Each tenant/company can configure their own payment gateway. Currently supported:
@@ -197,7 +296,7 @@ export default function Settings() {
                 </div>
 
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                  <strong>Security Note:</strong> Never store full credit card numbers. Payment gateways handle card details securely and return tokens for processing. {/* Updated security note */}
+                  <strong>Security Note:</strong> Never store full credit card numbers. Payment gateways handle card details securely and return tokens for processing.
                 </div>
 
                 {isSuperAdmin && (
@@ -223,7 +322,7 @@ export default function Settings() {
         <TabsContent value="subscription">
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Management</CardTitle> {/* Updated CardTitle */}
+              <CardTitle>Subscription Management</CardTitle>
             </CardHeader>
             <CardContent>
               {company ? (
@@ -372,7 +471,7 @@ export default function Settings() {
         <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle>User Management & Security</CardTitle> {/* Updated CardTitle */}
+              <CardTitle>User Management & Security</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">

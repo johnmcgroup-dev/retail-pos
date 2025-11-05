@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +20,14 @@ import {
   WifiOff,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Printer // Added Printer icon
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useReactToPrint } from "react-to-print"; // Added useReactToPrint
+import InvoiceReceipt from "./InvoiceReceipt"; // Added InvoiceReceipt component
+import { base44 } from "@/api/base44Client"; // Added base44 client
+import { useQuery } from "@tanstack/react-query"; // Added useQuery
 
 const STRIPE_ICON = () => (
   <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
@@ -41,7 +47,7 @@ export default function PaymentGatewayDialog({
   total, 
   onComplete, 
   isProcessing, 
-  isOffline = false 
+  isOffline 
 }) {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [gateway, setGateway] = useState("stripe");
@@ -53,6 +59,39 @@ export default function PaymentGatewayDialog({
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [cardName, setCardName] = useState("");
+
+  // New state for invoice and sale data
+  const [completedSale, setCompletedSale] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const invoiceRef = useRef();
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => base44.entities.Company.list(),
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers"],
+    queryFn: () => base44.entities.Customer.list(),
+  });
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error loading user:", error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const handlePrint = useReactToPrint({
+    content: () => invoiceRef.current,
+  });
 
   const change = amountReceived ? parseFloat(amountReceived) - total : 0;
 
@@ -93,11 +132,22 @@ export default function PaymentGatewayDialog({
       card_brand: getCardBrand(cardNumber),
       transaction_id: `${gateway.toUpperCase()}_${Date.now()}`,
       transaction_reference: `TXN-${Date.now()}`,
-      payment_status: "completed"
+      payment_status: "completed",
+      // Assuming customer_id is passed or derived elsewhere, for demo we'll omit or hardcode
+      // For a real app, you'd associate this payment with a customer and order
+      customer_id: "demo-customer-123" // Placeholder
     };
     
-    setProcessing(false);
-    onComplete(paymentData);
+    try {
+      await onComplete(paymentData);
+      setCompletedSale(paymentData);
+      setShowInvoice(true);
+    } catch (error) {
+      console.error("Payment failed:", error);
+      // Here you might set an error state to display to the user
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleCashPayment = () => {
@@ -106,10 +156,33 @@ export default function PaymentGatewayDialog({
       gateway: "manual",
       amount: parseFloat(amountReceived) || total,
       change: change > 0 ? change : 0,
-      payment_status: "completed"
+      payment_status: "completed",
+      customer_id: "demo-customer-123" // Placeholder
     };
-    onComplete(paymentData);
+    try {
+      onComplete(paymentData);
+      setCompletedSale(paymentData);
+      setShowInvoice(true);
+    } catch (error) {
+      console.error("Cash payment failed:", error);
+    }
   };
+
+  const handleOtherPayment = (methodType) => {
+    const paymentData = { 
+      method: methodType, 
+      gateway: "manual",
+      payment_status: "pending", // Bank transfer might be pending
+      customer_id: "demo-customer-123" // Placeholder
+    };
+    try {
+      onComplete(paymentData);
+      setCompletedSale(paymentData);
+      setShowInvoice(true);
+    } catch (error) {
+      console.error("Other payment failed:", error);
+    }
+  }
 
   const getCardBrand = (number) => {
     const cleaned = number.replace(/\s/g, '');
@@ -125,242 +198,267 @@ export default function PaymentGatewayDialog({
                       cardCvc.length >= 3 &&
                       cardName.length > 0;
 
+  const handleCloseInvoice = () => {
+    setShowInvoice(false);
+    setCompletedSale(null);
+    onClose(); // Close the main dialog after invoice is closed
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center justify-between">
-            Complete Payment
+    <>
+      <Dialog open={open && !showInvoice} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center justify-between">
+              Complete Payment
+              {isOffline && (
+                <Badge variant="destructive" className="ml-2">
+                  <WifiOff className="w-3 h-3 mr-1" />
+                  Offline Mode
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
             {isOffline && (
-              <Badge variant="destructive" className="ml-2">
-                <WifiOff className="w-3 h-3 mr-1" />
-                Offline Mode
-              </Badge>
-            )}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {isOffline && (
-            <Alert variant="warning" className="bg-yellow-50 border-yellow-300">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                Card payments unavailable offline. Use cash or save for later sync.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Total Amount */}
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-slate-600 mb-1">Total Amount</p>
-            <p className="text-3xl font-bold text-slate-900">${total.toFixed(2)}</p>
-          </div>
-
-          <Tabs value={paymentMethod} onValueChange={setPaymentMethod}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="card" disabled={isOffline}>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Card
-              </TabsTrigger>
-              <TabsTrigger value="cash">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Cash
-              </TabsTrigger>
-              <TabsTrigger value="other">
-                <Building2 className="w-4 h-4 mr-2" />
-                Other
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Card Payment */}
-            <TabsContent value="card" className="space-y-4 mt-4">
-              {/* Gateway Selection */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  type="button"
-                  variant={gateway === "stripe" ? "default" : "outline"}
-                  className={`h-20 flex flex-col gap-2 ${
-                    gateway === "stripe" ? "bg-blue-600 hover:bg-blue-700" : ""
-                  }`}
-                  onClick={() => setGateway("stripe")}
-                >
-                  <STRIPE_ICON />
-                  <span className="text-sm">Stripe</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={gateway === "paypal" ? "default" : "outline"}
-                  className={`h-20 flex flex-col gap-2 ${
-                    gateway === "paypal" ? "bg-blue-600 hover:bg-blue-700" : ""
-                  }`}
-                  onClick={() => setGateway("paypal")}
-                >
-                  <PAYPAL_ICON />
-                  <span className="text-sm">PayPal</span>
-                </Button>
-              </div>
-
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 text-xs">
-                  <strong>Demo Mode:</strong> This is a simulation. To enable real payments, go to Settings → Backend Functions and add Stripe/PayPal integration.
+              <Alert variant="warning" className="bg-yellow-50 border-yellow-300">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800">
+                  Card payments unavailable offline. Use cash or save for later sync.
                 </AlertDescription>
               </Alert>
+            )}
 
-              {/* Card Details Form */}
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="card-name">Cardholder Name</Label>
-                  <Input
-                    id="card-name"
-                    placeholder="John Doe"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    className="mt-1"
-                  />
+            {/* Total Amount */}
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-slate-600 mb-1">Total Amount</p>
+              <p className="text-3xl font-bold text-slate-900">${total.toFixed(2)}</p>
+            </div>
+
+            <Tabs value={paymentMethod} onValueChange={setPaymentMethod}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="card" disabled={isOffline}>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Card
+                </TabsTrigger>
+                <TabsTrigger value="cash">
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Cash
+                </TabsTrigger>
+                <TabsTrigger value="other">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Other
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Card Payment */}
+              <TabsContent value="card" className="space-y-4 mt-4">
+                {/* Gateway Selection */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={gateway === "stripe" ? "default" : "outline"}
+                    className={`h-20 flex flex-col gap-2 ${
+                      gateway === "stripe" ? "bg-blue-600 hover:bg-blue-700" : ""
+                    }`}
+                    onClick={() => setGateway("stripe")}
+                  >
+                    <STRIPE_ICON />
+                    <span className="text-sm">Stripe</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={gateway === "paypal" ? "default" : "outline"}
+                    className={`h-20 flex flex-col gap-2 ${
+                      gateway === "paypal" ? "bg-blue-600 hover:bg-blue-700" : ""
+                    }`}
+                    onClick={() => setGateway("paypal")}
+                  >
+                    <PAYPAL_ICON />
+                    <span className="text-sm">PayPal</span>
+                  </Button>
                 </div>
 
+                <Alert className="bg-blue-50 border-blue-200">
+                  <AlertCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 text-xs">
+                    <strong>Demo Mode:</strong> This is a simulation. To enable real payments, go to Settings → Backend Functions and add Stripe/PayPal integration.
+                  </AlertDescription>
+                </Alert>
+
+                {/* Card Details Form */}
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="card-name">Cardholder Name</Label>
+                    <Input
+                      id="card-name"
+                      placeholder="John Doe"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="card-number">Card Number</Label>
+                    <Input
+                      id="card-number"
+                      placeholder="1234 5678 9012 3456"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                      maxLength={19}
+                      className="mt-1"
+                    />
+                    {cardNumber.length > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        {getCardBrand(cardNumber)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="card-expiry">Expiry Date</Label>
+                      <Input
+                        id="card-expiry"
+                        placeholder="MM/YY"
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                        maxLength={5}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="card-cvc">CVC</Label>
+                      <Input
+                        id="card-cvc"
+                        placeholder="123"
+                        value={cardCvc}
+                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        maxLength={4}
+                        type="password"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-slate-500 p-3 bg-green-50 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span>Your payment information is encrypted and secure</span>
+                </div>
+              </TabsContent>
+
+              {/* Cash Payment */}
+              <TabsContent value="cash" className="space-y-4 mt-4">
                 <div>
-                  <Label htmlFor="card-number">Card Number</Label>
+                  <Label htmlFor="amount-received" className="text-sm font-semibold">
+                    Amount Received
+                  </Label>
                   <Input
-                    id="card-number"
-                    placeholder="1234 5678 9012 3456"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                    maxLength={19}
-                    className="mt-1"
+                    id="amount-received"
+                    type="number"
+                    step="0.01"
+                    value={amountReceived}
+                    onChange={(e) => setAmountReceived(e.target.value)}
+                    placeholder="Enter amount"
+                    className="mt-2 h-12 text-lg"
+                    autoFocus
                   />
-                  {cardNumber.length > 0 && (
-                    <p className="text-xs text-slate-500 mt-1">
-                      {getCardBrand(cardNumber)}
-                    </p>
+                  {change > 0 && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        Change: <span className="font-bold text-lg">${change.toFixed(2)}</span>
+                      </p>
+                    </div>
                   )}
                 </div>
+              </TabsContent>
 
+              {/* Other Payment Methods */}
+              <TabsContent value="other" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="card-expiry">Expiry Date</Label>
-                    <Input
-                      id="card-expiry"
-                      placeholder="MM/YY"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                      maxLength={5}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="card-cvc">CVC</Label>
-                    <Input
-                      id="card-cvc"
-                      placeholder="123"
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      maxLength={4}
-                      type="password"
-                      className="mt-1"
-                    />
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col gap-2"
+                    onClick={() => handleOtherPayment("bank_transfer")}
+                  >
+                    <Building2 className="w-6 h-6" />
+                    <span className="text-sm">Bank Transfer</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col gap-2"
+                    onClick={() => handleOtherPayment("mobile_money")}
+                  >
+                    <Smartphone className="w-6 h-6" />
+                    <span className="text-sm">Mobile Money</span>
+                  </Button>
                 </div>
-              </div>
+              </TabsContent>
+            </Tabs>
+          </div>
 
-              <div className="flex items-center gap-2 text-xs text-slate-500 p-3 bg-green-50 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span>Your payment information is encrypted and secure</span>
-              </div>
-            </TabsContent>
-
-            {/* Cash Payment */}
-            <TabsContent value="cash" className="space-y-4 mt-4">
-              <div>
-                <Label htmlFor="amount-received" className="text-sm font-semibold">
-                  Amount Received
-                </Label>
-                <Input
-                  id="amount-received"
-                  type="number"
-                  step="0.01"
-                  value={amountReceived}
-                  onChange={(e) => setAmountReceived(e.target.value)}
-                  placeholder="Enter amount"
-                  className="mt-2 h-12 text-lg"
-                  autoFocus
-                />
-                {change > 0 && (
-                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800">
-                      Change: <span className="font-bold text-lg">${change.toFixed(2)}</span>
-                    </p>
-                  </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={onClose} disabled={processing || isProcessing}>
+              Cancel
+            </Button>
+            {paymentMethod === "card" ? (
+              <Button
+                onClick={handleCardPayment}
+                disabled={processing || isProcessing || !isCardValid || isOffline}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {(processing || isProcessing) ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Pay ${total.toFixed(2)}
+                  </>
                 )}
-              </div>
-            </TabsContent>
+              </Button>
+            ) : paymentMethod === "cash" ? (
+              <Button
+                onClick={handleCashPayment}
+                disabled={processing || isProcessing || !amountReceived || change < 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Complete Cash Payment
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Other Payment Methods */}
-            <TabsContent value="other" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-20 flex flex-col gap-2"
-                  onClick={() => onComplete({ 
-                    method: "bank_transfer", 
-                    gateway: "manual",
-                    payment_status: "pending" 
-                  })}
-                >
-                  <Building2 className="w-6 h-6" />
-                  <span className="text-sm">Bank Transfer</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex flex-col gap-2"
-                  onClick={() => onComplete({ 
-                    method: "mobile_money", 
-                    gateway: "manual",
-                    payment_status: "completed" 
-                  })}
-                >
-                  <Smartphone className="w-6 h-6" />
-                  <span className="text-sm">Mobile Money</span>
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={processing || isProcessing}>
-            Cancel
-          </Button>
-          {paymentMethod === "card" ? (
-            <Button
-              onClick={handleCardPayment}
-              disabled={processing || isProcessing || !isCardValid || isOffline}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {(processing || isProcessing) ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Pay ${total.toFixed(2)}
-                </>
-              )}
+      {/* Invoice Dialog */}
+      <Dialog open={showInvoice} onOpenChange={handleCloseInvoice}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Invoice Generated</DialogTitle>
+          </DialogHeader>
+          <InvoiceReceipt 
+            ref={invoiceRef}
+            sale={completedSale}
+            company={companies[0]} // Assuming the first company is the active one
+            customer={customers.find(c => c.id === completedSale?.customer_id)}
+            user={user}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseInvoice}>
+              Close
             </Button>
-          ) : paymentMethod === "cash" ? (
-            <Button
-              onClick={handleCashPayment}
-              disabled={processing || isProcessing || !amountReceived || change < 0}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Complete Cash Payment
+            <Button onClick={handlePrint} className="bg-blue-600">
+              <Printer className="w-4 h-4 mr-2" />
+              Print Invoice
             </Button>
-          ) : null}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

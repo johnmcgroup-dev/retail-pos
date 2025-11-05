@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -51,6 +52,11 @@ export default function Dashboard() {
     enabled: !!selectedCompany,
   });
 
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
+  });
+
   useEffect(() => {
     if (companies.length > 0 && !selectedCompany) {
       setSelectedCompany(companies[0]);
@@ -94,15 +100,15 @@ export default function Dashboard() {
   const recentSales = sales.slice(0, 5);
 
   return (
-    <div className="p-6 md:p-8 space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Welcome back! Here's your business overview</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-sm md:text-base text-slate-500 mt-1">Welcome back! Here's your business overview</p>
         </div>
         <Link to={createPageUrl("POS")}>
-          <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+          <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg w-full md:w-auto">
             <ShoppingCart className="w-4 h-4 mr-2" />
             Open POS
           </Button>
@@ -110,7 +116,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -165,34 +171,57 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts & Recent Sales */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Alerts */}
         <Card className="lg:col-span-1 shadow-md">
           <CardHeader className="border-b border-slate-100">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
               Alerts
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3">
-            {lowStockProducts.length > 0 && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm font-semibold text-red-800">Low Stock Alert</p>
-                <p className="text-xs text-red-600 mt-1">
-                  {lowStockProducts.length} products need reordering
-                </p>
-              </div>
-            )}
-            {expiringProducts.length > 0 && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm font-semibold text-yellow-800">Expiration Alert</p>
-                <p className="text-xs text-yellow-600 mt-1">
-                  {expiringProducts.length} products expiring soon
-                </p>
-              </div>
-            )}
-            {lowStockProducts.length === 0 && expiringProducts.length === 0 && (
-              <p className="text-sm text-slate-500 text-center py-6">No alerts at this time</p>
+            {alerts.slice(0, 3).length > 0 ? (
+              alerts.slice(0, 3).map((alert) => (
+                <div key={alert.id} className={`p-3 rounded-lg border-2 ${
+                  alert.severity === 'critical' ? 'bg-red-50 border-red-200' :
+                  alert.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                  'bg-blue-50 border-blue-200'
+                }`}>
+                  <p className={`text-sm font-semibold ${
+                    alert.severity === 'critical' ? 'text-red-800' :
+                    alert.severity === 'warning' ? 'text-yellow-800' :
+                    'text-blue-800'
+                  }`}>{alert.title}</p>
+                  <p className={`text-xs mt-1 ${
+                    alert.severity === 'critical' ? 'text-red-600' :
+                    alert.severity === 'warning' ? 'text-yellow-600' :
+                    'text-blue-600'
+                  }`}>{alert.message}</p>
+                </div>
+              ))
+            ) : (
+              <>
+                {lowStockProducts.length > 0 && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm font-semibold text-red-800">Low Stock Alert</p>
+                    <p className="text-xs text-red-600 mt-1">
+                      {lowStockProducts.length} products need reordering
+                    </p>
+                  </div>
+                )}
+                {expiringProducts.length > 0 && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm font-semibold text-yellow-800">Expiration Alert</p>
+                    <p className="text-xs text-yellow-600 mt-1">
+                      {expiringProducts.length} products expiring soon
+                    </p>
+                  </div>
+                )}
+                {lowStockProducts.length === 0 && expiringProducts.length === 0 && (
+                  <p className="text-sm text-slate-500 text-center py-6">No alerts at this time</p>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
