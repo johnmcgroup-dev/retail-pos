@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -23,7 +24,9 @@ import {
   Award,
   Gift,
   Bell,
-  UserCog
+  UserCog,
+  Globe,
+  ShoppingBag
 } from "lucide-react";
 import {
   Sidebar,
