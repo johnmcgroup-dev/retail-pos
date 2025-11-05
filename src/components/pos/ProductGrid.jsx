@@ -3,8 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Package } from "lucide-react";
+import { formatCurrency } from "@/utils";
 
-export default function ProductGrid({ products, onAddToCart }) {
+export default function ProductGrid({ products, onAddToCart, currency = 'USD' }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {products.map((product) => (
@@ -31,7 +32,7 @@ export default function ProductGrid({ products, onAddToCart }) {
             )}
             <div className="flex items-center justify-between mt-2">
               <span className="text-lg font-bold text-blue-600">
-                ${product.selling_price?.toFixed(2)}
+                {formatCurrency(product.selling_price || 0, currency)}
               </span>
               <Button
                 size="sm"

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, FileText, TrendingUp, DollarSign, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/utils";
 
 export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,6 +17,13 @@ export default function Sales() {
     queryKey: ["sales"],
     queryFn: () => base44.entities.Sale.list("-sale_date"),
   });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => base44.entities.Company.list(),
+  });
+
+  const currency = companies[0]?.currency || 'USD';
 
   const filteredSales = sales.filter(sale =>
     sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,7 +51,7 @@ export default function Sales() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalRevenue, currency)}</p>
               </div>
               <DollarSign className="w-10 h-10 opacity-80" />
             </div>
@@ -66,7 +75,7 @@ export default function Sales() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Avg Transaction</p>
-                <p className="text-2xl font-bold text-slate-900">${averageTransaction.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(averageTransaction, currency)}</p>
               </div>
               <TrendingUp className="w-10 h-10 text-purple-500" />
             </div>
@@ -137,7 +146,7 @@ export default function Sales() {
                     <td className="p-4 text-slate-900">{sale.customer_name}</td>
                     <td className="p-4 text-right text-slate-600">{sale.items?.length || 0}</td>
                     <td className="p-4 text-right font-bold text-slate-900">
-                      ${sale.total_amount?.toFixed(2)}
+                      {formatCurrency(sale.total_amount || 0, currency)}
                     </td>
                     <td className="p-4">
                       <Badge variant="outline" className="capitalize">

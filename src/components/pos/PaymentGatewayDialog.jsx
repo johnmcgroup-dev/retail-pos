@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -14,8 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Smartphone, DollarSign, AlertCircle, Printer } from "lucide-react";
 import InvoiceReceipt from "./InvoiceReceipt";
+import { formatCurrency, getCurrencySymbol } from "@/utils";
 
-export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline }) {
+export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline, currency = 'USD' }) {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isProcessingPayment, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -132,7 +134,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
               <p className="text-sm text-blue-700 font-medium">Total Amount</p>
-              <p className="text-3xl font-bold text-blue-900">${total.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-blue-900">{formatCurrency(total, currency)}</p>
             </div>
 
             <div>
@@ -197,7 +199,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
 
             {paymentMethod === "cash" && (
               <div>
-                <Label>Amount Received</Label>
+                <Label>Amount Received ({getCurrencySymbol(currency)})</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -207,7 +209,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
                 />
                 {change > 0 && (
                   <p className="mt-2 text-green-600 font-semibold">
-                    Change: ${change.toFixed(2)}
+                    Change: {formatCurrency(change, currency)}
                   </p>
                 )}
               </div>

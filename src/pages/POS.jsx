@@ -17,7 +17,7 @@ import CartPanel from "../components/pos/CartPanel";
 import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
-import { offlineCache, CACHE_KEYS, useOnlineStatus } from "@/utils";
+import { offlineCache, CACHE_KEYS, useOnlineStatus, formatCurrency, getCurrencySymbol } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";
 
@@ -37,6 +37,8 @@ export default function POS() {
     queryFn: () => base44.entities.Company.list(),
     enabled: isOnline,
   });
+
+  const currency = selectedCompany?.currency || companies[0]?.currency || 'USD';
 
   // Products query with offline support
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -442,6 +444,7 @@ export default function POS() {
             cart={cart}
             onUpdateQuantity={updateQuantity}
             onRemoveItem={removeFromCart}
+            currency={currency}
           />
         </div>
 
@@ -449,21 +452,21 @@ export default function POS() {
           <div className="space-y-3 mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Subtotal:</span>
-              <span className="font-semibold">${totals.subtotal.toFixed(2)}</span>
+              <span className="font-semibold">{formatCurrency(totals.subtotal, currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Tax:</span>
-              <span className="font-semibold">${totals.taxAmount.toFixed(2)}</span>
+              <span className="font-semibold">{formatCurrency(totals.taxAmount, currency)}</span>
             </div>
             {totals.discountAmount > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Discount:</span>
-                <span className="font-semibold text-green-600">-${totals.discountAmount.toFixed(2)}</span>
+                <span className="font-semibold text-green-600">-{formatCurrency(totals.discountAmount, currency)}</span>
               </div>
             )}
             <div className="flex justify-between text-xl font-bold pt-3 border-t border-slate-300">
               <span>Total:</span>
-              <span className="text-blue-600">${totals.total.toFixed(2)}</span>
+              <span className="text-blue-600">{formatCurrency(totals.total, currency)}</span>
             </div>
           </div>
 
@@ -485,6 +488,7 @@ export default function POS() {
         onComplete={handleCheckout}
         isProcessing={createSaleMutation.isPending}
         isOffline={!isOnline}
+        currency={currency}
       />
     </div>
   );

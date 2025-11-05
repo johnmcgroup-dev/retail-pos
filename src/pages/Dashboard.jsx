@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, formatCurrency } from "@/utils";
 import {
   DollarSign,
   TrendingUp,
@@ -99,6 +99,8 @@ export default function Dashboard() {
 
   const recentSales = sales.slice(0, 5);
 
+  const currency = selectedCompany?.currency || 'USD';
+
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Header */}
@@ -125,7 +127,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${todayRevenue.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatCurrency(todayRevenue, currency)}</div>
             <p className="text-xs opacity-80 mt-1">{todaySales.length} transactions</p>
           </CardContent>
         </Card>
@@ -138,7 +140,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${monthRevenue.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatCurrency(monthRevenue, currency)}</div>
             <p className="text-xs opacity-80 mt-1">{monthSales.length} sales this month</p>
           </CardContent>
         </Card>
@@ -151,7 +153,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalInventoryValue.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatCurrency(totalInventoryValue, currency)}</div>
             <p className="text-xs opacity-80 mt-1">{products.length} products</p>
           </CardContent>
         </Card>
@@ -243,7 +245,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-slate-900">${sale.total_amount?.toFixed(2)}</p>
+                      <p className="font-bold text-slate-900">{formatCurrency(sale.total_amount || 0, currency)}</p>
                       <Badge variant={sale.payment_status === 'paid' ? 'default' : 'destructive'} className="text-xs">
                         {sale.payment_status}
                       </Badge>

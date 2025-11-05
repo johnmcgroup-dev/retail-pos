@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"; // Added useQueryClient, useMutation
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,8 @@ import { format } from "date-fns";
 import { offlineCache } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import PasswordChangeDialog from "../components/settings/PasswordChangeDialog";
-import { Input } from "@/components/ui/input"; // Added Input import
+import { Input } from "@/components/ui/input";
+import { CURRENCIES } from "@/utils";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -24,6 +25,7 @@ export default function Settings() {
     phone: "",
     email: "",
     tax_id: "",
+    currency: "USD",
     goodwill_message: "Thank you for your business!"
   });
 
@@ -32,7 +34,7 @@ export default function Settings() {
     queryFn: () => base44.entities.Company.list(),
   });
 
-  const queryClient = useQueryClient(); // Initialized queryClient
+  const queryClient = useQueryClient();
 
   const updateCompanyMutation = useMutation({
     mutationFn: (data) => {
@@ -71,6 +73,7 @@ export default function Settings() {
         phone: companies[0].phone || "",
         email: companies[0].email || "",
         tax_id: companies[0].tax_id || "",
+        currency: companies[0].currency || "USD",
         goodwill_message: companies[0].goodwill_message || "Thank you for your business!"
       });
     }
@@ -161,6 +164,21 @@ export default function Settings() {
                       <option value="pharmacy">Pharmacy</option>
                       <option value="other">Other</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Currency *</label>
+                    <select
+                      value={companyForm.currency}
+                      onChange={(e) => setCompanyForm({ ...companyForm, currency: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      {Object.entries(CURRENCIES).map(([code, currency]) => (
+                        <option key={code} value={code}>
+                          {currency.symbol} - {currency.name} ({code})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">This currency will be used throughout your app</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-semibold text-slate-700">Address</label>

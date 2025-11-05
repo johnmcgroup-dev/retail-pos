@@ -1,7 +1,11 @@
+
 import React, { forwardRef } from "react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/utils";
 
 const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
+  const currency = company?.currency || 'USD';
+
   return (
     <div ref={ref} className="bg-white p-8 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Header */}
@@ -61,8 +65,8 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
               <td className="py-3 px-4 text-slate-700">{index + 1}</td>
               <td className="py-3 px-4 text-slate-900">{item.product_name}</td>
               <td className="py-3 px-4 text-center text-slate-700">{item.quantity}</td>
-              <td className="py-3 px-4 text-right text-slate-700">${item.unit_price.toFixed(2)}</td>
-              <td className="py-3 px-4 text-right font-semibold text-slate-900">${item.total.toFixed(2)}</td>
+              <td className="py-3 px-4 text-right text-slate-700">{formatCurrency(item.unit_price, currency)}</td>
+              <td className="py-3 px-4 text-right font-semibold text-slate-900">{formatCurrency(item.total, currency)}</td>
             </tr>
           ))}
         </tbody>
@@ -73,40 +77,40 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
         <div className="w-64">
           <div className="flex justify-between py-2 border-b border-slate-200">
             <span className="text-slate-600">Subtotal:</span>
-            <span className="font-semibold text-slate-900">${sale?.subtotal?.toFixed(2)}</span>
+            <span className="font-semibold text-slate-900">{formatCurrency(sale?.subtotal || 0, currency)}</span>
           </div>
           {sale?.tax_amount > 0 && (
             <div className="flex justify-between py-2 border-b border-slate-200">
               <span className="text-slate-600">Tax:</span>
-              <span className="font-semibold text-slate-900">${sale?.tax_amount?.toFixed(2)}</span>
+              <span className="font-semibold text-slate-900">{formatCurrency(sale?.tax_amount, currency)}</span>
             </div>
           )}
           {sale?.discount_amount > 0 && (
             <div className="flex justify-between py-2 border-b border-slate-200">
               <span className="text-slate-600">Discount:</span>
-              <span className="font-semibold text-green-600">-${sale?.discount_amount?.toFixed(2)}</span>
+              <span className="font-semibold text-green-600">-{formatCurrency(sale?.discount_amount, currency)}</span>
             </div>
           )}
           <div className="flex justify-between py-3 border-t-2 border-slate-300">
             <span className="text-xl font-bold text-slate-900">TOTAL:</span>
-            <span className="text-xl font-bold text-blue-600">${sale?.total_amount?.toFixed(2)}</span>
+            <span className="text-xl font-bold text-blue-600">{formatCurrency(sale?.total_amount || 0, currency)}</span>
           </div>
           {sale?.amount_paid > 0 && (
             <>
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">Amount Paid:</span>
-                <span className="font-semibold text-slate-900">${sale?.amount_paid?.toFixed(2)}</span>
+                <span className="font-semibold text-slate-900">{formatCurrency(sale?.amount_paid, currency)}</span>
               </div>
               {sale?.amount_due > 0 && (
                 <div className="flex justify-between py-2">
                   <span className="text-slate-600">Balance Due:</span>
-                  <span className="font-semibold text-red-600">${sale?.amount_due?.toFixed(2)}</span>
+                  <span className="font-semibold text-red-600">{formatCurrency(sale?.amount_due, currency)}</span>
                 </div>
               )}
               {(sale?.amount_paid - sale?.total_amount) > 0 && (
                 <div className="flex justify-between py-2">
                   <span className="text-slate-600">Change:</span>
-                  <span className="font-semibold text-green-600">${(sale?.amount_paid - sale?.total_amount).toFixed(2)}</span>
+                  <span className="font-semibold text-green-600">{formatCurrency(sale?.amount_paid - sale?.total_amount, currency)}</span>
                 </div>
               )}
             </>
