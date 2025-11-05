@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -344,12 +345,11 @@ export default function POS() {
       tax_amount: totals.taxAmount,
       discount_amount: totals.discountAmount,
       total_amount: totals.total,
-      payment_method: paymentData.method,
-      payment_status: paymentData.payment_status || "paid",
-      amount_paid: paymentData.amount || totals.total,
+      payment_method: paymentData.payment_method,
+      payment_status: "paid",
+      amount_paid: paymentData.amount_paid || totals.total,
       amount_due: 0,
       cashier: cashierEmail,
-      payment_data: paymentData
     };
 
     await createSaleMutation.mutateAsync(saleData);
