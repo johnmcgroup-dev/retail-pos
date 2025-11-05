@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ProductDialog({ open, onClose, product, companies }) {
   const queryClient = useQueryClient();
@@ -36,10 +38,15 @@ export default function ProductDialog({ open, onClose, product, companies }) {
     unit: "piece",
     reorder_level: 10,
     track_expiration: false,
-    status: "active"
+    default_expiry_days: 0,
+    status: "active",
+    image_url: "",
+    images: []
   });
 
   const [barcodeInput, setBarcodeInput] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     if (product) {
@@ -67,6 +74,49 @@ export default function ProductDialog({ open, onClose, product, companies }) {
     saveMutation.mutate(formData);
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File size must be less than 5MB");
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError("Please upload an image file");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData({
+        ...formData,
+        image_url: file_url,
+        images: [...(formData.images || []), file_url]
+      });
+    } catch (error) {
+      setUploadError("Failed to upload image. Please try again.");
+      console.error("Upload error:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      images: newImages,
+      image_url: newImages[0] || ""
+    });
+  };
+
   const addBarcode = () => {
     if (barcodeInput.trim()) {
       setFormData({
@@ -86,12 +136,67 @@ export default function ProductDialog({ open, onClose, product, companies }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{product ? "Edit Product" : "Add New Product"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Image Upload Section */}
+          <div className="border-2 border-dashed border-slate-300 rounded-lg p-4">
+            <Label className="mb-2 block">Product Images</Label>
+            
+            {formData.images && formData.images.length > 0 ? (
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                {formData.images.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img src={img} alt={`Product ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 mb-3">
+                <ImageIcon className="w-12 h-12 text-slate-400 mb-2" />
+                <p className="text-sm text-slate-500">No images uploaded</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="hidden"
+                id="image-upload"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('image-upload').click()}
+                disabled={uploading}
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {uploading ? "Uploading..." : "Upload Image"}
+              </Button>
+            </div>
+            
+            {uploadError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
+            )}
+            <p className="text-xs text-slate-500 mt-2">Max file size: 5MB. Supported: JPG, PNG, GIF</p>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label>Product Name *</Label>
@@ -107,6 +212,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
               <Input
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                placeholder="e.g., PRD-001"
               />
             </div>
 
@@ -115,6 +221,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
               <Input
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="e.g., Electronics"
               />
             </div>
 
@@ -141,7 +248,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
                 type="number"
                 step="0.01"
                 value={formData.cost_price}
-                onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) || 0 })}
               />
             </div>
 
@@ -151,7 +258,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
                 type="number"
                 step="0.01"
                 value={formData.selling_price}
-                onChange={(e) => setFormData({ ...formData, selling_price: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, selling_price: parseFloat(e.target.value) || 0 })}
                 required
               />
             </div>
@@ -162,7 +269,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
                 type="number"
                 step="0.01"
                 value={formData.wholesale_price}
-                onChange={(e) => setFormData({ ...formData, wholesale_price: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, wholesale_price: parseFloat(e.target.value) || 0 })}
               />
             </div>
 
@@ -172,7 +279,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
                 type="number"
                 step="0.01"
                 value={formData.tax_rate}
-                onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
               />
             </div>
 
@@ -181,8 +288,29 @@ export default function ProductDialog({ open, onClose, product, companies }) {
               <Input
                 type="number"
                 value={formData.reorder_level}
-                onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 0 })}
               />
+            </div>
+
+            <div>
+              <Label>Default Shelf Life (Days)</Label>
+              <Input
+                type="number"
+                value={formData.default_expiry_days}
+                onChange={(e) => setFormData({ ...formData, default_expiry_days: parseInt(e.target.value) || 0 })}
+                placeholder="e.g., 365"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="track_expiration"
+                checked={formData.track_expiration}
+                onChange={(e) => setFormData({ ...formData, track_expiration: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <Label htmlFor="track_expiration" className="cursor-pointer">Track Expiration Dates</Label>
             </div>
 
             <div>
@@ -206,6 +334,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
+              placeholder="Product description..."
             />
           </div>
 
@@ -242,7 +371,7 @@ export default function ProductDialog({ open, onClose, product, companies }) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saveMutation.isPending}>
+            <Button type="submit" disabled={saveMutation.isPending || uploading}>
               {saveMutation.isPending ? "Saving..." : "Save Product"}
             </Button>
           </DialogFooter>

@@ -6,13 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2, AlertCircle, DollarSign } from "lucide-react";
+import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2, AlertCircle, DollarSign, CheckCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { offlineCache } from "@/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert"; // Added import for Alert components
+import PasswordChangeDialog from "../components/settings/PasswordChangeDialog"; // Added import for PasswordChangeDialog
 
 export default function Settings() {
   const [user, setUser] = useState(null);
   const [cacheInfo, setCacheInfo] = useState({});
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false); // Added state for password change dialog
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -39,6 +42,11 @@ export default function Settings() {
   };
 
   const company = companies[0];
+  const isSuperAdmin = user?.email === 'johnmcgroup@gmail.com'; // Added isSuperAdmin check
+  const isTrialExpired = company?.trial_ends_at && new Date(company.trial_ends_at) < new Date(); // Added isTrialExpired check
+  const daysLeftInTrial = company?.trial_ends_at 
+    ? Math.ceil((new Date(company.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
+    : 0; // Added daysLeftInTrial calculation
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -63,7 +71,7 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="users">
             <Users className="w-4 h-4 mr-2" />
-            Users & Roles
+            Users & Security {/* Changed from "Users & Roles" */}
           </TabsTrigger>
           <TabsTrigger value="offline">
             <Database className="w-4 h-4 mr-2" />
@@ -123,26 +131,49 @@ export default function Settings() {
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                     <AlertCircle className="w-5 h-5" />
-                    Payment Integration Setup
+                    Multi-Tenant Payment Processing {/* Updated title */}
                   </h4>
                   <p className="text-sm text-blue-800 mb-3">
-                    To enable real payment processing with Stripe or PayPal, you need to configure backend functions.
+                    Each tenant/company can configure their own payment gateway. Currently supported:
                   </p>
-                  <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-                    <li>Go to Dashboard → Settings → Backend Functions</li>
-                    <li>Enable Backend Functions for your app</li>
-                    <li>Add Stripe or PayPal integration packages</li>
-                    <li>Configure API keys securely</li>
-                    <li>Deploy and test payment processing</li>
-                  </ol>
+                  <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                    <li><strong>PayPal</strong> - Global payment processing</li>
+                    <li><strong>Mainstack</strong> - African payment gateway</li>
+                    <li><strong>Stripe</strong> - International card processing</li>
+                  </ul>
                 </div>
 
                 <div>
                   <h4 className="font-semibold text-slate-900 mb-3">Available Payment Methods</h4>
                   <div className="space-y-3">
+                    {/* PayPal */}
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <CreditCard className="w-6 h-6 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-slate-900">PayPal</p>
+                          <p className="text-xs text-slate-500">Global payment processing, buyer protection</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">Demo Mode</Badge>
+                    </div>
+
+                    {/* Mainstack */}
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-6 h-6 text-purple-600" />
+                        <div>
+                          <p className="font-medium text-slate-900">Mainstack</p>
+                          <p className="text-xs text-slate-500">Accept payments across Africa</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">Demo Mode</Badge>
+                    </div>
+
+                    {/* Stripe */}
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-6 h-6 text-indigo-600" />
                         <div>
                           <p className="font-medium text-slate-900">Stripe</p>
                           <p className="text-xs text-slate-500">Credit/Debit Cards, Apple Pay, Google Pay</p>
@@ -151,17 +182,7 @@ export default function Settings() {
                       <Badge variant="secondary">Demo Mode</Badge>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <CreditCard className="w-6 h-6 text-blue-600" />
-                        <div>
-                          <p className="font-medium text-slate-900">PayPal</p>
-                          <p className="text-xs text-slate-500">PayPal Balance, Cards</p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">Demo Mode</Badge>
-                    </div>
-
+                    {/* Cash */}
                     <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
                       <div className="flex items-center gap-3">
                         <DollarSign className="w-6 h-6 text-green-600" />
@@ -176,8 +197,24 @@ export default function Settings() {
                 </div>
 
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                  <strong>Security Note:</strong> Never store credit card numbers in your database. Payment gateways handle card details securely and return tokens for processing.
+                  <strong>Security Note:</strong> Never store full credit card numbers. Payment gateways handle card details securely and return tokens for processing. {/* Updated security note */}
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <h4 className="font-semibold text-purple-900 mb-2">Super Admin Gateway Setup</h4>
+                    <p className="text-sm text-purple-800">
+                      To enable real payment processing, configure API keys in the backend:
+                    </p>
+                    <ol className="text-sm text-purple-800 mt-2 space-y-1 list-decimal list-inside">
+                      <li>Enable Backend Functions in Dashboard</li>
+                      <li>Add PayPal/Mainstack/Stripe SDK</li>
+                      <li>Configure API keys securely</li>
+                      <li>Test in sandbox mode</li>
+                      <li>Deploy to production</li>
+                    </ol>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -186,11 +223,24 @@ export default function Settings() {
         <TabsContent value="subscription">
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Details</CardTitle>
+              <CardTitle>Subscription Management</CardTitle> {/* Updated CardTitle */}
             </CardHeader>
             <CardContent>
               {company ? (
                 <div className="space-y-6">
+                  {company.status === 'trial' && (
+                    <Alert className={isTrialExpired ? "bg-red-50 border-red-300" : "bg-blue-50 border-blue-300"}>
+                      <AlertCircle className={`h-4 w-4 ${isTrialExpired ? "text-red-600" : "text-blue-600"}`} />
+                      <AlertDescription className={isTrialExpired ? "text-red-800" : "text-blue-800"}>
+                        {isTrialExpired ? (
+                          <span><strong>Trial Expired!</strong> Please subscribe to continue using RetailPro.</span>
+                        ) : (
+                          <span><strong>{daysLeftInTrial} days</strong> left in your 14-day free trial.</span>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-4">
                       <div>
@@ -225,6 +275,92 @@ export default function Settings() {
                       </div>
                     )}
                   </div>
+
+                  {/* Pricing Plans */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="border-2 hover:border-blue-500 transition-colors">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>Monthly Plan</span>
+                          <Badge>Popular</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-center mb-6">
+                          <p className="text-4xl font-bold text-slate-900">${company.monthly_price}</p>
+                          <p className="text-slate-600">/month</p>
+                        </div>
+                        <ul className="space-y-2 text-sm mb-6">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Unlimited products
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Multi-warehouse support
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Offline mode
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Email support
+                          </li>
+                        </ul>
+                        <Button className="w-full" disabled={company.subscription_plan === 'monthly'}>
+                          {company.subscription_plan === 'monthly' ? 'Current Plan' : 'Subscribe Monthly'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-green-500 relative overflow-hidden">
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-green-500">Save 17%</Badge>
+                      </div>
+                      <CardHeader>
+                        <CardTitle>Yearly Plan</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-center mb-6">
+                          <p className="text-4xl font-bold text-slate-900">${company.yearly_price}</p>
+                          <p className="text-slate-600">/year</p>
+                          <p className="text-xs text-green-600 mt-1">Save ${(company.monthly_price * 12 - company.yearly_price).toFixed(2)}</p>
+                        </div>
+                        <ul className="space-y-2 text-sm mb-6">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Everything in Monthly
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Priority support
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            Advanced analytics
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            API access
+                          </li>
+                        </ul>
+                        <Button className="w-full bg-green-600 hover:bg-green-700" disabled={company.subscription_plan === 'yearly'}>
+                          {company.subscription_plan === 'yearly' ? 'Current Plan' : 'Subscribe Yearly'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 border rounded-lg text-sm">
+                    <p className="font-semibold text-slate-900 mb-2">Payment Methods Accepted:</p>
+                    <div className="flex gap-4 flex-wrap">
+                      <Badge variant="outline">PayPal</Badge>
+                      <Badge variant="outline">Mainstack</Badge>
+                      <Badge variant="outline">Credit/Debit Cards</Badge>
+                      <Badge variant="outline">Bank Transfer</Badge>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <p className="text-slate-500">No subscription information available</p>
@@ -236,28 +372,91 @@ export default function Settings() {
         <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
+              <CardTitle>User Management & Security</CardTitle> {/* Updated CardTitle */}
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {user && (
-                  <div className="p-4 border rounded-lg flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          {user.full_name?.[0]?.toUpperCase()}
-                        </span>
+                  <>
+                    <div className="p-4 border rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">
+                            {user.full_name?.[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">{user.full_name}</p>
+                          <p className="text-sm text-slate-500">{user.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">{user.full_name}</p>
-                        <p className="text-sm text-slate-500">{user.email}</p>
-                      </div>
+                      <Badge className={`capitalize ${
+                        user.email === 'johnmcgroup@gmail.com' ? 'bg-red-100 text-red-700' : ''
+                      }`}>
+                        {user.email === 'johnmcgroup@gmail.com' ? 'Super Admin' : user.role}
+                      </Badge>
                     </div>
-                    <Badge className="capitalize">{user.role}</Badge>
-                  </div>
+
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-3">Security Settings</h4>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPasswordDialog(true)}
+                        className="w-full justify-start"
+                      >
+                        <Lock className="w-4 h-4 mr-2" />
+                        Change Password
+                      </Button>
+                    </div>
+
+                    {isSuperAdmin && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5" />
+                          Super Administrator Access
+                        </h4>
+                        <p className="text-sm text-red-800 mb-2">
+                          You have full system access across all tenants/companies.
+                        </p>
+                        <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                          <li>View and manage all companies</li>
+                          <li>Configure system-wide settings</li>
+                          <li>Access all user data</li>
+                          <li>Manage subscriptions and billing</li>
+                        </ul>
+                      </div>
+                    )}
+                  </>
                 )}
-                <p className="text-sm text-slate-500 mt-4">
-                  To manage users and roles, contact your system administrator.
+
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">Role Hierarchy</h4>
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <span className="font-semibold">Super Admin</span>
+                      <Badge variant="outline" className="text-red-600">Developer Only</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <span className="font-semibold">Admin</span>
+                      <Badge variant="outline">Tenant/Company Owner</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <span className="font-semibold">Manager</span>
+                      <Badge variant="outline">Department Head</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <span className="font-semibold">Supervisor</span>
+                      <Badge variant="outline">Team Lead</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <span className="font-semibold">User</span>
+                      <Badge variant="outline">Staff Member</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-sm text-slate-500">
+                  To manage other users and roles, contact your system administrator or use the Dashboard → Users section.
                 </p>
               </div>
             </CardContent>
@@ -359,6 +558,11 @@ export default function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <PasswordChangeDialog 
+        open={showPasswordDialog} 
+        onClose={() => setShowPasswordDialog(false)} 
+      />
     </div>
   );
 }
