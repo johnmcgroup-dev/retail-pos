@@ -200,27 +200,37 @@ export default function Layout({ children, currentPageName }) {
       
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <Sidebar className="border-r border-slate-200 bg-white">
-          <SidebarHeader className="border-b border-slate-200 p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <ShoppingCart className="w-6 h-6 text-white" />
+          <SidebarHeader className="border-b border-slate-200 p-3 md:p-5">
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* JmtSolution Logo */}
+              <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl shadow-lg flex items-center justify-center">
+                  <div className="text-white font-bold text-sm md:text-base">
+                    <span className="text-yellow-300">J</span>
+                    <span className="text-xs md:text-sm">mt</span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-md">
+                  <ShoppingCart className="w-2 h-2 md:w-3 md:h-3 text-white" />
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-slate-900 text-base md:text-lg">My Retailer PoS</h2>
-                <p className="text-xs text-slate-500">Point of Sale</p>
+              
+              <div className="min-w-0 flex-1">
+                <h2 className="font-bold text-slate-900 text-sm md:text-lg truncate">My Retailer Pro</h2>
+                <p className="text-[10px] md:text-xs text-slate-500 truncate">by JmtSolution</p>
               </div>
             </div>
             {company && (
-              <div className="mt-3 md:mt-4 p-2 md:p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                <p className="text-xs text-slate-600 font-medium">Active Company</p>
+              <div className="mt-2 md:mt-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <p className="text-[10px] md:text-xs text-slate-600 font-medium">Active Company</p>
                 <p className="font-semibold text-slate-900 text-xs md:text-sm truncate">{company.name}</p>
               </div>
             )}
           </SidebarHeader>
           
-          <SidebarContent className="p-2 md:p-3">
+          <SidebarContent className="p-2">
             <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+              <SidebarGroupLabel className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 py-1.5">
                 Main Menu
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -229,20 +239,20 @@ export default function Layout({ children, currentPageName }) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton 
                         asChild 
-                        className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-xl mb-1 ${
+                        className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg mb-0.5 ${
                           location.pathname === item.url 
                             ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md hover:from-blue-600 hover:to-indigo-600 hover:text-white' 
                             : ''
-                        } ${item.highlight ? 'border-2 border-green-400' : ''}`}
+                        } ${item.highlight ? 'border border-green-400' : ''}`}
                       >
-                        <Link to={item.url} className="flex items-center gap-3 px-2 md:px-3 py-2.5">
-                          <item.icon className="w-4 h-4 md:w-5 md:h-5" />
-                          <span className="font-medium text-sm md:text-base">{item.title}</span>
+                        <Link to={item.url} className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2">
+                          <item.icon className="w-4 h-4 flex-shrink-0" />
+                          <span className="font-medium text-xs md:text-sm truncate">{item.title}</span>
                           {item.highlight && (
-                            <Badge className="ml-auto bg-green-500 text-white text-xs">Quick</Badge>
+                            <Badge className="ml-auto bg-green-500 text-white text-[10px] md:text-xs flex-shrink-0">Quick</Badge>
                           )}
                           {item.badge && (
-                            <Badge className="ml-auto bg-purple-500 text-white text-xs">{item.badge}</Badge>
+                            <Badge className="ml-auto bg-purple-500 text-white text-[10px] md:text-xs flex-shrink-0">{item.badge}</Badge>
                           )}
                         </Link>
                       </SidebarMenuButton>
@@ -253,13 +263,13 @@ export default function Layout({ children, currentPageName }) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-slate-200 p-3 md:p-4">
+          <SidebarFooter className="border-t border-slate-200 p-2 md:p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start hover:bg-slate-100">
-                  <div className="flex items-center gap-2 md:gap-3 w-full">
-                    <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-xs md:text-sm">
+                <Button variant="ghost" className="w-full justify-start hover:bg-slate-100 h-auto py-2">
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-xs">
                         {user?.full_name?.[0]?.toUpperCase() || "U"}
                       </span>
                     </div>
@@ -267,13 +277,13 @@ export default function Layout({ children, currentPageName }) {
                       <p className="font-semibold text-slate-900 text-xs md:text-sm truncate">
                         {user?.full_name || "User"}
                       </p>
-                      <p className="text-xs text-slate-500 capitalize truncate">{user?.role || user?.role_level || "user"}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500 capitalize truncate">{user?.role || user?.role_level || "user"}</p>
                     </div>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-slate-400 flex-shrink-0" />
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
@@ -284,33 +294,33 @@ export default function Layout({ children, currentPageName }) {
         </Sidebar>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-3 md:py-4 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 md:gap-4 lg:hidden">
-                <SidebarTrigger className="hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200">
-                  <Menu className="w-5 h-5" />
+          <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-2 md:py-3 shadow-sm sticky top-0 z-10">
+            <div className="flex items-center justify-between gap-2 md:gap-4">
+              <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                <SidebarTrigger className="lg:hidden hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
+                  <Menu className="w-5 h-5 md:w-6 md:h-6" />
                 </SidebarTrigger>
-                <h1 className="text-lg md:text-xl font-bold text-slate-900">My Retailer PoS</h1>
+                <div className="min-w-0 flex-1 lg:hidden">
+                  <h1 className="text-sm md:text-base font-bold text-slate-900 truncate">My Retailer Pro</h1>
+                </div>
               </div>
 
-              <div className="ml-auto">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative"
-                  onClick={() => setShowNotifications(true)}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadAlerts > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {unreadAlerts > 9 ? '9+' : unreadAlerts}
-                    </span>
-                  )}
-                  {criticalAlerts > 0 && (
-                    <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                  )}
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative flex-shrink-0 h-8 w-8 md:h-10 md:w-10"
+                onClick={() => setShowNotifications(true)}
+              >
+                <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                {unreadAlerts > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white text-[10px] md:text-xs rounded-full flex items-center justify-center font-bold">
+                    {unreadAlerts > 9 ? '9+' : unreadAlerts}
+                  </span>
+                )}
+                {criticalAlerts > 0 && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 md:w-3 md:h-3 bg-red-600 rounded-full animate-pulse" />
+                )}
+              </Button>
             </div>
           </header>
 
