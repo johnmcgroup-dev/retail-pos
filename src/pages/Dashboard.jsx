@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { createPageUrl, formatCurrency } from "@/utils";
-import { offlineCache, CACHE_KEYS } from "../components/utils/offlineCache";
+import { createPageUrl, formatCurrency, offlineCache, CACHE_KEYS } from "../components/utils";
 import {
   DollarSign,
   TrendingUp,
@@ -222,8 +222,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* ... rest of JSX remains the same ... */}
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <Card className="lg:col-span-1 shadow-md">

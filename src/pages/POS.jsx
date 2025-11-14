@@ -17,8 +17,7 @@ import CartPanel from "../components/pos/CartPanel";
 import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
-import { formatCurrency, getCurrencySymbol } from "@/utils";
-import { offlineCache, CACHE_KEYS } from "../components/utils/offlineCache"; // Changed import path
+import { formatCurrency, getCurrencySymbol, offlineCache, CACHE_KEYS } from "../components/utils";
 import { useOnlineStatus } from "../components/shared/useOnlineStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";
