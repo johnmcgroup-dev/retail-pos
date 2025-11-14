@@ -1,10 +1,10 @@
 import React from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { WifiOff, Wifi } from "lucide-react";
-import { useOnlineStatus } from "@/utils";
+import { WifiOff } from "lucide-react";
+import { useOnlineStatus } from "./useOnlineStatus";
 
 export default function OfflineIndicator() {
-  const isOnline = useOnlineStatus();
+  const { isOnline } = useOnlineStatus();
 
   if (isOnline) return null;
 

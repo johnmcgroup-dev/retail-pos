@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +16,8 @@ import CartPanel from "../components/pos/CartPanel";
 import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
-import { offlineCache, CACHE_KEYS, useOnlineStatus, formatCurrency, getCurrencySymbol } from "@/utils";
+import { offlineCache, CACHE_KEYS, formatCurrency, getCurrencySymbol } from "@/utils";
+import { useOnlineStatus } from "../components/shared/useOnlineStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";
 
@@ -230,10 +230,8 @@ export default function POS() {
         return { offline: true };
       }
 
-      // Create sale
       const sale = await base44.entities.Sale.create(saleData);
       
-      // Create payment record
       if (saleData.payment_data) {
         await base44.entities.Payment.create({
           company_id: saleData.company_id,
@@ -254,7 +252,6 @@ export default function POS() {
         });
       }
       
-      // Award loyalty points
       if (saleData.customer_id && selectedCompany) {
         const loyaltyPrograms = await base44.entities.LoyaltyProgram.filter({
           company_id: selectedCompany.id,
@@ -294,7 +291,6 @@ export default function POS() {
         }
       }
       
-      // Update inventory
       for (const item of cart) {
         const inventoryRecords = await base44.entities.Inventory.filter({
           product_id: item.product_id,
@@ -403,7 +399,7 @@ export default function POS() {
         </div>
 
         <div className="flex-1 overflow-auto p-4">
-          <ProductGrid products={filteredProducts} onAddToCart={addToCart} />
+          <ProductGrid products={filteredProducts} onAddToCart={addToCart} currency={currency} />
         </div>
       </div>
 
