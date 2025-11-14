@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -194,12 +195,12 @@ export default function Layout({ children, currentPageName }) {
   const criticalAlerts = alerts.filter(a => a.severity === "critical").length;
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <OfflineIndicator />
       <InstallPrompt />
       
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
-        <Sidebar className="border-r border-slate-200 bg-white">
+        <Sidebar className="border-r border-slate-200 bg-white" collapsible="icon">
           <SidebarHeader className="border-b border-slate-200 p-3 md:p-5">
             <div className="flex items-center gap-2 md:gap-3">
               {/* JmtSolution Logo */}
@@ -293,14 +294,14 @@ export default function Layout({ children, currentPageName }) {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden w-full min-w-0">
           <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-2 md:py-3 shadow-sm sticky top-0 z-10">
             <div className="flex items-center justify-between gap-2 md:gap-4">
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                <SidebarTrigger className="lg:hidden hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
+                <SidebarTrigger className="hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
                   <Menu className="w-5 h-5 md:w-6 md:h-6" />
                 </SidebarTrigger>
-                <div className="min-w-0 flex-1 lg:hidden">
+                <div className="min-w-0 flex-1">
                   <h1 className="text-sm md:text-base font-bold text-slate-900 truncate">My Retailer Pro</h1>
                 </div>
               </div>
@@ -324,7 +325,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto w-full">
             {children}
           </div>
         </main>
