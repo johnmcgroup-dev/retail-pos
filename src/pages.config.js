@@ -14,6 +14,7 @@ import LoyaltyManagement from './pages/LoyaltyManagement';
 import CRM from './pages/CRM';
 import OnlineStore from './pages/OnlineStore';
 import OnlineOrders from './pages/OnlineOrders';
+import EcommerceSync from './pages/EcommerceSync';
 import Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "CRM": CRM,
     "OnlineStore": OnlineStore,
     "OnlineOrders": OnlineOrders,
+    "EcommerceSync": EcommerceSync,
 }
 
 export const pagesConfig = {

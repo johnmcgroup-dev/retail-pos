@@ -26,7 +26,8 @@ import {
   Bell,
   UserCog,
   Globe,
-  ShoppingBag
+  ShoppingBag,
+  RefreshCw
 } from "lucide-react";
 import {
   Sidebar,
@@ -89,6 +90,13 @@ const navigationItems = [
     title: "Online Orders",
     url: createPageUrl("OnlineOrders"),
     icon: ShoppingBag,
+  },
+  {
+    title: "E-commerce Sync",
+    url: createPageUrl("EcommerceSync"),
+    icon: RefreshCw,
+    adminOnly: true,
+    badge: "New"
   },
   {
     title: "Purchases",
