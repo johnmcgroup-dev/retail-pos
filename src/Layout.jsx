@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -52,6 +51,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import OfflineIndicator from "@/components/shared/OfflineIndicator";
+import InstallPrompt from "@/components/shared/InstallPrompt";
 
 const navigationItems = [
   {
@@ -194,6 +195,9 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <SidebarProvider>
+      <OfflineIndicator />
+      <InstallPrompt />
+      
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <Sidebar className="border-r border-slate-200 bg-white">
           <SidebarHeader className="border-b border-slate-200 p-4 md:p-6">

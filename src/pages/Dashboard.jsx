@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { createPageUrl, formatCurrency } from "@/utils";
+import { createPageUrl, formatCurrency, offlineCache, CACHE_KEYS } from "@/utils";
 import {
   DollarSign,
   TrendingUp,
@@ -19,37 +18,88 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, subDays, startOfMonth } from "date-fns";
+import OfflineIndicator from "../components/shared/OfflineIndicator";
 
 export default function Dashboard() {
   const [selectedCompany, setSelectedCompany] = useState(null);
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
-    queryFn: () => base44.entities.Company.list(),
+    queryFn: async () => {
+      try {
+        const data = await base44.entities.Company.list();
+        offlineCache.set(CACHE_KEYS.COMPANIES || 'companies', data);
+        return data;
+      } catch (error) {
+        return offlineCache.get(CACHE_KEYS.COMPANIES || 'companies') || [];
+      }
+    },
+    initialData: () => offlineCache.get(CACHE_KEYS.COMPANIES || 'companies') || [],
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: sales = [] } = useQuery({
     queryKey: ["sales", selectedCompany?.id],
-    queryFn: () => base44.entities.Sale.list("-sale_date"),
+    queryFn: async () => {
+      try {
+        const data = await base44.entities.Sale.list("-sale_date");
+        offlineCache.set(CACHE_KEYS.SALES, data);
+        return data;
+      } catch (error) {
+        return offlineCache.get(CACHE_KEYS.SALES) || [];
+      }
+    },
     enabled: !!selectedCompany,
+    initialData: () => offlineCache.get(CACHE_KEYS.SALES) || [],
+    staleTime: 2 * 60 * 1000,
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ["products", selectedCompany?.id],
-    queryFn: () => base44.entities.Product.list(),
+    queryFn: async () => {
+      try {
+        const data = await base44.entities.Product.list();
+        offlineCache.set(CACHE_KEYS.PRODUCTS, data);
+        return data;
+      } catch (error) {
+        return offlineCache.get(CACHE_KEYS.PRODUCTS) || [];
+      }
+    },
     enabled: !!selectedCompany,
+    initialData: () => offlineCache.get(CACHE_KEYS.PRODUCTS) || [],
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: inventory = [] } = useQuery({
     queryKey: ["inventory", selectedCompany?.id],
-    queryFn: () => base44.entities.Inventory.list(),
+    queryFn: async () => {
+      try {
+        const data = await base44.entities.Inventory.list();
+        offlineCache.set(CACHE_KEYS.INVENTORY, data);
+        return data;
+      } catch (error) {
+        return offlineCache.get(CACHE_KEYS.INVENTORY) || [];
+      }
+    },
     enabled: !!selectedCompany,
+    initialData: () => offlineCache.get(CACHE_KEYS.INVENTORY) || [],
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers", selectedCompany?.id],
-    queryFn: () => base44.entities.Customer.list(),
+    queryFn: async () => {
+      try {
+        const data = await base44.entities.Customer.list();
+        offlineCache.set(CACHE_KEYS.CUSTOMERS, data);
+        return data;
+      } catch (error) {
+        return offlineCache.get(CACHE_KEYS.CUSTOMERS) || [];
+      }
+    },
     enabled: !!selectedCompany,
+    initialData: () => offlineCache.get(CACHE_KEYS.CUSTOMERS) || [],
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: alerts = [] } = useQuery({
@@ -103,6 +153,8 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+      <OfflineIndicator />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
