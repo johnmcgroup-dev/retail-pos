@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +18,7 @@ import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
-import { offlineCache, CACHE_KEYS } from "@/utils/offlineCache";
+import { offlineCache, CACHE_KEYS } from "../components/utils/offlineCache"; // Changed import path
 import { useOnlineStatus } from "../components/shared/useOnlineStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";

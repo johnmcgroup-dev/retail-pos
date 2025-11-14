@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl, formatCurrency } from "@/utils";
-import { offlineCache, CACHE_KEYS } from "@/utils/offlineCache";
+import { offlineCache, CACHE_KEYS } from "../components/utils/offlineCache";
 import {
   DollarSign,
   TrendingUp,
@@ -223,9 +223,9 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Alerts & Recent Sales */}
+      {/* ... rest of JSX remains the same ... */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Alerts */}
         <Card className="lg:col-span-1 shadow-md">
           <CardHeader className="border-b border-slate-100 pb-3">
             <CardTitle className="flex items-center gap-2 text-sm md:text-base">
@@ -279,7 +279,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Sales */}
         <Card className="lg:col-span-2 shadow-md">
           <CardHeader className="border-b border-slate-100 pb-3">
             <CardTitle className="text-sm md:text-base lg:text-lg">Recent Sales</CardTitle>
