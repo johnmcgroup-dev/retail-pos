@@ -1,0 +1,80 @@
+{
+  "name": "SyncLog",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "connection_id": {
+      "type": "string",
+      "description": "Reference to PlatformConnection"
+    },
+    "sync_type": {
+      "type": "string",
+      "enum": [
+        "products",
+        "orders",
+        "customers",
+        "inventory",
+        "full"
+      ],
+      "description": "Type of synchronization"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "pos_to_platform",
+        "platform_to_pos",
+        "bidirectional"
+      ],
+      "description": "Sync direction"
+    },
+    "sync_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial",
+        "failed",
+        "in_progress"
+      ],
+      "default": "in_progress"
+    },
+    "items_processed": {
+      "type": "number",
+      "default": 0
+    },
+    "items_succeeded": {
+      "type": "number",
+      "default": 0
+    },
+    "items_failed": {
+      "type": "number",
+      "default": 0
+    },
+    "error_details": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of error details"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Time taken for sync"
+    },
+    "triggered_by": {
+      "type": "string",
+      "description": "User email or 'auto'"
+    }
+  },
+  "required": [
+    "company_id",
+    "connection_id",
+    "sync_type",
+    "sync_date"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Company/Tenant the user belongs to"
+    },
+    "role_level": {
+      "type": "string",
+      "enum": [
+        "super_admin",
+        "admin",
+        "manager",
+        "supervisor",
+        "user"
+      ],
+      "default": "user",
+      "description": "User role hierarchy"
+    },
+    "warehouse_id": {
+      "type": "string",
+      "description": "Default warehouse for this user"
+    },
+    "permissions": {
+      "type": "object",
+      "description": "Custom permissions for the user"
+    },
+    "last_login": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "company_id",
+    "warehouse_id",
+    "permissions",
+    "last_login"
+  ]
+}

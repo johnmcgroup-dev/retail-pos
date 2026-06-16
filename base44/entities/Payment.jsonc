@@ -1,0 +1,113 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "reference_type": {
+      "type": "string",
+      "enum": [
+        "sale",
+        "purchase",
+        "expense"
+      ],
+      "description": "What this payment is for"
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "ID of the sale, purchase, or expense"
+    },
+    "payer_type": {
+      "type": "string",
+      "enum": [
+        "customer",
+        "vendor",
+        "company"
+      ]
+    },
+    "payer_id": {
+      "type": "string"
+    },
+    "payer_name": {
+      "type": "string"
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "card",
+        "bank_transfer",
+        "check",
+        "mobile_money",
+        "stripe",
+        "paypal"
+      ]
+    },
+    "payment_gateway": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "paypal",
+        "square",
+        "manual"
+      ],
+      "description": "Payment gateway used"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "External transaction ID from payment gateway"
+    },
+    "transaction_reference": {
+      "type": "string",
+      "description": "Internal reference number"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "refunded",
+        "cancelled"
+      ],
+      "default": "completed"
+    },
+    "card_last_four": {
+      "type": "string",
+      "description": "Last 4 digits of card (for security)"
+    },
+    "card_brand": {
+      "type": "string",
+      "description": "Card brand (Visa, Mastercard, etc.)"
+    },
+    "gateway_response": {
+      "type": "object",
+      "description": "Full response from payment gateway (sanitized)"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "URL to payment receipt"
+    },
+    "refund_reason": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "company_id",
+    "reference_type",
+    "amount",
+    "payment_method"
+  ]
+}

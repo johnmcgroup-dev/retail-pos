@@ -1,0 +1,61 @@
+{
+  "name": "LoyaltyTransaction",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Reference to Company"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "earned",
+        "redeemed",
+        "expired",
+        "adjusted"
+      ],
+      "description": "Type of loyalty transaction"
+    },
+    "points": {
+      "type": "number",
+      "description": "Points earned or redeemed (positive for earned, negative for redeemed)"
+    },
+    "reference_type": {
+      "type": "string",
+      "enum": [
+        "sale",
+        "reward",
+        "manual",
+        "expiration"
+      ],
+      "description": "What triggered this transaction"
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "ID of the sale, reward, etc."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the transaction"
+    },
+    "balance_after": {
+      "type": "number",
+      "description": "Customer's point balance after this transaction"
+    },
+    "transaction_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "company_id",
+    "customer_id",
+    "transaction_type",
+    "points",
+    "transaction_date"
+  ]
+}

@@ -13,6 +13,7 @@ import {
   Store, 
   Globe, 
   ShoppingBag, 
+  Package,
   Settings as SettingsIcon,
   Palette,
   CreditCard,

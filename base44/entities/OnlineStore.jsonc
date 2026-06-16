@@ -1,0 +1,93 @@
+{
+  "name": "OnlineStore",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Company that owns this store"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Store name"
+    },
+    "store_url": {
+      "type": "string",
+      "description": "Custom URL slug (e.g., mystore)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "banner_url": {
+      "type": "string"
+    },
+    "theme_color": {
+      "type": "string",
+      "default": "#3b82f6",
+      "description": "Primary brand color"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "payment_gateways": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "stripe",
+          "paypal",
+          "mainstack"
+        ]
+      },
+      "description": "Enabled payment gateways"
+    },
+    "shipping_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "shipping_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "free_shipping_threshold": {
+      "type": "number",
+      "description": "Order amount for free shipping"
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "return_policy": {
+      "type": "string"
+    },
+    "terms_conditions": {
+      "type": "string"
+    },
+    "social_links": {
+      "type": "object",
+      "description": "Social media links"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "maintenance_mode": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "company_id",
+    "store_name",
+    "store_url"
+  ]
+}

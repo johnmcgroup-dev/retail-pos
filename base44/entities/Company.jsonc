@@ -1,0 +1,101 @@
+{
+  "name": "Company",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Company/Tenant name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "warehouse",
+        "retail_store",
+        "restaurant",
+        "pharmacy",
+        "other"
+      ],
+      "default": "retail_store"
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "tax_id": {
+      "type": "string"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "goodwill_message": {
+      "type": "string",
+      "description": "Footer message on receipts/invoices",
+      "default": "Thank you for your business!"
+    },
+    "subscription_plan": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "monthly",
+        "yearly"
+      ],
+      "default": "trial"
+    },
+    "subscription_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "subscription_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "trial_ends_at": {
+      "type": "string",
+      "format": "date",
+      "description": "14 days trial end date"
+    },
+    "payment_gateway": {
+      "type": "string",
+      "enum": [
+        "paypal",
+        "mainstack",
+        "stripe"
+      ],
+      "description": "Preferred payment gateway"
+    },
+    "payment_gateway_customer_id": {
+      "type": "string",
+      "description": "Customer ID in payment gateway"
+    },
+    "monthly_price": {
+      "type": "number",
+      "default": 29.99
+    },
+    "yearly_price": {
+      "type": "number",
+      "default": 299.99
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "trial",
+        "expired"
+      ],
+      "default": "trial"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

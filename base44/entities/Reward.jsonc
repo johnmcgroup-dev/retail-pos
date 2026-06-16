@@ -1,0 +1,75 @@
+{
+  "name": "Reward",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Reward name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "points_required": {
+      "type": "number",
+      "description": "Points needed to redeem this reward"
+    },
+    "reward_type": {
+      "type": "string",
+      "enum": [
+        "discount_percentage",
+        "discount_amount",
+        "free_product",
+        "special_offer"
+      ],
+      "default": "discount_percentage"
+    },
+    "discount_value": {
+      "type": "number",
+      "description": "Percentage (e.g., 10 for 10%) or fixed amount"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "For free_product type"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "terms_conditions": {
+      "type": "string"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date"
+    },
+    "max_redemptions": {
+      "type": "number",
+      "description": "Maximum times this can be redeemed (0 = unlimited)"
+    },
+    "redemptions_count": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "expired"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "company_id",
+    "name",
+    "points_required",
+    "reward_type"
+  ]
+}

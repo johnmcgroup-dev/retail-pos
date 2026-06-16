@@ -1,0 +1,93 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Reference to Company"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Stock Keeping Unit"
+    },
+    "barcodes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple barcodes for same product"
+    },
+    "cost_price": {
+      "type": "number",
+      "description": "Purchase cost"
+    },
+    "selling_price": {
+      "type": "number"
+    },
+    "wholesale_price": {
+      "type": "number"
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "piece",
+        "kg",
+        "liter",
+        "meter",
+        "box",
+        "pack"
+      ],
+      "default": "piece"
+    },
+    "reorder_level": {
+      "type": "number",
+      "description": "Minimum stock level for reorder alert"
+    },
+    "track_expiration": {
+      "type": "boolean",
+      "default": false
+    },
+    "default_expiry_days": {
+      "type": "number",
+      "description": "Default shelf life in days"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Product image URL"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple product images"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "discontinued"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "company_id",
+    "name",
+    "selling_price"
+  ]
+}

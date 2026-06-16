@@ -1,0 +1,67 @@
+{
+  "name": "Warehouse",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Company that owns this warehouse"
+    },
+    "name": {
+      "type": "string",
+      "description": "Warehouse name"
+    },
+    "code": {
+      "type": "string",
+      "description": "Warehouse code/identifier"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "postal_code": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "manager_name": {
+      "type": "string"
+    },
+    "manager_email": {
+      "type": "string"
+    },
+    "capacity": {
+      "type": "number",
+      "description": "Storage capacity in cubic meters or units"
+    },
+    "warehouse_type": {
+      "type": "string",
+      "enum": [
+        "main",
+        "branch",
+        "retail_store",
+        "distribution_center"
+      ],
+      "default": "main"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "company_id",
+    "name"
+  ]
+}

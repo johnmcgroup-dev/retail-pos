@@ -1,0 +1,52 @@
+{
+  "name": "CustomerSegment",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Segment name (e.g., High Value Customers)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "segment_type": {
+      "type": "string",
+      "enum": [
+        "behavioral",
+        "demographic",
+        "value_based",
+        "loyalty_based",
+        "custom"
+      ],
+      "default": "custom"
+    },
+    "criteria": {
+      "type": "object",
+      "description": "Segmentation criteria (e.g., total_purchases > 1000)"
+    },
+    "customer_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of customers in this segment"
+    },
+    "color": {
+      "type": "string",
+      "description": "Color code for visual identification"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "company_id",
+    "name"
+  ]
+}

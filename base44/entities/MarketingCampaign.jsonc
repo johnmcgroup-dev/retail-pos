@@ -1,0 +1,97 @@
+{
+  "name": "MarketingCampaign",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Campaign name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "campaign_type": {
+      "type": "string",
+      "enum": [
+        "email",
+        "sms",
+        "promotional_offer",
+        "loyalty_reward",
+        "product_launch"
+      ],
+      "default": "promotional_offer"
+    },
+    "target_segment_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Customer segment IDs to target"
+    },
+    "offer_details": {
+      "type": "object",
+      "description": "Details of the offer (discount, products, etc.)"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percentage",
+        "fixed_amount",
+        "free_product",
+        "buy_x_get_y"
+      ],
+      "description": "Type of discount offered"
+    },
+    "discount_value": {
+      "type": "number",
+      "description": "Discount value (percentage or amount)"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "completed",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "target_customer_count": {
+      "type": "number",
+      "description": "Number of customers targeted"
+    },
+    "reached_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of customers reached"
+    },
+    "conversion_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of customers who converted"
+    },
+    "revenue_generated": {
+      "type": "number",
+      "default": 0
+    },
+    "budget": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "company_id",
+    "name",
+    "campaign_type"
+  ]
+}

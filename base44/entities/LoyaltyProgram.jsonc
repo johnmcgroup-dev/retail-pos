@@ -1,0 +1,37 @@
+{
+  "name": "LoyaltyProgram",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "points_per_dollar": {
+      "type": "number",
+      "description": "How many points per dollar spent"
+    },
+    "redemption_value": {
+      "type": "number",
+      "description": "Dollar value of each point"
+    },
+    "minimum_purchase": {
+      "type": "number",
+      "description": "Minimum purchase to earn points"
+    },
+    "expiry_months": {
+      "type": "number",
+      "description": "Points expiry in months (0 = never)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "company_id",
+    "name",
+    "points_per_dollar"
+  ]
+}

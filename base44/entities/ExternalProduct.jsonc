@@ -1,0 +1,48 @@
+{
+  "name": "ExternalProduct",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "connection_id": {
+      "type": "string",
+      "description": "Reference to PlatformConnection"
+    },
+    "internal_product_id": {
+      "type": "string",
+      "description": "Reference to local Product"
+    },
+    "external_product_id": {
+      "type": "string",
+      "description": "Product ID on external platform"
+    },
+    "external_variant_id": {
+      "type": "string",
+      "description": "Variant ID if applicable"
+    },
+    "sync_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "last_synced": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sync_status": {
+      "type": "string",
+      "enum": [
+        "synced",
+        "pending",
+        "error"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "company_id",
+    "connection_id",
+    "internal_product_id",
+    "external_product_id"
+  ]
+}

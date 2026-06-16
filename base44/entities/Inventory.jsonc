@@ -1,0 +1,44 @@
+{
+  "name": "Inventory",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "warehouse_id": {
+      "type": "string",
+      "description": "Warehouse where stock is located"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 0
+    },
+    "batch_number": {
+      "type": "string"
+    },
+    "manufacturing_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expiration_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "location": {
+      "type": "string",
+      "description": "Warehouse location/shelf"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "company_id",
+    "product_id",
+    "quantity"
+  ]
+}

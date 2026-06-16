@@ -1,0 +1,73 @@
+{
+  "name": "CommunicationLog",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Reference to Customer"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "communication_type": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone",
+        "sms",
+        "in_person",
+        "chat",
+        "social_media"
+      ],
+      "description": "Type of communication"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "inbound",
+        "outbound"
+      ],
+      "description": "Inbound or outbound communication"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Subject or topic of communication"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Detailed notes about the interaction"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "successful",
+        "follow_up_required",
+        "no_response",
+        "resolved",
+        "escalated"
+      ],
+      "description": "Result of the communication"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "handled_by": {
+      "type": "string",
+      "description": "Staff member who handled the communication"
+    },
+    "communication_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "company_id",
+    "customer_id",
+    "communication_type",
+    "communication_date"
+  ]
+}

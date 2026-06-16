@@ -1,0 +1,94 @@
+{
+  "name": "PlatformConnection",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Company that owns this connection"
+    },
+    "platform_type": {
+      "type": "string",
+      "enum": [
+        "shopify",
+        "woocommerce",
+        "magento",
+        "bigcommerce",
+        "custom"
+      ],
+      "description": "E-commerce platform type"
+    },
+    "platform_name": {
+      "type": "string",
+      "description": "Custom name for this connection"
+    },
+    "store_url": {
+      "type": "string",
+      "description": "Store URL (e.g., mystore.myshopify.com)"
+    },
+    "api_key": {
+      "type": "string",
+      "description": "API key or access token"
+    },
+    "api_secret": {
+      "type": "string",
+      "description": "API secret (encrypted)"
+    },
+    "webhook_url": {
+      "type": "string",
+      "description": "Webhook endpoint for real-time updates"
+    },
+    "sync_products": {
+      "type": "boolean",
+      "default": true
+    },
+    "sync_orders": {
+      "type": "boolean",
+      "default": true
+    },
+    "sync_customers": {
+      "type": "boolean",
+      "default": true
+    },
+    "sync_inventory": {
+      "type": "boolean",
+      "default": true
+    },
+    "auto_sync_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable automatic synchronization"
+    },
+    "sync_interval_minutes": {
+      "type": "number",
+      "default": 15,
+      "description": "Auto-sync interval in minutes"
+    },
+    "last_sync_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "connection_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "error",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "status_message": {
+      "type": "string",
+      "description": "Status or error message"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "company_id",
+    "platform_type",
+    "store_url"
+  ]
+}
