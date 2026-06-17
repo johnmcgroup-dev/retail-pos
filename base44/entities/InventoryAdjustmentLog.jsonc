@@ -1,0 +1,64 @@
+{
+  "name": "InventoryAdjustmentLog",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "inventory_id": {
+      "type": "string",
+      "description": "Reference to Inventory record"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "adjusted_by": {
+      "type": "string",
+      "description": "Full name of the user who made the change"
+    },
+    "adjusted_by_email": {
+      "type": "string"
+    },
+    "previous_quantity": {
+      "type": "number"
+    },
+    "new_quantity": {
+      "type": "number"
+    },
+    "change": {
+      "type": "number",
+      "description": "Positive = increase, negative = decrease"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "stock_count",
+        "damage",
+        "theft",
+        "return",
+        "supplier_delivery",
+        "correction",
+        "other"
+      ],
+      "default": "correction"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "adjustment_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "company_id",
+    "product_id",
+    "previous_quantity",
+    "new_quantity",
+    "reason",
+    "adjustment_date"
+  ]
+}

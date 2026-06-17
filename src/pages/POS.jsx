@@ -31,6 +31,7 @@ export default function POS() {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [usingCachedData, setUsingCachedData] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [mobileTab, setMobileTab] = useState("products");
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -168,10 +169,26 @@ export default function POS() {
     return (
       p.name?.toLowerCase().includes(term) ||
       p.sku?.toLowerCase().includes(term) ||
-      // Multi-barcode: match any barcode in the array (exact or partial)
-      (p.barcodes || []).some(b => b.toLowerCase().includes(term) || b === term)
+      (p.barcodes || []).some(b => b.toLowerCase().includes(term))
     );
   });
+
+  // On Enter (or barcode scanner which sends Enter after scan), try exact barcode/SKU match → auto-add
+  const handleSearchKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+    const term = searchTerm.trim();
+    if (!term) return;
+    const exact = products.find(p =>
+      p.sku === term ||
+      (p.barcodes || []).some(b => b === term)
+    );
+    if (exact) {
+      addToCart(exact);
+      setMobileTab("cart");
+      setSearchTerm("");
+      e.preventDefault();
+    }
+  };
 
   const addToCart = (product) => {
     const existingItem = cart.find(item => item.product_id === product.id);
@@ -359,7 +376,6 @@ export default function POS() {
   };
 
   const totals = calculateTotals();
-  const [mobileTab, setMobileTab] = useState("products");
 
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-slate-50">
@@ -419,9 +435,10 @@ export default function POS() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
                 type="text"
-                placeholder="Search products, SKU, barcode..."
+                placeholder="Search or scan barcode (Enter to add)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 className="pl-9 h-10 text-sm"
               />
             </div>

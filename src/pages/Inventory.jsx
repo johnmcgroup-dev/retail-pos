@@ -5,15 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw } from "lucide-react";
+import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History } from "lucide-react";
 import { format } from "date-fns";
 import AlertBanner from "../components/notifications/AlertBanner";
 import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
+import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
+import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
 
 export default function Inventory() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [isGeneratingAlerts, setIsGeneratingAlerts] = useState(false);
+  const [adjustItem, setAdjustItem] = useState(null); // { inv, product }
+  const [showLog, setShowLog] = useState(false);
   
   const { data: inventory = [] } = useQuery({
     queryKey: ["inventory"],
@@ -127,15 +131,21 @@ export default function Inventory() {
           <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
           <p className="text-slate-500 mt-1">Track and manage stock levels</p>
         </div>
-        <Button
-          onClick={handleRefreshAlerts}
-          disabled={isGeneratingAlerts}
-          variant="outline"
-          className="gap-2"
-        >
-          <RefreshCw className={`w-4 h-4 ${isGeneratingAlerts ? 'animate-spin' : ''}`} />
-          {isGeneratingAlerts ? 'Checking...' : 'Check Alerts'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => setShowLog(true)}>
+            <History className="w-4 h-4" />
+            Adjustment Log
+          </Button>
+          <Button
+            onClick={handleRefreshAlerts}
+            disabled={isGeneratingAlerts}
+            variant="outline"
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isGeneratingAlerts ? 'animate-spin' : ''}`} />
+            {isGeneratingAlerts ? 'Checking...' : 'Check Alerts'}
+          </Button>
+        </div>
       </div>
 
       {/* Alert Banners */}
@@ -229,7 +239,8 @@ export default function Inventory() {
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">Expiry</th>
                   <th className="text-right p-4 text-sm font-semibold text-slate-700">Value</th>
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">Status</th>
-                </tr>
+                  <th className="p-4 text-sm font-semibold text-slate-700"></th>
+                  </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredInventory.map((inv) => {
@@ -295,7 +306,18 @@ export default function Inventory() {
                           </Badge>
                         )}
                       </td>
-                    </tr>
+                      <td className="p-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-xs"
+                          onClick={() => setAdjustItem({ inv, product: inv.product })}
+                        >
+                          <SlidersHorizontal className="w-3 h-3" />
+                          Adjust
+                        </Button>
+                      </td>
+                      </tr>
                   );
                 })}
               </tbody>
@@ -309,6 +331,26 @@ export default function Inventory() {
           </div>
         </CardContent>
       </Card>
+
+      {adjustItem && (
+        <AdjustStockDialog
+          open={!!adjustItem}
+          onClose={() => setAdjustItem(null)}
+          inventoryItem={adjustItem.inv}
+          product={adjustItem.product}
+          companyId={companies[0]?.id}
+          onSuccess={() => {
+            queryClient.invalidateQueries(["inventory"]);
+            queryClient.invalidateQueries(["adjustmentLogs"]);
+          }}
+        />
+      )}
+
+      <AdjustmentLogDrawer
+        open={showLog}
+        onClose={() => setShowLog(false)}
+        companyId={companies[0]?.id}
+      />
     </div>
   );
 }
