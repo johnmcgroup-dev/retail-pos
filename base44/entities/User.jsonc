@@ -6,13 +6,19 @@
       "type": "string",
       "description": "Company/Tenant the user belongs to"
     },
+    "tenant_id": {
+      "type": "string",
+      "description": "Tenant ID attached at invitation time \u2014 used to associate invited users with their company without requiring onboarding"
+    },
     "role_level": {
       "type": "string",
       "enum": [
         "super_admin",
+        "owner",
         "admin",
         "manager",
         "supervisor",
+        "cashier",
         "user"
       ],
       "default": "user",
@@ -34,11 +40,5 @@
       "type": "boolean",
       "default": true
     }
-  },
-  "required": [
-    "company_id",
-    "warehouse_id",
-    "permissions",
-    "last_login"
-  ]
+  }
 }

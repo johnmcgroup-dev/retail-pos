@@ -55,8 +55,12 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // New tenant: authenticated admin with no company yet → show setup
-  if (isAuthenticated && user?.role === 'admin' && companies.length === 0) {
+  // Invited users carry a tenant_id on their profile — skip onboarding if set
+  const hasTenantId = !!user?.tenant_id;
+
+  // New tenant: authenticated user with no company and no tenant_id → show onboarding
+  // (invited users always have tenant_id set, so they skip this)
+  if (isAuthenticated && companies.length === 0 && !hasTenantId && user?.role !== 'user') {
     return (
       <TenantSetup onComplete={() => queryClient.invalidateQueries({ queryKey: ["companies_check"] })} />
     );

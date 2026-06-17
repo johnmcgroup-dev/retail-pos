@@ -44,6 +44,7 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -171,6 +172,41 @@ const navigationItems = [
   },
 ];
 
+// Inner component so it can use useSidebar (must be inside SidebarProvider)
+function NavMenu({ filteredNavItems, location }) {
+  const { setOpenMobile, isMobile } = useSidebar();
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
+  return (
+    <SidebarMenu>
+      {filteredNavItems.map((item) => (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton
+            asChild
+            className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg mb-0.5 ${
+              location.pathname === item.url
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md hover:from-blue-600 hover:to-indigo-600 hover:text-white'
+                : ''
+            } ${item.highlight ? 'border border-green-400' : ''}`}
+          >
+            <Link to={item.url} onClick={handleNavClick} className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2">
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="font-medium text-xs md:text-sm truncate">{item.title}</span>
+              {item.highlight && (
+                <Badge className="ml-auto bg-green-500 text-white text-[10px] md:text-xs flex-shrink-0">Quick</Badge>
+              )}
+              {item.badge && (
+                <Badge className="ml-auto bg-purple-500 text-white text-[10px] md:text-xs flex-shrink-0">{item.badge}</Badge>
+              )}
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+}
+
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -208,7 +244,8 @@ export default function Layout({ children, currentPageName }) {
 
   const filteredNavItems = navigationItems.filter(item => {
     if (item.adminOnly) {
-      return user?.role === 'admin' || user?.role_level === 'admin' || user?.role_level === 'super_admin';
+      const role = user?.role;
+      return role === 'admin' || role === 'owner' || role === 'super_admin';
     }
     return true;
   });
@@ -282,31 +319,7 @@ export default function Layout({ children, currentPageName }) {
                 Main Menu
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {filteredNavItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
-                        className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg mb-0.5 ${
-                          location.pathname === item.url 
-                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md hover:from-blue-600 hover:to-indigo-600 hover:text-white' 
-                            : ''
-                        } ${item.highlight ? 'border border-green-400' : ''}`}
-                      >
-                        <Link to={item.url} className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2">
-                          <item.icon className="w-4 h-4 flex-shrink-0" />
-                          <span className="font-medium text-xs md:text-sm truncate">{item.title}</span>
-                          {item.highlight && (
-                            <Badge className="ml-auto bg-green-500 text-white text-[10px] md:text-xs flex-shrink-0">Quick</Badge>
-                          )}
-                          {item.badge && (
-                            <Badge className="ml-auto bg-purple-500 text-white text-[10px] md:text-xs flex-shrink-0">{item.badge}</Badge>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
+                <NavMenu filteredNavItems={filteredNavItems} location={location} />
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>

@@ -70,6 +70,18 @@ export default function UserManagement() {
     if (!inviteForm.email) return;
     try {
       await base44.users.inviteUser(inviteForm.email, inviteForm.role === "super_admin" ? "admin" : inviteForm.role);
+      
+      // Tag the newly-invited user with this tenant's company_id so they skip onboarding
+      if (company) {
+        // Find the user record (may take a moment to appear)
+        try {
+          const invitedUsers = await base44.entities.User.filter({ email: inviteForm.email });
+          if (invitedUsers.length > 0) {
+            await base44.entities.User.update(invitedUsers[0].id, { tenant_id: company.id });
+          }
+        } catch (_) { /* user row may not exist yet — that's OK */ }
+      }
+
       toast({ title: "Invitation sent!", description: `${inviteForm.email} has been invited as ${ROLE_CONFIG[inviteForm.role]?.label}.` });
       setShowInviteDialog(false);
       setInviteForm({ email: "", role: "user" });

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -227,13 +226,13 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
         </DialogContent>
       </Dialog>
 
-      {/* Invoice Dialog */}
+      {/* Invoice Dialog — rendered in a portal at z-[100] so it never underlaps POS */}
       <Dialog open={showInvoice} onOpenChange={handleCloseInvoice}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="fixed inset-4 md:inset-8 max-w-none w-auto h-auto max-h-none overflow-y-auto z-[100] rounded-xl">
           <DialogHeader>
             <DialogTitle>Invoice Generated</DialogTitle>
           </DialogHeader>
-          <div ref={invoiceRef}>
+          <div ref={invoiceRef} className="overflow-y-auto max-h-[70vh]">
             <InvoiceReceipt 
               sale={completedSale}
               company={companies[0]}
