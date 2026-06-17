@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +10,7 @@ import {
   Users,
   AlertTriangle,
   ShoppingCart,
-  Calendar
+  ChevronRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -170,57 +169,73 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl">
-          <CardHeader className="pb-2 md:pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Today's Sales</CardTitle>
-              <DollarSign className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
-            </div>
-          </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(todayRevenue, currency)}</div>
-            <p className="text-[10px] md:text-xs opacity-80 mt-1">{todaySales.length} transactions</p>
-          </CardContent>
-        </Card>
+        <Link to={createPageUrl("SalesReport")} className="block">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+            <CardHeader className="pb-2 md:pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Today's Sales</CardTitle>
+                <DollarSign className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+              </div>
+            </CardHeader>
+            <CardContent className="pb-3">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(todayRevenue, currency)}</div>
+              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
+                {todaySales.length} transactions <ChevronRight className="w-3 h-3 ml-auto" />
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl">
-          <CardHeader className="pb-2 md:pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Monthly Revenue</CardTitle>
-              <TrendingUp className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
-            </div>
-          </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(monthRevenue, currency)}</div>
-            <p className="text-[10px] md:text-xs opacity-80 mt-1">{monthSales.length} sales this month</p>
-          </CardContent>
-        </Card>
+        <Link to={createPageUrl("SalesReport")} className="block">
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+            <CardHeader className="pb-2 md:pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Monthly Revenue</CardTitle>
+                <TrendingUp className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+              </div>
+            </CardHeader>
+            <CardContent className="pb-3">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(monthRevenue, currency)}</div>
+              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
+                {monthSales.length} sales this month <ChevronRight className="w-3 h-3 ml-auto" />
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl">
-          <CardHeader className="pb-2 md:pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Inventory Value</CardTitle>
-              <Package className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
-            </div>
-          </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(totalInventoryValue, currency)}</div>
-            <p className="text-[10px] md:text-xs opacity-80 mt-1">{products.length} products</p>
-          </CardContent>
-        </Card>
+        <Link to={createPageUrl("Inventory")} className="block">
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+            <CardHeader className="pb-2 md:pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Inventory Value</CardTitle>
+                <Package className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+              </div>
+            </CardHeader>
+            <CardContent className="pb-3">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(totalInventoryValue, currency)}</div>
+              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
+                {products.length} products <ChevronRight className="w-3 h-3 ml-auto" />
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-xl">
-          <CardHeader className="pb-2 md:pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Customers</CardTitle>
-              <Users className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
-            </div>
-          </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl lg:text-3xl font-bold">{customers.length}</div>
-            <p className="text-[10px] md:text-xs opacity-80 mt-1">Active customers</p>
-          </CardContent>
-        </Card>
+        <Link to={createPageUrl("Customers")} className="block">
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+            <CardHeader className="pb-2 md:pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Customers</CardTitle>
+                <Users className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+              </div>
+            </CardHeader>
+            <CardContent className="pb-3">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{customers.length}</div>
+              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
+                Active customers <ChevronRight className="w-3 h-3 ml-auto" />
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
