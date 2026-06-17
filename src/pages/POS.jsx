@@ -359,126 +359,154 @@ export default function POS() {
   };
 
   const totals = calculateTotals();
+  const [mobileTab, setMobileTab] = useState("products");
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-slate-50">
-      {/* Left Panel - Products */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-4 bg-white border-b border-slate-200">
-          <ConnectionStatus usingCache={usingCachedData && isOnline} />
-          
-          <AlertBanner 
-            alerts={alerts.filter(a => a.severity === 'critical')} 
-            onDismiss={(id) => dismissAlertMutation.mutate(id)}
-            onViewAll={() => {}}
-          />
-          
-          {pendingSyncCount > 0 && (
-            <Alert className="mb-2 bg-yellow-50 border-yellow-300">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                <span className="font-semibold">{pendingSyncCount} offline sale(s)</span> waiting to sync
-                {isOnline && " - Syncing now..."}
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-slate-50">
 
-        <div className="p-4 bg-white border-b border-slate-200 shadow-sm">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <Input
-              type="text"
-              placeholder="Search products by name, SKU, or barcode..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 text-lg"
-              autoFocus
-            />
-          </div>
-          {usingCachedData && offlineCache.getLastSync() && (
-            <p className="text-xs text-slate-500 mt-2">
-              Last synced: {new Date(offlineCache.getLastSync()).toLocaleString()}
-            </p>
+      {/* Mobile tab bar */}
+      <div className="md:hidden flex bg-white border-b border-slate-200 shrink-0">
+        <button
+          onClick={() => setMobileTab("products")}
+          className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 ${
+            mobileTab === "products" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500"
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          Products
+        </button>
+        <button
+          onClick={() => setMobileTab("cart")}
+          className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 relative ${
+            mobileTab === "cart" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500"
+          }`}
+        >
+          <ShoppingCart className="w-4 h-4" />
+          Cart
+          {cart.length > 0 && (
+            <span className="ml-1 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+              {cart.length}
+            </span>
           )}
-        </div>
-
-        <div className="flex-1 overflow-auto p-4">
-          <ProductGrid products={filteredProducts} onAddToCart={addToCart} currency={currency} />
-        </div>
+        </button>
       </div>
 
-      {/* Right Panel - Cart */}
-      <div className="w-full md:w-[450px] bg-white border-l border-slate-200 flex flex-col shadow-2xl">
-        <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600">
-          <div className="flex items-center justify-between text-white">
-            <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <ShoppingCart className="w-6 h-6" />
-                Cart
-              </h2>
-              <p className="text-sm opacity-90">{cart.length} items</p>
-            </div>
-            {cart.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearCart}
-                className="text-white hover:bg-white/20"
-              >
-                Clear All
-              </Button>
+      {/* Main content row */}
+      <div className="flex-1 flex flex-row overflow-hidden min-h-0">
+
+        {/* Products Panel */}
+        <div className={`flex-1 flex flex-col overflow-hidden ${mobileTab === "cart" ? "hidden md:flex" : "flex"}`}>
+          <div className="p-3 bg-white border-b border-slate-200 shrink-0">
+            <ConnectionStatus usingCache={usingCachedData && isOnline} />
+            <AlertBanner
+              alerts={alerts.filter(a => a.severity === 'critical')}
+              onDismiss={(id) => dismissAlertMutation.mutate(id)}
+              onViewAll={() => {}}
+            />
+            {pendingSyncCount > 0 && (
+              <Alert className="mb-2 bg-yellow-50 border-yellow-300">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800 text-xs">
+                  <span className="font-semibold">{pendingSyncCount} offline sale(s)</span> waiting to sync
+                  {isOnline && " - Syncing now..."}
+                </AlertDescription>
+              </Alert>
             )}
+          </div>
+
+          <div className="p-3 bg-white border-b border-slate-200 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search products, SKU, barcode..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 text-sm"
+              />
+            </div>
+            {usingCachedData && offlineCache.getLastSync() && (
+              <p className="text-xs text-slate-500 mt-1">
+                Last synced: {new Date(offlineCache.getLastSync()).toLocaleString()}
+              </p>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-auto p-3">
+            <ProductGrid
+              products={filteredProducts}
+              onAddToCart={(product) => { addToCart(product); setMobileTab("cart"); }}
+              currency={currency}
+            />
           </div>
         </div>
 
-        <div className="p-4 border-b border-slate-200 bg-slate-50">
-          <CustomerSelector
-            customers={customers}
-            selectedCustomer={selectedCustomer}
-            onSelectCustomer={setSelectedCustomer}
-          />
-        </div>
-
-        <div className="flex-1 overflow-auto">
-          <CartPanel
-            cart={cart}
-            onUpdateQuantity={updateQuantity}
-            onRemoveItem={removeFromCart}
-            currency={currency}
-          />
-        </div>
-
-        <div className="border-t border-slate-200 p-6 bg-slate-50">
-          <div className="space-y-3 mb-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Subtotal:</span>
-              <span className="font-semibold">{formatCurrency(totals.subtotal, currency)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Tax:</span>
-              <span className="font-semibold">{formatCurrency(totals.taxAmount, currency)}</span>
-            </div>
-            {totals.discountAmount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Discount:</span>
-                <span className="font-semibold text-green-600">-{formatCurrency(totals.discountAmount, currency)}</span>
+        {/* Cart Panel */}
+        <div className={`w-full md:w-[420px] bg-white border-l border-slate-200 flex flex-col shrink-0 ${mobileTab === "products" ? "hidden md:flex" : "flex"}`}>
+          <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 shrink-0">
+            <div className="flex items-center justify-between text-white">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  Cart <span className="text-sm opacity-80">({cart.length} items)</span>
+                </h2>
               </div>
-            )}
-            <div className="flex justify-between text-xl font-bold pt-3 border-t border-slate-300">
-              <span>Total:</span>
-              <span className="text-blue-600">{formatCurrency(totals.total, currency)}</span>
+              {cart.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearCart} className="text-white hover:bg-white/20 text-xs">
+                  Clear All
+                </Button>
+              )}
             </div>
           </div>
 
-          <Button
-            className="w-full h-14 text-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
-            disabled={cart.length === 0}
-            onClick={() => setShowCheckout(true)}
-          >
-            <DollarSign className="w-5 h-5 mr-2" />
-            Complete Sale {!isOnline && "(Cash Only)"}
-          </Button>
+          <div className="p-3 border-b border-slate-200 bg-slate-50 shrink-0">
+            <CustomerSelector
+              customers={customers}
+              selectedCustomer={selectedCustomer}
+              onSelectCustomer={setSelectedCustomer}
+            />
+          </div>
+
+          <div className="flex-1 overflow-auto min-h-0">
+            <CartPanel
+              cart={cart}
+              onUpdateQuantity={updateQuantity}
+              onRemoveItem={removeFromCart}
+              currency={currency}
+            />
+          </div>
+
+          <div className="border-t border-slate-200 p-4 bg-slate-50 shrink-0">
+            <div className="space-y-2 mb-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-600">Subtotal:</span>
+                <span className="font-semibold">{formatCurrency(totals.subtotal, currency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Tax:</span>
+                <span className="font-semibold">{formatCurrency(totals.taxAmount, currency)}</span>
+              </div>
+              {totals.discountAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Discount:</span>
+                  <span className="font-semibold text-green-600">-{formatCurrency(totals.discountAmount, currency)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-300">
+                <span>Total:</span>
+                <span className="text-blue-600">{formatCurrency(totals.total, currency)}</span>
+              </div>
+            </div>
+
+            <Button
+              className="w-full h-12 text-base bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
+              disabled={cart.length === 0}
+              onClick={() => setShowCheckout(true)}
+            >
+              <DollarSign className="w-5 h-5 mr-2" />
+              Complete Sale {!isOnline && "(Cash Only)"}
+            </Button>
+          </div>
         </div>
       </div>
 

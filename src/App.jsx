@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import TenantSetup from '@/pages/TenantSetup';
 import RoleGuard from '@/components/shared/RoleGuard';
+import Landing from '@/pages/Landing';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -50,8 +51,12 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
+      // Show landing page instead of immediately redirecting
+      return (
+        <Routes>
+          <Route path="*" element={<Landing />} />
+        </Routes>
+      );
     }
   }
 
@@ -69,15 +74,19 @@ const AuthenticatedApp = () => {
   // Render the main app, wrapped with role guard
   return (
     <RoleGuard user={user}>
-      <LayoutWrapper currentPageName={mainPageKey}>
-        <Routes>
-          <Route path="/" element={<MainPage />} />
-          {Object.entries(Pages).map(([path, Page]) => (
-            <Route key={path} path={`/${path}`} element={<Page />} />
-          ))}
-          <Route path="*" element={<PageNotFound />} />
-        </Routes>
-      </LayoutWrapper>
+      <Routes>
+        {/* Landing page — unauthenticated entry point, no layout */}
+        <Route path="/" element={<Landing />} />
+        {/* All named app pages with layout */}
+        {Object.entries(Pages).map(([path, Page]) => (
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={<LayoutWrapper currentPageName={path}><Page /></LayoutWrapper>}
+          />
+        ))}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
     </RoleGuard>
   );
 };
