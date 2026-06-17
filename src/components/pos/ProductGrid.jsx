@@ -7,43 +7,40 @@ import { formatCurrency } from "@/utils";
 
 export default function ProductGrid({ products, onAddToCart, currency = 'USD' }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
       {products.map((product) => (
         <Card
           key={product.id}
-          className="hover:shadow-lg transition-all duration-200 cursor-pointer group border-2 border-transparent hover:border-blue-400"
+          className="transition-all duration-150 cursor-pointer border-2 border-transparent
+            hover:shadow-lg hover:border-blue-400
+            active:scale-95 active:border-blue-600 active:shadow-inner active:bg-blue-50
+            touch-manipulation select-none"
           onClick={() => onAddToCart(product)}
+          onTouchStart={() => {}} // ensures :active fires on iOS
         >
-          <CardContent className="p-4">
-            <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+          <CardContent className="p-3 md:p-4">
+            <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden pointer-events-none">
               {product.image_url ? (
                 <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
               ) : (
-                <Package className="w-12 h-12 text-slate-400" />
+                <Package className="w-10 h-10 md:w-12 md:h-12 text-slate-400" />
               )}
             </div>
-            <h3 className="font-semibold text-slate-900 mb-1 line-clamp-2 min-h-[2.5rem]">
+            <h3 className="font-semibold text-slate-900 mb-1 line-clamp-2 min-h-[2.5rem] text-sm md:text-base pointer-events-none">
               {product.name}
             </h3>
             {product.category && (
-              <Badge variant="secondary" className="text-xs mb-2">
+              <Badge variant="secondary" className="text-xs mb-2 pointer-events-none">
                 {product.category}
               </Badge>
             )}
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-lg font-bold text-blue-600">
+            <div className="flex items-center justify-between mt-2 pointer-events-none">
+              <span className="text-base md:text-lg font-bold text-blue-600">
                 {formatCurrency(product.selling_price || 0, currency)}
               </span>
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 group-hover:scale-110 transition-transform"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToCart(product);
-                }}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
+                <Plus className="w-4 h-4 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
