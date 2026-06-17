@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -163,11 +162,16 @@ export default function POS() {
     setPendingSyncCount(0);
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.barcodes?.some(b => b.includes(searchTerm))
-  );
+  const filteredProducts = products.filter(p => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      p.name?.toLowerCase().includes(term) ||
+      p.sku?.toLowerCase().includes(term) ||
+      // Multi-barcode: match any barcode in the array (exact or partial)
+      (p.barcodes || []).some(b => b.toLowerCase().includes(term) || b === term)
+    );
+  });
 
   const addToCart = (product) => {
     const existingItem = cart.find(item => item.product_id === product.id);

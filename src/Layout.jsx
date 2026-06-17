@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./components/utils";
@@ -27,7 +26,10 @@ import {
   UserCog,
   Globe,
   ShoppingBag,
-  RefreshCw
+  RefreshCw,
+  UserCheck,
+  PieChart,
+  Upload
 } from "lucide-react";
 import {
   Sidebar,
@@ -140,6 +142,24 @@ const navigationItems = [
     title: "Loyalty Manager",
     url: createPageUrl("LoyaltyManagement"),
     icon: Gift,
+    adminOnly: true
+  },
+  {
+    title: "Sales Report",
+    url: createPageUrl("SalesReport"),
+    icon: PieChart,
+    adminOnly: true
+  },
+  {
+    title: "User Management",
+    url: createPageUrl("UserManagement"),
+    icon: UserCheck,
+    adminOnly: true
+  },
+  {
+    title: "Bulk Import",
+    url: createPageUrl("BulkImport"),
+    icon: Upload,
     adminOnly: true
   },
   {

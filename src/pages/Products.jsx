@@ -3,9 +3,10 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Package, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Upload } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
 
 export default function Products() {
@@ -31,11 +32,16 @@ export default function Products() {
     },
   });
 
-  const filteredProducts = products.filter(p =>
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      p.name?.toLowerCase().includes(term) ||
+      p.sku?.toLowerCase().includes(term) ||
+      p.category?.toLowerCase().includes(term) ||
+      (p.barcodes || []).some(b => b.toLowerCase().includes(term))
+    );
+  });
 
   const handleEdit = (product) => {
     setEditingProduct(product);
@@ -60,13 +66,18 @@ export default function Products() {
           <h1 className="text-3xl font-bold text-slate-900">Products</h1>
           <p className="text-slate-500 mt-1">Manage your product catalog</p>
         </div>
-        <Button
-          onClick={() => setShowDialog(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Link to="/BulkImport">
+            <Button variant="outline" className="gap-2">
+              <Upload className="w-4 h-4" />
+              Bulk Import
+            </Button>
+          </Link>
+          <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
       <Card>

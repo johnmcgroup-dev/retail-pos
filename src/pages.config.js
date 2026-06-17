@@ -15,6 +15,9 @@ import CRM from './pages/CRM';
 import OnlineStore from './pages/OnlineStore';
 import OnlineOrders from './pages/OnlineOrders';
 import EcommerceSync from './pages/EcommerceSync';
+import UserManagement from './pages/UserManagement';
+import SalesReport from './pages/SalesReport';
+import BulkImport from './pages/BulkImport';
 import Layout from './Layout.jsx';
 
 
@@ -36,6 +39,9 @@ export const PAGES = {
     "OnlineStore": OnlineStore,
     "OnlineOrders": OnlineOrders,
     "EcommerceSync": EcommerceSync,
+    "UserManagement": UserManagement,
+    "SalesReport": SalesReport,
+    "BulkImport": BulkImport,
 }
 
 export const pagesConfig = {
