@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, startOfMonth } from "date-fns";
 import OfflineIndicator from "../components/shared/OfflineIndicator";
+import StaffSalesWidget from "../components/dashboard/StaffSalesWidget";
 
 export default function Dashboard() {
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -239,6 +240,9 @@ export default function Dashboard() {
         </Link>
       </div>
       
+      {/* Staff Sales Widget */}
+      <StaffSalesWidget sales={sales} currency={currency} showSymbol={showSymbol} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <Card className="lg:col-span-1 shadow-md">
           <CardHeader className="border-b border-slate-100 pb-3">
@@ -309,7 +313,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-slate-900 text-xs md:text-sm">{formatCurrency(sale.total_amount || 0, currency)}</p>
+                      <p className="font-bold text-slate-900 text-xs md:text-sm">{formatCurrency(sale.total_amount || 0, currency, showSymbol)}</p>
                       <Badge variant={sale.payment_status === 'paid' ? 'default' : 'destructive'} className="text-[10px] md:text-xs">
                         {sale.payment_status}
                       </Badge>

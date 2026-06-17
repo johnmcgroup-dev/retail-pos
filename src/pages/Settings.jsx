@@ -419,7 +419,7 @@ export default function Settings() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-center mb-6">
-                          <p className="text-4xl font-bold text-slate-900">${company.monthly_price}</p>
+                          <p className="text-4xl font-bold text-slate-900">₦15,000</p>
                           <p className="text-slate-600">/month</p>
                         </div>
                         <ul className="space-y-2 text-sm mb-6">
@@ -455,9 +455,9 @@ export default function Settings() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-center mb-6">
-                          <p className="text-4xl font-bold text-slate-900">${company.yearly_price}</p>
+                          <p className="text-4xl font-bold text-slate-900">₦128,000</p>
                           <p className="text-slate-600">/year</p>
-                          <p className="text-xs text-green-600 mt-1">Save ${(company.monthly_price * 12 - company.yearly_price).toFixed(2)}</p>
+                          <p className="text-xs text-green-600 mt-1">Save ₦52,000 vs monthly</p>
                         </div>
                         <ul className="space-y-2 text-sm mb-6">
                           <li className="flex items-center gap-2">
