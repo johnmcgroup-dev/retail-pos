@@ -20,9 +20,11 @@ export const CURRENCIES: Record<string, { name: string; symbol: string; code: st
   EGP: { name: 'Egyptian Pound', symbol: '£', code: 'EGP' },
 };
 
-export function formatCurrency(amount: number | string, currencyCode: string = 'USD'): string {
+export function formatCurrency(amount: number | string, currencyCode: string = 'USD', showSymbol: boolean = false): string {
+  const num = parseFloat(String(amount || 0)).toFixed(2);
+  if (!showSymbol) return num;
   const currency = CURRENCIES[currencyCode] || CURRENCIES.USD;
-  return `${currency.symbol}${parseFloat(String(amount || 0)).toFixed(2)}`;
+  return `${currency.symbol}${num}`;
 }
 
 export function getCurrencySymbol(currencyCode: string = 'USD'): string {

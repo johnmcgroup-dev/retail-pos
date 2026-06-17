@@ -148,6 +148,7 @@ export default function Dashboard() {
   const recentSales = sales.slice(0, 5);
 
   const currency = selectedCompany?.currency || 'USD';
+  const showSymbol = selectedCompany?.show_currency_symbol || false;
 
   return (
     <div className="p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
@@ -178,7 +179,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(todayRevenue, currency)}</div>
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(todayRevenue, currency, showSymbol)}</div>
               <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
                 {todaySales.length} transactions <ChevronRight className="w-3 h-3 ml-auto" />
               </p>
@@ -195,7 +196,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(monthRevenue, currency)}</div>
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(monthRevenue, currency, showSymbol)}</div>
               <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
                 {monthSales.length} sales this month <ChevronRight className="w-3 h-3 ml-auto" />
               </p>
@@ -212,7 +213,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(totalInventoryValue, currency)}</div>
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(totalInventoryValue, currency, showSymbol)}</div>
               <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
                 {products.length} products <ChevronRight className="w-3 h-3 ml-auto" />
               </p>

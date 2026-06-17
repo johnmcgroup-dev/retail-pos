@@ -33,6 +33,11 @@
       "type": "string",
       "default": "USD"
     },
+    "show_currency_symbol": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show currency symbol (e.g. $, \u20a6) alongside amounts. Off by default \u2014 amounts show as plain numbers."
+    },
     "logo_url": {
       "type": "string"
     },
@@ -73,8 +78,7 @@
       "description": "Preferred payment gateway"
     },
     "payment_gateway_customer_id": {
-      "type": "string",
-      "description": "Customer ID in payment gateway"
+      "type": "string"
     },
     "monthly_price": {
       "type": "number",

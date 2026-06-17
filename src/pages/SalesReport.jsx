@@ -27,7 +27,9 @@ export default function SalesReport() {
     queryFn: () => base44.entities.Company.list(),
   });
 
-  const currency = companies[0]?.currency || "USD";
+  const company = companies[0];
+  const currency = company?.currency || "USD";
+  const showSymbol = company?.show_currency_symbol || false;
 
   const getDateRange = () => {
     const now = new Date();
@@ -140,7 +142,7 @@ export default function SalesReport() {
               <p className="text-xs md:text-sm opacity-90">Total Revenue</p>
               <DollarSign className="w-4 h-4 opacity-80" />
             </div>
-            <p className="text-xl md:text-3xl font-bold">{formatCurrency(totalRevenue, currency)}</p>
+            <p className="text-xl md:text-3xl font-bold">{formatCurrency(totalRevenue, currency, showSymbol)}</p>
             <p className="text-xs opacity-80 mt-1">{periodLabels[period]}</p>
           </CardContent>
         </Card>
@@ -151,7 +153,7 @@ export default function SalesReport() {
               <p className="text-xs md:text-sm opacity-90">Gross Profit</p>
               <TrendingUp className="w-4 h-4 opacity-80" />
             </div>
-            <p className="text-xl md:text-3xl font-bold">{formatCurrency(grossProfit, currency)}</p>
+            <p className="text-xl md:text-3xl font-bold">{formatCurrency(grossProfit, currency, showSymbol)}</p>
             <p className="text-xs opacity-80 mt-1">Margin: {profitMargin.toFixed(1)}%</p>
           </CardContent>
         </Card>
@@ -163,7 +165,7 @@ export default function SalesReport() {
               <Package className="w-4 h-4 opacity-80" />
             </div>
             <p className="text-xl md:text-3xl font-bold">{totalTransactions}</p>
-            <p className="text-xs opacity-80 mt-1">Avg: {formatCurrency(avgOrderValue, currency)}</p>
+            <p className="text-xs opacity-80 mt-1">Avg: {formatCurrency(avgOrderValue, currency, showSymbol)}</p>
           </CardContent>
         </Card>
 
@@ -193,7 +195,7 @@ export default function SalesReport() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="time" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [formatCurrency(v, currency), "Revenue"]} />
+                <Tooltip formatter={(v) => [formatCurrency(v, currency, showSymbol), "Revenue"]} />
                 <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -226,7 +228,7 @@ export default function SalesReport() {
                       <p className="text-xs text-slate-500">{p.qty} units sold</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-slate-900">{formatCurrency(p.revenue, currency)}</p>
+                      <p className="font-bold text-slate-900">{formatCurrency(p.revenue, currency, showSymbol)}</p>
                       <Badge className={`text-xs ${margin >= 20 ? 'bg-green-100 text-green-700' : margin >= 10 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
                         {margin.toFixed(1)}% margin
                       </Badge>

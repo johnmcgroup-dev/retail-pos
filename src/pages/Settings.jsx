@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -26,6 +25,7 @@ export default function Settings() {
     email: "",
     tax_id: "",
     currency: "USD",
+    show_currency_symbol: false,
     goodwill_message: "Thank you for your business!"
   });
 
@@ -74,6 +74,7 @@ export default function Settings() {
         email: companies[0].email || "",
         tax_id: companies[0].tax_id || "",
         currency: companies[0].currency || "USD",
+        show_currency_symbol: companies[0].show_currency_symbol || false,
         goodwill_message: companies[0].goodwill_message || "Thank you for your business!"
       });
     }
@@ -179,6 +180,20 @@ export default function Settings() {
                       ))}
                     </select>
                     <p className="text-xs text-slate-500 mt-1">This currency will be used throughout your app</p>
+                  </div>
+                  <div className="flex items-start justify-between p-3 border rounded-lg bg-slate-50">
+                    <div>
+                      <label className="text-sm font-semibold text-slate-700">Show Currency Symbol</label>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Display symbol (e.g. ₦, $) alongside amounts. Off by default — amounts show as plain numbers.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="mt-1 w-5 h-5 accent-blue-600 cursor-pointer"
+                      checked={companyForm.show_currency_symbol || false}
+                      onChange={(e) => setCompanyForm({ ...companyForm, show_currency_symbol: e.target.checked })}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-semibold text-slate-700">Address</label>
