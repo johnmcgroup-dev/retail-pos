@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import {
   ShoppingCart,
   Plus,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  Package
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
@@ -25,6 +26,9 @@ export default function POS() {
   const queryClient = useQueryClient();
   const { isOnline, wasOffline } = useOnlineStatus();
   const [searchTerm, setSearchTerm] = useState("");
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const searchInputRef = useRef(null);
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -115,6 +119,12 @@ export default function POS() {
     },
   });
 
+  // Auto-focus search on mount
+  useEffect(() => {
+    const timer = setTimeout(() => searchInputRef.current?.focus(), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (companies.length > 0 && !selectedCompany) {
       setSelectedCompany(companies[0]);
@@ -173,11 +183,43 @@ export default function POS() {
     );
   });
 
-  // On Enter (or barcode scanner which sends Enter after scan), try exact barcode/SKU match → auto-add
+  // Dropdown search results (top 8)
+  const searchResults = searchTerm.trim()
+    ? filteredProducts.slice(0, 8)
+    : [];
+
   const handleSearchKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex(i => Math.min(i + 1, searchResults.length - 1));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex(i => Math.max(i - 1, 0));
+      return;
+    }
+    if (e.key === "Escape") {
+      setShowSearchDropdown(false);
+      return;
+    }
     if (e.key !== "Enter") return;
+
     const term = searchTerm.trim();
     if (!term) return;
+
+    // If dropdown is open and item highlighted, add that item
+    if (showSearchDropdown && searchResults.length > 0) {
+      const item = searchResults[highlightedIndex] || searchResults[0];
+      addToCart(item);
+      setMobileTab("cart");
+      setSearchTerm("");
+      setShowSearchDropdown(false);
+      e.preventDefault();
+      return;
+    }
+
+    // Barcode/SKU exact match
     const exact = products.find(p =>
       p.sku === term ||
       (p.barcodes || []).some(b => b === term)
@@ -186,6 +228,7 @@ export default function POS() {
       addToCart(exact);
       setMobileTab("cart");
       setSearchTerm("");
+      setShowSearchDropdown(false);
       e.preventDefault();
     }
   };
@@ -434,13 +477,56 @@ export default function POS() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search or scan barcode (Enter to add)..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setHighlightedIndex(0);
+                  setShowSearchDropdown(e.target.value.trim().length > 0);
+                }}
                 onKeyDown={handleSearchKeyDown}
+                onBlur={() => setTimeout(() => setShowSearchDropdown(false), 150)}
+                onFocus={() => searchTerm.trim() && setShowSearchDropdown(true)}
                 className="pl-9 h-10 text-sm"
+                autoComplete="off"
               />
+              {/* Live search dropdown */}
+              {showSearchDropdown && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+                  {searchResults.map((product, idx) => (
+                    <div
+                      key={product.id}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                        idx === highlightedIndex ? "bg-blue-50" : "hover:bg-slate-50"
+                      }`}
+                      onMouseDown={() => {
+                        addToCart(product);
+                        setMobileTab("cart");
+                        setSearchTerm("");
+                        setShowSearchDropdown(false);
+                        searchInputRef.current?.focus();
+                      }}
+                      onMouseEnter={() => setHighlightedIndex(idx)}
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {product.image_url
+                          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                          : <Package className="w-4 h-4 text-slate-400" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-900 text-sm truncate">{product.name}</p>
+                        {product.category && <p className="text-xs text-slate-500 truncate">{product.category}</p>}
+                      </div>
+                      <span className="font-bold text-blue-600 text-sm flex-shrink-0">
+                        {formatCurrency(product.selling_price || 0, currency)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             {usingCachedData && offlineCache.getLastSync() && (
               <p className="text-xs text-slate-500 mt-1">
