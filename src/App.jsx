@@ -31,9 +31,19 @@ const AuthenticatedApp = () => {
   const queryClient = useQueryClient();
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
-    queryKey: ["companies_check"],
-    queryFn: () => base44.entities.Company.list(),
-    enabled: isAuthenticated,
+    queryKey: ["companies_check", user?.id],
+    queryFn: async () => {
+      // Invited users have tenant_id set — load that specific company
+      if (user?.tenant_id) {
+        try {
+          const tenantCompanies = await base44.entities.Company.filter({ id: user.tenant_id });
+          if (tenantCompanies.length > 0) return tenantCompanies;
+        } catch (_) {}
+      }
+      // Owners/admins see only the company they created
+      return base44.entities.Company.filter({ created_by_id: user?.id });
+    },
+    enabled: isAuthenticated && !!user,
     staleTime: 60000,
   });
 

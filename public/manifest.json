@@ -1,12 +1,13 @@
 {
   "name": "My Retailer Pro",
   "short_name": "Retailer Pro",
-  "description": "Point of Sale and Business Management by JmtSolution",
+  "description": "Smart POS for modern businesses",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "any",
+  "scope": "/",
   "icons": [
     {
       "src": "https://base44.com/logo_v2.svg",
@@ -14,5 +15,7 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["business", "productivity", "shopping"],
+  "prefer_related_applications": false
 }
