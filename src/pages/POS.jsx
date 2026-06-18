@@ -39,7 +39,7 @@ export default function POS() {
     enabled: isOnline,
   });
 
-  const currency = selectedCompany?.currency || companies[0]?.currency || 'USD';
+  const currency = selectedCompany?.currency || companies[0]?.currency || 'NGN';
 
   // Products query with offline support
   const { data: products = [], isLoading: productsLoading } = useQuery({

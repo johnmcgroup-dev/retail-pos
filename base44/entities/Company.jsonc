@@ -31,12 +31,12 @@
     },
     "currency": {
       "type": "string",
-      "default": "USD"
+      "default": "NGN"
     },
     "show_currency_symbol": {
       "type": "boolean",
-      "default": false,
-      "description": "Show currency symbol (e.g. $, \u20a6) alongside amounts. Off by default \u2014 amounts show as plain numbers."
+      "default": true,
+      "description": "Show currency symbol (e.g. \u20a6) alongside amounts. On by default."
     },
     "logo_url": {
       "type": "string"

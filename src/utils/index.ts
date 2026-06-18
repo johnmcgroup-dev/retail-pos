@@ -20,15 +20,15 @@ export const CURRENCIES: Record<string, { name: string; symbol: string; code: st
   EGP: { name: 'Egyptian Pound', symbol: '£', code: 'EGP' },
 };
 
-export function formatCurrency(amount: number | string, currencyCode: string = 'USD', showSymbol: boolean = false): string {
+export function formatCurrency(amount: number | string, currencyCode: string = 'NGN', showSymbol: boolean = true): string {
   const num = parseFloat(String(amount || 0)).toFixed(2);
+  const currency = CURRENCIES[currencyCode] || CURRENCIES.NGN;
   if (!showSymbol) return num;
-  const currency = CURRENCIES[currencyCode] || CURRENCIES.USD;
   return `${currency.symbol}${num}`;
 }
 
-export function getCurrencySymbol(currencyCode: string = 'USD'): string {
-  const currency = CURRENCIES[currencyCode] || CURRENCIES.USD;
+export function getCurrencySymbol(currencyCode: string = 'NGN'): string {
+  const currency = CURRENCIES[currencyCode] || CURRENCIES.NGN;
   return currency.symbol;
 }
 

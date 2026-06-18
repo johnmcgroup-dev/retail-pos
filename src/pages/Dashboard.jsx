@@ -148,8 +148,8 @@ export default function Dashboard() {
 
   const recentSales = sales.slice(0, 5);
 
-  const currency = selectedCompany?.currency || 'USD';
-  const showSymbol = selectedCompany?.show_currency_symbol || false;
+  const currency = selectedCompany?.currency || 'NGN';
+  const showSymbol = selectedCompany?.show_currency_symbol !== false; // default true
 
   return (
     <div className="p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
