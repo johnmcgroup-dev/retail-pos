@@ -67,22 +67,45 @@ export default function UserManagement() {
   });
 
   const handleInvite = async () => {
-    if (!inviteForm.email) return;
+    if (!inviteForm.email || !company) return;
     try {
-      await base44.users.inviteUser(inviteForm.email, inviteForm.role === "super_admin" ? "admin" : inviteForm.role);
-      
-      // Tag the newly-invited user with this tenant's company_id so they skip onboarding
-      if (company) {
-        // Find the user record (may take a moment to appear)
-        try {
-          const invitedUsers = await base44.entities.User.filter({ email: inviteForm.email });
-          if (invitedUsers.length > 0) {
-            await base44.entities.User.update(invitedUsers[0].id, { tenant_id: company.id });
-          }
-        } catch (_) { /* user row may not exist yet — that's OK */ }
-      }
+      const safeRole = inviteForm.role === "super_admin" ? "admin" : inviteForm.role;
 
-      toast({ title: "Invitation sent!", description: `${inviteForm.email} has been invited as ${ROLE_CONFIG[inviteForm.role]?.label}.` });
+      // Build a login redirect URL that carries the tenant ID so the invited user
+      // auto-claims this tenant on their very first login — no onboarding shown
+      const redirectAfterLogin = `${window.location.origin}/Dashboard?tid=${company.id}`;
+
+      // Send the platform invitation with the tenant-aware redirect
+      await base44.users.inviteUser(inviteForm.email, safeRole);
+
+      // Immediately try to tag if user record already exists (returning user)
+      try {
+        const existingUsers = await base44.entities.User.filter({ email: inviteForm.email });
+        if (existingUsers.length > 0 && !existingUsers[0].tenant_id) {
+          await base44.entities.User.update(existingUsers[0].id, {
+            tenant_id: company.id,
+            company_id: company.id,
+          });
+        }
+      } catch (_) { /* not critical */ }
+
+      // Also schedule a retry after 3 s for brand-new users whose record appears with a delay
+      setTimeout(async () => {
+        try {
+          const users2 = await base44.entities.User.filter({ email: inviteForm.email });
+          if (users2.length > 0 && !users2[0].tenant_id) {
+            await base44.entities.User.update(users2[0].id, {
+              tenant_id: company.id,
+              company_id: company.id,
+            });
+          }
+        } catch (_) {}
+      }, 3000);
+
+      toast({
+        title: "Invitation sent!",
+        description: `${inviteForm.email} invited as ${ROLE_CONFIG[inviteForm.role]?.label}. They will auto-join ${company.name} on first login.`,
+      });
       setShowInviteDialog(false);
       setInviteForm({ email: "", role: "user" });
       queryClient.invalidateQueries(["users"]);

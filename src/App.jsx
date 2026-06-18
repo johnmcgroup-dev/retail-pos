@@ -11,6 +11,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import TenantSetup from '@/pages/TenantSetup';
+import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
 import Landing from '@/pages/Landing';
 import { base44 } from '@/api/base44Client';
@@ -29,6 +30,31 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, user } = useAuth();
   const queryClient = useQueryClient();
+
+  // On first login, if ?tid= is in the URL, claim that tenant for this user
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    const params = new URLSearchParams(window.location.search);
+    const tid = params.get('tid');
+    if (!tid) return;
+    if (user.tenant_id) {
+      // Already has a tenant — just clean the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('tid');
+      window.history.replaceState({}, '', url.toString());
+      return;
+    }
+    // Claim the tenant via backend
+    base44.functions.invoke('claimTenant', { tenantId: tid })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['companies_check'] });
+        // Clean the URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('tid');
+        window.history.replaceState({}, '', url.toString());
+      })
+      .catch(console.error);
+  }, [isAuthenticated, user]);
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
     queryKey: ["companies_check", user?.id],
@@ -71,11 +97,12 @@ const AuthenticatedApp = () => {
   }
 
   // Invited users carry a tenant_id on their profile — skip onboarding if set
+  // Also skip if ?tid= is in the URL (claim hook will handle it after redirect)
   const hasTenantId = !!user?.tenant_id;
+  const tidInUrl = new URLSearchParams(window.location.search).has('tid');
 
-  // New tenant: authenticated user with no company and no tenant_id → show onboarding
-  // (invited users always have tenant_id set, so they skip this)
-  if (isAuthenticated && companies.length === 0 && !hasTenantId && user?.role !== 'user') {
+  // New tenant: authenticated user with no company, no tenant_id, and no ?tid= → show onboarding
+  if (isAuthenticated && companies.length === 0 && !hasTenantId && !tidInUrl && user?.role !== 'user') {
     return (
       <TenantSetup onComplete={() => queryClient.invalidateQueries({ queryKey: ["companies_check"] })} />
     );

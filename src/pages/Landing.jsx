@@ -14,14 +14,21 @@ export default function Landing() {
   const [mode, setMode] = useState(null); // "invited" | "new" | "returning" | null
 
   const urlParams = new URLSearchParams(window.location.search);
-  const isInvited = urlParams.has("invite") || urlParams.has("ref") || urlParams.has("token");
+  const isInvited = urlParams.has("invite") || urlParams.has("ref") || urlParams.has("token") || urlParams.has("tid");
+  const tid = urlParams.get("tid");
+
+  // Build the post-login redirect preserving ?tid= so the claim hook fires
+  const dashboardUrl = tid
+    ? `${window.location.origin}/Dashboard?tid=${tid}`
+    : `${window.location.origin}/Dashboard`;
 
   useEffect(() => {
     const check = async () => {
       try {
         const authenticated = await base44.auth.isAuthenticated();
         if (authenticated) {
-          window.location.href = "/Dashboard";
+          // Already logged in — go straight to dashboard (tid claim will fire there)
+          window.location.href = dashboardUrl;
           return;
         }
       } catch (_) {}
@@ -31,7 +38,7 @@ export default function Landing() {
     check();
   }, []);
 
-  const handleLogin = () => base44.auth.redirectToLogin(window.location.origin + "/Dashboard");
+  const handleLogin = () => base44.auth.redirectToLogin(dashboardUrl);
   const handleRegister = () => base44.auth.redirectToLogin(window.location.origin + "/Dashboard");
 
   if (checking) {
@@ -52,13 +59,19 @@ export default function Landing() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">You've been invited!</h1>
           <p className="text-slate-500 mb-8">
-            You've been added to a My Retailer Pro business account. Click below to sign in and get started.
+            You've been added to a My Retailer Pro business account. Sign in to join your team — no setup required.
           </p>
           <div className="bg-white rounded-2xl shadow-xl p-6 space-y-3">
             <div className="flex items-center gap-3 text-left p-3 bg-green-50 rounded-lg border border-green-100">
               <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <span className="text-sm text-slate-700">Your account is already set up — no setup needed</span>
+              <span className="text-sm text-slate-700">You'll automatically join your team's workspace — no setup needed</span>
             </div>
+            {tid && (
+              <div className="flex items-center gap-3 text-left p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
+                <span className="text-sm text-slate-700">Your tenant access is pre-configured and ready</span>
+              </div>
+            )}
             <Button
               onClick={handleLogin}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-12"
