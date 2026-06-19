@@ -155,12 +155,24 @@ export default function POS() {
             product_id: item.product_id,
             company_id: selectedCompany?.id || companies[0]?.id
           });
-          
-          if (inventoryRecords.length > 0) {
-            const inv = inventoryRecords[0];
+
+          // FEFO: sort by expiration_date ascending (nulls last)
+          const sorted = [...inventoryRecords].sort((a, b) => {
+            if (!a.expiration_date && !b.expiration_date) return 0;
+            if (!a.expiration_date) return 1;
+            if (!b.expiration_date) return -1;
+            return new Date(a.expiration_date) - new Date(b.expiration_date);
+          });
+
+          let remaining = item.quantity;
+          for (const inv of sorted) {
+            if (remaining <= 0) break;
+            if ((inv.quantity || 0) <= 0) continue;
+            const deduct = Math.min(inv.quantity, remaining);
             await base44.entities.Inventory.update(inv.id, {
-              quantity: inv.quantity - item.quantity
+              quantity: inv.quantity - deduct
             });
+            remaining -= deduct;
           }
         }
       } catch (error) {
@@ -173,7 +185,17 @@ export default function POS() {
     setPendingSyncCount(0);
   };
 
+  // Build a map of total available stock per product from inventory
+  const stockByProduct = inventory.reduce((acc, inv) => {
+    if (inv.quantity > 0) {
+      acc[inv.product_id] = (acc[inv.product_id] || 0) + inv.quantity;
+    }
+    return acc;
+  }, {});
+
   const filteredProducts = products.filter(p => {
+    // Only show products that have stock in inventory
+    if ((stockByProduct[p.id] || 0) <= 0) return false;
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return (
@@ -356,17 +378,30 @@ export default function POS() {
         }
       }
       
+      // FEFO deduction: deduct from earliest-expiring batches first
       for (const item of cart) {
         const inventoryRecords = await base44.entities.Inventory.filter({
           product_id: item.product_id,
           company_id: selectedCompany.id
         });
-        
-        if (inventoryRecords.length > 0) {
-          const inv = inventoryRecords[0];
+
+        // Sort by expiration_date ascending (nulls last)
+        const sorted = [...inventoryRecords].sort((a, b) => {
+          if (!a.expiration_date && !b.expiration_date) return 0;
+          if (!a.expiration_date) return 1;
+          if (!b.expiration_date) return -1;
+          return new Date(a.expiration_date) - new Date(b.expiration_date);
+        });
+
+        let remaining = item.quantity;
+        for (const inv of sorted) {
+          if (remaining <= 0) break;
+          if ((inv.quantity || 0) <= 0) continue;
+          const deduct = Math.min(inv.quantity, remaining);
           await base44.entities.Inventory.update(inv.id, {
-            quantity: inv.quantity - item.quantity
+            quantity: inv.quantity - deduct
           });
+          remaining -= deduct;
         }
       }
       
@@ -540,6 +575,7 @@ export default function POS() {
               products={filteredProducts}
               onAddToCart={(product) => { addToCart(product); setMobileTab("cart"); }}
               currency={currency}
+              stockByProduct={stockByProduct}
             />
           </div>
         </div>
