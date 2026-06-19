@@ -3,17 +3,19 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Package, Edit, Trash2, Upload } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Upload, PackagePlus, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
+import StockProductDialog from "../components/inventory/StockProductDialog";
 
 export default function Products() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [stockProduct, setStockProduct] = useState(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -23,6 +25,11 @@ export default function Products() {
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
+  });
+
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: () => base44.entities.Inventory.list(),
   });
 
   const deleteMutation = useMutation({
@@ -58,6 +65,9 @@ export default function Products() {
     setShowDialog(false);
     setEditingProduct(null);
   };
+
+  const getInventoryForProduct = (productId) => inventory.find(inv => inv.product_id === productId);
+  const getStockLevel = (productId) => getInventoryForProduct(productId)?.quantity ?? 0;
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -115,7 +125,7 @@ export default function Products() {
                 </Badge>
               )}
               
-              <div className="space-y-1 text-sm text-slate-600 mb-4">
+              <div className="space-y-1 text-sm text-slate-600 mb-3">
                 <p>SKU: {product.sku || "N/A"}</p>
                 <p className="font-semibold text-lg text-blue-600">
                   ${product.selling_price?.toFixed(2)}
@@ -123,6 +133,25 @@ export default function Products() {
                 {product.cost_price && (
                   <p className="text-xs">Cost: ${product.cost_price.toFixed(2)}</p>
                 )}
+              </div>
+
+              {/* Stock Level Display */}
+              <div className="flex items-center justify-between mb-3 p-2 rounded-lg bg-slate-50">
+                <span className="text-xs text-slate-500">In Stock</span>
+                {(() => {
+                  const qty = getStockLevel(product.id);
+                  const reorderLevel = product.reorder_level || 0;
+                  const isLow = qty <= reorderLevel;
+                  return (
+                    <Badge className={qty === 0 ? "bg-red-100 text-red-700" : isLow ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}>
+                      {qty === 0 ? (
+                        <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> No stock</span>
+                      ) : (
+                        <span className="flex items-center gap-1">{isLow && <AlertTriangle className="w-3 h-3" />}{qty} {product.unit || "pcs"}</span>
+                      )}
+                    </Badge>
+                  );
+                })()}
               </div>
 
               <div className="flex gap-2">
@@ -134,6 +163,14 @@ export default function Products() {
                 >
                   <Edit className="w-4 h-4 mr-1" />
                   Edit
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setStockProduct({ product, inventoryItem: getInventoryForProduct(product.id) })}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  <PackagePlus className="w-4 h-4 mr-1" />
+                  Stock
                 </Button>
                 <Button
                   variant="outline"
@@ -162,6 +199,20 @@ export default function Products() {
         product={editingProduct}
         companies={companies}
       />
+
+      {stockProduct && (
+        <StockProductDialog
+          open={!!stockProduct}
+          onClose={() => setStockProduct(null)}
+          product={stockProduct.product}
+          inventoryItem={stockProduct.inventoryItem}
+          companyId={companies[0]?.id}
+          onSuccess={() => {
+            queryClient.invalidateQueries(["inventory"]);
+            queryClient.invalidateQueries(["products"]);
+          }}
+        />
+      )}
     </div>
   );
 }

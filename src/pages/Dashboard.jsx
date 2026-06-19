@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { format, startOfMonth } from "date-fns";
 import OfflineIndicator from "../components/shared/OfflineIndicator";
 import StaffSalesWidget from "../components/dashboard/StaffSalesWidget";
+import LowStockAlerts from "../components/dashboard/LowStockAlerts";
 
 export default function Dashboard() {
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -244,58 +245,9 @@ export default function Dashboard() {
       <StaffSalesWidget sales={sales} currency={currency} showSymbol={showSymbol} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        <Card className="lg:col-span-1 shadow-md">
-          <CardHeader className="border-b border-slate-100 pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm md:text-base">
-              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-500" />
-              Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 md:p-4 space-y-2 md:space-y-3">
-            {alerts.slice(0, 3).length > 0 ? (
-              alerts.slice(0, 3).map((alert) => (
-                <div key={alert.id} className={`p-2 md:p-3 rounded-lg border-2 ${
-                  alert.severity === 'critical' ? 'bg-red-50 border-red-200' :
-                  alert.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-blue-50 border-blue-200'
-                }`}>
-                  <p className={`text-xs md:text-sm font-semibold ${
-                    alert.severity === 'critical' ? 'text-red-800' :
-                    alert.severity === 'warning' ? 'text-yellow-800' :
-                    'text-blue-800'
-                  }`}>{alert.title}</p>
-                  <p className={`text-[10px] md:text-xs mt-1 ${
-                    alert.severity === 'critical' ? 'text-red-600' :
-                    alert.severity === 'warning' ? 'text-yellow-600' :
-                    'text-blue-600'
-                  }`}>{alert.message}</p>
-                </div>
-              ))
-            ) : (
-              <>
-                {lowStockProducts.length > 0 && (
-                  <div className="p-2 md:p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-xs md:text-sm font-semibold text-red-800">Low Stock Alert</p>
-                    <p className="text-[10px] md:text-xs text-red-600 mt-1">
-                      {lowStockProducts.length} products need reordering
-                    </p>
-                  </div>
-                )}
-                {expiringProducts.length > 0 && (
-                  <div className="p-2 md:p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-xs md:text-sm font-semibold text-yellow-800">Expiration Alert</p>
-                    <p className="text-[10px] md:text-xs text-yellow-600 mt-1">
-                      {expiringProducts.length} products expiring soon
-                    </p>
-                  </div>
-                )}
-                {lowStockProducts.length === 0 && expiringProducts.length === 0 && (
-                  <p className="text-xs md:text-sm text-slate-500 text-center py-4 md:py-6">No alerts at this time</p>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-1">
+          <LowStockAlerts currency={currency} showSymbol={showSymbol} />
+        </div>
 
         <Card className="lg:col-span-2 shadow-md">
           <CardHeader className="border-b border-slate-100 pb-3">
