@@ -7,55 +7,61 @@ import { formatCurrency } from "@/utils";
 
 export default function ProductGrid({ products, onAddToCart, currency = 'USD', stockByProduct = {} }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
       {products.map((product) => {
         const stock = stockByProduct[product.id] || 0;
         const isLowStock = stock > 0 && stock <= 5;
         return (
-          <Card
+          <button
             key={product.id}
-            className="transition-all duration-150 cursor-pointer border-2 border-transparent
-              hover:shadow-lg hover:border-blue-400
-              active:scale-95 active:border-blue-600 active:shadow-inner active:bg-blue-50
-              touch-manipulation select-none"
+            type="button"
             onClick={() => onAddToCart(product)}
-            onTouchStart={() => {}}
+            className="group relative bg-white rounded-xl border-2 border-slate-100 text-left
+              transition-all duration-100 cursor-pointer select-none
+              hover:border-blue-400 hover:shadow-md
+              active:scale-95 active:border-blue-600 active:bg-blue-50 active:shadow-inner
+              focus:outline-none focus:ring-2 focus:ring-blue-400
+              touch-manipulation w-full overflow-hidden"
+            style={{ WebkitTapHighlightColor: 'rgba(59,130,246,0.15)' }}
           >
-            <CardContent className="p-3 md:p-4">
-              <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden pointer-events-none">
-                {product.image_url ? (
-                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                ) : (
-                  <Package className="w-10 h-10 md:w-12 md:h-12 text-slate-400" />
-                )}
-              </div>
-              <h3 className="font-semibold text-slate-900 mb-1 line-clamp-2 min-h-[2.5rem] text-sm md:text-base pointer-events-none">
-                {product.name}
-              </h3>
-              {product.category && (
-                <Badge variant="secondary" className="text-xs mb-1 pointer-events-none">
-                  {product.category}
-                </Badge>
+            {/* Image */}
+            <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 w-full flex items-center justify-center overflow-hidden">
+              {product.image_url ? (
+                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+              ) : (
+                <Package className="w-10 h-10 text-slate-300" />
               )}
-              <p className={`text-xs font-medium mb-1 pointer-events-none ${isLowStock ? 'text-orange-500' : 'text-slate-400'}`}>
-                Stock: {stock} {isLowStock && '⚠️'}
+            </div>
+
+            {/* Info */}
+            <div className="p-2 md:p-3">
+              <p className="font-semibold text-slate-900 text-xs md:text-sm leading-tight line-clamp-2 min-h-[2em]">
+                {product.name}
               </p>
-              <div className="flex items-center justify-between mt-1 pointer-events-none">
-                <span className="text-base md:text-lg font-bold text-blue-600">
+              {product.category && (
+                <span className="inline-block text-[10px] md:text-xs bg-slate-100 text-slate-500 rounded px-1.5 py-0.5 mt-1 truncate max-w-full">
+                  {product.category}
+                </span>
+              )}
+              <p className={`text-[10px] md:text-xs font-medium mt-1 ${isLowStock ? 'text-orange-500' : 'text-slate-400'}`}>
+                {isLowStock ? `⚠️ Only ${stock} left` : `Stock: ${stock}`}
+              </p>
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-sm md:text-base font-bold text-blue-600">
                   {formatCurrency(product.selling_price || 0, currency)}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
-                  <Plus className="w-4 h-4 text-white" />
-                </div>
+                <span className="w-7 h-7 rounded-full bg-blue-600 group-active:bg-blue-700 flex items-center justify-center shadow-sm flex-shrink-0">
+                  <Plus className="w-3.5 h-3.5 text-white" />
+                </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </button>
         );
       })}
       {products.length === 0 && (
-        <div className="col-span-full text-center py-12">
-          <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-500">No products found</p>
+        <div className="col-span-full text-center py-16">
+          <Package className="w-16 h-16 text-slate-200 mx-auto mb-3" />
+          <p className="text-slate-400 font-medium">No products available</p>
         </div>
       )}
     </div>

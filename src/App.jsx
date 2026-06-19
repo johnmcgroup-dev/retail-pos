@@ -14,6 +14,7 @@ import TenantSetup from '@/pages/TenantSetup';
 import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
 import Landing from '@/pages/Landing';
+import Storefront from '@/pages/Storefront';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -112,6 +113,8 @@ const AuthenticatedApp = () => {
   return (
     <RoleGuard user={user}>
       <Routes>
+        {/* Public storefront — no auth required, no layout */}
+        <Route path="/store/:slug" element={<Storefront />} />
         {/* Landing page — unauthenticated entry point, no layout */}
         <Route path="/" element={<Landing />} />
         {/* All named app pages with layout */}

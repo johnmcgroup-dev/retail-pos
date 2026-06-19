@@ -137,6 +137,14 @@ export default function POS() {
     }
   }, [wasOffline, isOnline]);
 
+  // When coming back online, force-refresh products and inventory from server
+  useEffect(() => {
+    if (isOnline) {
+      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["inventory"]);
+    }
+  }, [isOnline]);
+
   useEffect(() => {
     const pending = offlineCache.getPendingOfflineSales();
     setPendingSyncCount(pending.length);
@@ -407,12 +415,21 @@ export default function POS() {
       
       return sale;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries(["sales"]);
       queryClient.invalidateQueries(["inventory"]);
       queryClient.invalidateQueries(["customers"]);
       queryClient.invalidateQueries(["loyaltyTransactions"]);
       queryClient.invalidateQueries(["payments"]);
+      // Refresh and re-cache inventory so offline view stays accurate
+      if (isOnline) {
+        try {
+          const freshInventory = await base44.entities.Inventory.list();
+          offlineCache.set(CACHE_KEYS.INVENTORY, freshInventory);
+          const freshProducts = await base44.entities.Product.filter({ status: "active" });
+          offlineCache.set(CACHE_KEYS.PRODUCTS, freshProducts);
+        } catch (_) {}
+      }
       clearCart();
       setShowCheckout(false);
     },
