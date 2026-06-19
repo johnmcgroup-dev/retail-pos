@@ -198,6 +198,7 @@ export default function Products() {
         onClose={handleCloseDialog}
         product={editingProduct}
         companies={companies}
+        inventoryItem={editingProduct ? getInventoryForProduct(editingProduct.id) : null}
       />
 
       {stockProduct && (

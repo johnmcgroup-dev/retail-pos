@@ -19,10 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Camera, Package } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import CameraCapture from "./CameraCapture";
 
-export default function ProductDialog({ open, onClose, product, companies }) {
+export default function ProductDialog({ open, onClose, product, companies, inventoryItem }) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     company_id: "",
@@ -41,7 +42,8 @@ export default function ProductDialog({ open, onClose, product, companies }) {
     default_expiry_days: 0,
     status: "active",
     image_url: "",
-    images: []
+    images: [],
+    stock_quantity: 0
   });
 
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -50,21 +52,56 @@ export default function ProductDialog({ open, onClose, product, companies }) {
 
   useEffect(() => {
     if (product) {
-      setFormData(product);
+      setFormData({
+        ...product,
+        stock_quantity: inventoryItem?.quantity ?? 0
+      });
     } else if (companies.length > 0) {
-      setFormData(prev => ({ ...prev, company_id: companies[0].id }));
+      setFormData(prev => ({
+        ...prev,
+        company_id: companies[0].id,
+        stock_quantity: inventoryItem?.quantity ?? 0
+      }));
     }
-  }, [product, companies]);
+  }, [product, companies, inventoryItem]);
 
   const saveMutation = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async (data) => {
+      const { stock_quantity, ...productData } = data;
+      let savedProduct;
       if (product) {
-        return base44.entities.Product.update(product.id, data);
+        savedProduct = await base44.entities.Product.update(product.id, productData);
+      } else {
+        savedProduct = await base44.entities.Product.create(productData);
       }
-      return base44.entities.Product.create(data);
+
+      // Manage inventory stock quantity
+      if (stock_quantity !== undefined && stock_quantity !== null) {
+        const companyId = productData.company_id || companies[0]?.id;
+        if (companyId && savedProduct.id) {
+          if (inventoryItem) {
+            // Update existing inventory
+            await base44.entities.Inventory.update(inventoryItem.id, {
+              quantity: stock_quantity,
+              last_updated: new Date().toISOString()
+            });
+          } else {
+            // Create new inventory record
+            await base44.entities.Inventory.create({
+              company_id: companyId,
+              product_id: savedProduct.id,
+              quantity: stock_quantity,
+              last_updated: new Date().toISOString()
+            });
+          }
+        }
+      }
+
+      return savedProduct;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["inventory"]);
       onClose();
     },
   });
@@ -182,11 +219,18 @@ export default function ProductDialog({ open, onClose, product, companies }) {
                 variant="outline"
                 onClick={() => document.getElementById('image-upload').click()}
                 disabled={uploading}
-                className="w-full"
+                className="flex-1"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {uploading ? "Uploading..." : "Upload Image"}
+                {uploading ? "Uploading..." : "Upload"}
               </Button>
+              <div className="flex-1">
+                <CameraCapture
+                  onCapture={handleImageUpload}
+                  disabled={uploading}
+                  label={uploading ? "Uploading..." : "Camera"}
+                />
+              </div>
             </div>
             
             {uploadError && (
@@ -290,6 +334,21 @@ export default function ProductDialog({ open, onClose, product, companies }) {
                 value={formData.reorder_level}
                 onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 0 })}
               />
+            </div>
+
+            <div>
+              <Label>Stock Quantity</Label>
+              <Input
+                type="number"
+                value={formData.stock_quantity}
+                onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
+                placeholder="e.g., 100"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                {inventoryItem
+                  ? "Updates the current stock level for this product."
+                  : "Sets the initial stock quantity in inventory."}
+              </p>
             </div>
 
             <div>
