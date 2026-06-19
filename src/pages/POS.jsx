@@ -213,10 +213,8 @@ export default function POS() {
     );
   });
 
-  // Dropdown search results (top 8)
-  const searchResults = searchTerm.trim()
-    ? filteredProducts.slice(0, 8)
-    : [];
+  // Dropdown search results (top 8) — show all products even with empty search
+  const searchResults = filteredProducts.slice(0, 8);
 
   const handleSearchKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -236,7 +234,6 @@ export default function POS() {
     if (e.key !== "Enter") return;
 
     const term = searchTerm.trim();
-    if (!term) return;
 
     // If dropdown is open and item highlighted, add that item
     if (showSearchDropdown && searchResults.length > 0) {
@@ -536,18 +533,23 @@ export default function POS() {
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setHighlightedIndex(0);
-                  setShowSearchDropdown(e.target.value.trim().length > 0);
+                  setShowSearchDropdown(true);
                 }}
                 onKeyDown={handleSearchKeyDown}
                 onBlur={() => setTimeout(() => setShowSearchDropdown(false), 150)}
-                onFocus={() => searchTerm.trim() && setShowSearchDropdown(true)}
+                onFocus={() => setShowSearchDropdown(true)}
                 className="pl-9 h-10 text-sm"
                 autoComplete="off"
               />
-              {/* Live search dropdown */}
-              {showSearchDropdown && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
-                  {searchResults.map((product, idx) => (
+              {/* Live search dropdown — shows all products on focus, filters as you type/scan */}
+              {showSearchDropdown && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden max-h-[60vh] overflow-y-auto">
+                  {searchResults.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-slate-400">
+                      <Package className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                      No matching products
+                    </div>
+                  ) : searchResults.map((product, idx) => (
                     <div
                       key={product.id}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
