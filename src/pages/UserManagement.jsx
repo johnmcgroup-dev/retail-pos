@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Users, UserPlus, Mail, Shield, Building2, Crown, Star } from "lucide-react";
+import { Users, UserPlus, Mail, Shield, Building2, Crown, Star, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 
 const ROLE_CONFIG = {
@@ -63,6 +64,14 @@ export default function UserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries(["users"]);
       toast({ title: "Role updated successfully" });
+    },
+  });
+
+  const removeUserMutation = useMutation({
+    mutationFn: ({ userId }) => base44.entities.User.update(userId, { tenant_id: null, role: "user" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["users"]);
+      toast({ title: "User removed from tenant" });
     },
   });
 
@@ -207,19 +216,45 @@ export default function UserManagement() {
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {canEditUser(user) ? (
-                    <Select
-                      value={user.role || "user"}
-                      onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
-                    >
-                      <SelectTrigger className="w-36">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {assignableRoles.map(r => (
-                          <SelectItem key={r} value={r}>{ROLE_CONFIG[r]?.label || r}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <>
+                      <Select
+                        value={user.role || "user"}
+                        onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assignableRoles.map(r => (
+                            <SelectItem key={r} value={r}>{ROLE_CONFIG[r]?.label || r}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Remove <strong>{user.full_name || user.email}</strong> from this tenant? They will lose access to the app.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-red-600 hover:bg-red-700"
+                              onClick={() => removeUserMutation.mutate({ userId: user.id })}
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </>
                   ) : (
                     <RoleBadge role={user.role || "user"} />
                   )}
