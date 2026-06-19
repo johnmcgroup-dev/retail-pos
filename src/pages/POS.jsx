@@ -21,6 +21,7 @@ import { formatCurrency, getCurrencySymbol, offlineCache, CACHE_KEYS } from "../
 import { useOnlineStatus } from "../components/shared/useOnlineStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";
+import { playScanBeep, playErrorBuzz } from "../components/pos/scanSound";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -116,6 +117,33 @@ export default function POS() {
     const timer = setTimeout(() => searchInputRef.current?.focus(), 300);
     return () => clearTimeout(timer);
   }, []);
+
+  // Keep search focused: refocus when window regains focus (e.g. scanner input)
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      // Don't steal focus if checkout dialog or a modal is open
+      if (!showCheckout) {
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, [showCheckout]);
+
+  // Refocus search when returning to products tab on mobile
+  useEffect(() => {
+    if (mobileTab === "products") {
+      searchInputRef.current?.focus();
+    }
+  }, [mobileTab]);
+
+  // Refocus search after checkout dialog closes
+  useEffect(() => {
+    if (!showCheckout) {
+      const timer = setTimeout(() => searchInputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showCheckout]);
 
   useEffect(() => {
     if (companies.length > 0 && !selectedCompany) {
@@ -229,9 +257,10 @@ export default function POS() {
     if (showSearchDropdown && searchResults.length > 0) {
       const item = searchResults[highlightedIndex] || searchResults[0];
       addToCart(item);
-      setMobileTab("cart");
       setSearchTerm("");
       setShowSearchDropdown(false);
+      setHighlightedIndex(0);
+      searchInputRef.current?.focus();
       e.preventDefault();
       return;
     }
@@ -243,19 +272,25 @@ export default function POS() {
     );
     if (exact) {
       addToCart(exact);
-      setMobileTab("cart");
       setSearchTerm("");
       setShowSearchDropdown(false);
+      setHighlightedIndex(0);
+      searchInputRef.current?.focus();
       e.preventDefault();
+    } else if (term) {
+      // Scanned/typed code not found — play error buzz
+      playErrorBuzz();
     }
   };
 
   const addToCart = (product) => {
+    playScanBeep();
     const existingItem = cart.find(item => item.product_id === product.id);
     if (existingItem) {
+      const newQty = existingItem.quantity + 1;
       setCart(cart.map(item =>
         item.product_id === product.id
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: newQty, total: item.unit_price * newQty }
           : item
       ));
     } else {
@@ -547,9 +582,9 @@ export default function POS() {
                       }`}
                       onMouseDown={() => {
                         addToCart(product);
-                        setMobileTab("cart");
                         setSearchTerm("");
                         setShowSearchDropdown(false);
+                        setHighlightedIndex(0);
                         searchInputRef.current?.focus();
                       }}
                       onMouseEnter={() => setHighlightedIndex(idx)}
