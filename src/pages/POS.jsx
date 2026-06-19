@@ -58,21 +58,13 @@ export default function POS() {
         return [];
       }
 
-      const data = await base44.entities.Product.filter({ status: "active" });
+      const data = await base44.entities.Product.list();
       offlineCache.set(CACHE_KEYS.PRODUCTS, data);
       offlineCache.updateLastSync();
       setUsingCachedData(false);
       return data;
     },
     staleTime: 5 * 60 * 1000,
-    initialData: () => {
-      const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
-      if (cached) {
-        setUsingCachedData(true);
-        return cached;
-      }
-      return [];
-    }
   });
 
   const { data: customers = [] } = useQuery({
