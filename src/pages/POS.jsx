@@ -202,8 +202,6 @@ export default function POS() {
   }, {});
 
   const filteredProducts = products.filter(p => {
-    // Only show products that have stock in inventory
-    if ((stockByProduct[p.id] || 0) <= 0) return false;
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return (
