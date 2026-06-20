@@ -9,10 +9,27 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   // </React.StrictMode>,
 )
 
-// Register service worker for PWA / offline support
-if ('serviceWorker' in navigator) {
+// Register service worker for PWA / offline support — only in production
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// In dev mode, unregister any stale service worker and clear caches to prevent
+// "Cannot read properties of null (reading 'useState')" from stale JS bundles
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const reg of registrations) {
+      await reg.unregister();
+    }
+    if (window.caches) {
+      const keys = await window.caches.keys();
+      for (const key of keys) {
+        await window.caches.delete(key);
+      }
+    }
   });
 }
 
