@@ -1,0 +1,53 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CreditCard, LogOut } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+
+export default function TrialExpired({ company }) {
+  const handleLogout = () => {
+    base44.auth.logout();
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-red-500 to-orange-500 p-8 text-center">
+          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Trial Period Overdue</h1>
+          <p className="text-white/80 mt-2">Your 7-day free trial has ended</p>
+        </div>
+        <div className="p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <p className="text-slate-600">
+              To continue using <span className="font-semibold">{company?.name || "My Retailer Pro"}</span>,
+              payment must be done now to activate your subscription.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border-2 border-slate-200 rounded-xl p-4 text-center">
+              <p className="text-sm font-semibold text-slate-700">Monthly</p>
+              <p className="text-3xl font-bold text-slate-900">${company?.monthly_price || 29.99}</p>
+              <p className="text-xs text-slate-500">per month</p>
+            </div>
+            <div className="border-2 border-blue-500 bg-blue-50 rounded-xl p-4 text-center">
+              <p className="text-sm font-semibold text-blue-700">Yearly</p>
+              <p className="text-3xl font-bold text-slate-900">${company?.yearly_price || 299.99}</p>
+              <p className="text-xs text-slate-500">per year</p>
+              <p className="text-xs text-green-600 font-semibold mt-1">Save 2 months!</p>
+            </div>
+          </div>
+          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6">
+            <CreditCard className="w-5 h-5 mr-2" />
+            Pay Now to Continue
+          </Button>
+          <Button variant="ghost" onClick={handleLogout} className="w-full text-slate-500">
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

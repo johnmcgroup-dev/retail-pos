@@ -29,7 +29,9 @@ import {
   RefreshCw,
   UserCheck,
   PieChart,
-  Upload
+  Upload,
+  PackagePlus,
+  ClipboardList
 } from "lucide-react";
 import {
   Sidebar,
@@ -80,6 +82,17 @@ const navigationItems = [
     title: "Inventory",
     url: createPageUrl("Inventory"),
     icon: Store,
+  },
+  {
+    title: "Stocking",
+    url: createPageUrl("Stocking"),
+    icon: PackagePlus,
+    highlight: true
+  },
+  {
+    title: "Stocking Report",
+    url: createPageUrl("StockingReport"),
+    icon: ClipboardList,
   },
   {
     title: "Sales",

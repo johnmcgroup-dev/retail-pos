@@ -11,6 +11,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import TenantSetup from '@/pages/TenantSetup';
+import TrialExpired from '@/components/shared/TrialExpired';
 import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
 import Landing from '@/pages/Landing';
@@ -101,6 +102,19 @@ const AuthenticatedApp = () => {
   // Also skip if ?tid= is in the URL (claim hook will handle it after redirect)
   const hasTenantId = !!user?.tenant_id;
   const tidInUrl = new URLSearchParams(window.location.search).has('tid');
+
+  // Trial period check — 7 days from company creation
+  if (isAuthenticated && companies.length > 0 && !tidInUrl) {
+    const company = companies[0];
+    const isTrial = company.status === 'trial' || !company.status;
+    if (isTrial) {
+      const createdDate = new Date(company.created_date);
+      const trialEnd = new Date(createdDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (new Date() > trialEnd) {
+        return <TrialExpired company={company} />;
+      }
+    }
+  }
 
   // New tenant: authenticated user with no company, no tenant_id, and no ?tid= → show onboarding
   if (isAuthenticated && companies.length === 0 && !hasTenantId && !tidInUrl && user?.role !== 'user') {

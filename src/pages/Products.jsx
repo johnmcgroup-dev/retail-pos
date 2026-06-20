@@ -3,19 +3,17 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Package, Edit, Trash2, Upload, PackagePlus, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
-import StockProductDialog from "../components/inventory/StockProductDialog";
 
 export default function Products() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [stockProduct, setStockProduct] = useState(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -77,6 +75,12 @@ export default function Products() {
           <p className="text-slate-500 mt-1">Manage your product catalog</p>
         </div>
         <div className="flex gap-2">
+          <Link to="/Stocking">
+            <Button variant="outline" className="gap-2">
+              <Package className="w-4 h-4" />
+              Stock Products
+            </Button>
+          </Link>
           <Link to="/BulkImport">
             <Button variant="outline" className="gap-2">
               <Upload className="w-4 h-4" />
@@ -165,14 +169,6 @@ export default function Products() {
                   Edit
                 </Button>
                 <Button
-                  size="sm"
-                  onClick={() => setStockProduct({ product, inventoryItem: getInventoryForProduct(product.id) })}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  <PackagePlus className="w-4 h-4 mr-1" />
-                  Stock
-                </Button>
-                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDelete(product.id)}
@@ -200,20 +196,6 @@ export default function Products() {
         companies={companies}
         inventoryItem={editingProduct ? getInventoryForProduct(editingProduct.id) : null}
       />
-
-      {stockProduct && (
-        <StockProductDialog
-          open={!!stockProduct}
-          onClose={() => setStockProduct(null)}
-          product={stockProduct.product}
-          inventoryItem={stockProduct.inventoryItem}
-          companyId={companies[0]?.id}
-          onSuccess={() => {
-            queryClient.invalidateQueries(["inventory"]);
-            queryClient.invalidateQueries(["products"]);
-          }}
-        />
-      )}
     </div>
   );
 }

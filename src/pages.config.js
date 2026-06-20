@@ -18,6 +18,8 @@ import EcommerceSync from './pages/EcommerceSync';
 import UserManagement from './pages/UserManagement';
 import SalesReport from './pages/SalesReport';
 import BulkImport from './pages/BulkImport';
+import Stocking from './pages/Stocking';
+import StockingReport from './pages/StockingReport';
 import Layout from './Layout.jsx';
 
 
@@ -42,6 +44,8 @@ export const PAGES = {
     "UserManagement": UserManagement,
     "SalesReport": SalesReport,
     "BulkImport": BulkImport,
+    "Stocking": Stocking,
+    "StockingReport": StockingReport,
 }
 
 export const pagesConfig = {
