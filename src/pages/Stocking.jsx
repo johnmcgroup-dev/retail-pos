@@ -182,6 +182,7 @@ export default function Stocking() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (!companyId) throw new Error("Company not loaded. Please reload and try again.");
       const user = await base44.auth.me();
       const vendor = vendors.find(v => v.id === vendorId);
       const now = new Date().toISOString();
@@ -293,6 +294,9 @@ export default function Stocking() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!companyId) {
+      alert("Company not loaded yet. Please wait a moment and try again."); return;
+    }
     if (!vendorId) { alert("Please select a vendor/supplier"); return; }
     if (items.some(i => !i.product_id || !i.quantity || i.quantity <= 0)) {
       alert("Please select products and enter quantities for all line items"); return;
