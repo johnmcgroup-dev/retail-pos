@@ -20,6 +20,7 @@ import SalesReport from './pages/SalesReport';
 import BulkImport from './pages/BulkImport';
 import Stocking from './pages/Stocking';
 import StockingReport from './pages/StockingReport';
+import StaffPOS from './pages/StaffPOS';
 import Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "BulkImport": BulkImport,
     "Stocking": Stocking,
     "StockingReport": StockingReport,
+    "StaffPOS": StaffPOS,
 }
 
 export const pagesConfig = {

@@ -10,17 +10,17 @@ export default function RoleGuard({ user, children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const posUrl = createPageUrl("POS");
+  const staffUrl = createPageUrl("StaffPOS");
 
   useEffect(() => {
     if (!user) return;
     if (user.role === "user") {
-      // Only allow the POS route
-      if (location.pathname !== posUrl && location.pathname !== `${posUrl}/`) {
-        navigate(posUrl, { replace: true });
+      // Staff: only allowed on the StaffPOS route
+      if (location.pathname !== staffUrl && location.pathname !== `${staffUrl}/`) {
+        navigate(staffUrl, { replace: true });
       }
     }
-  }, [user, location.pathname, posUrl, navigate]);
+  }, [user, location.pathname, staffUrl, navigate]);
 
   return <>{children}</>;
 }
