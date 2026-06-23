@@ -12,10 +12,14 @@ export default function SearchInput({
   const [scanning, setScanning] = useState(false);
   const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
+  // Normalise onChange so callers can always read e.target.value, whether the
+  // value came from a typed keystroke or a camera scan (which passes a string).
+  const change = onChange ? (val) => onChange({ target: { value: val } }) : undefined;
+
   const handleDetect = (text) => {
     setScanning(false);
     if (onScan) onScan(text);
-    else if (onChange) onChange(text);
+    else if (change) change(text);
   };
 
   return (
@@ -27,7 +31,7 @@ export default function SearchInput({
           type="text"
           placeholder={placeholder}
           value={value}
-          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          onChange={onChange ? (e) => change(e.target.value) : undefined}
           onKeyDown={onKeyDown}
           onFocus={onFocus}
           onBlur={onBlur}
