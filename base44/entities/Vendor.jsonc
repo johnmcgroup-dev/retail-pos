@@ -27,6 +27,18 @@
       "type": "string",
       "description": "e.g., Net 30, Net 60"
     },
+    "bank_name": {
+      "type": "string"
+    },
+    "bank_account_number": {
+      "type": "string"
+    },
+    "bank_account_name": {
+      "type": "string"
+    },
+    "bank_sort_code": {
+      "type": "string"
+    },
     "total_purchases": {
       "type": "number",
       "default": 0

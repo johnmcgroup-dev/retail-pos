@@ -46,26 +46,31 @@ export default function POS() {
 
   const currency = selectedCompany?.currency || companies[0]?.currency || 'NGN';
 
-  // Products query with offline support
+  // Products query: always try online first, fall back to cache
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      if (!isOnline) {
-        const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
-        if (cached) {
-          setUsingCachedData(true);
-          return cached;
+      if (isOnline) {
+        try {
+          const data = await base44.entities.Product.list();
+          offlineCache.set(CACHE_KEYS.PRODUCTS, data);
+          offlineCache.updateLastSync();
+          setUsingCachedData(false);
+          return data;
+        } catch (_) {
+          // fall through to cache
         }
-        return [];
       }
-
-      const data = await base44.entities.Product.list();
-      offlineCache.set(CACHE_KEYS.PRODUCTS, data);
-      offlineCache.updateLastSync();
-      setUsingCachedData(false);
-      return data;
+      const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
+      if (cached) {
+        setUsingCachedData(true);
+        return cached;
+      }
+      return [];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchInterval: isOnline ? 5 * 60 * 1000 : false,
   });
 
   const { data: customers = [] } = useQuery({
@@ -556,9 +561,27 @@ export default function POS() {
                 placeholder="Search or scan barcode (Enter to add)..."
                 value={searchTerm}
                 onChange={(e) => {
-                  setSearchTerm(e.target.value);
+                  const val = e.target.value;
+                  setSearchTerm(val);
                   setHighlightedIndex(0);
                   setShowSearchDropdown(true);
+                  // Instant barcode match — barcode scanners emit full code quickly
+                  // Check for exact barcode/SKU match on every change
+                  const trimmed = val.trim();
+                  if (trimmed.length >= 4) {
+                    const exact = products.find(p =>
+                      p.sku === trimmed || (p.barcodes || []).some(b => b === trimmed)
+                    );
+                    if (exact) {
+                      addToCart(exact);
+                      setTimeout(() => {
+                        setSearchTerm("");
+                        setShowSearchDropdown(false);
+                        setHighlightedIndex(0);
+                        searchInputRef.current?.focus();
+                      }, 50);
+                    }
+                  }
                 }}
                 onKeyDown={handleSearchKeyDown}
                 onBlur={() => setTimeout(() => setShowSearchDropdown(false), 150)}
