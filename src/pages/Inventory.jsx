@@ -11,6 +11,7 @@ import AlertBanner from "../components/notifications/AlertBanner";
 import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
 import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
 import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
+import SearchInput from "../components/shared/SearchInput";
 
 export default function Inventory() {
   const queryClient = useQueryClient();
@@ -210,13 +211,11 @@ export default function Inventory() {
       <Card>
         <CardContent className="p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <Input
-              type="text"
+            <SearchInput
               placeholder="Search inventory..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10"
             />
           </div>
         </CardContent>

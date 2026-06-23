@@ -8,6 +8,7 @@ import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle
 import { offlineCache, CACHE_KEYS } from "@/components/utils";
 import { useOnlineStatus } from "@/components/shared/useOnlineStatus";
 import { playScanBeep, playErrorBuzz } from "@/components/pos/scanSound";
+import SearchInput from "@/components/shared/SearchInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -207,6 +208,24 @@ export default function StaffPOS() {
   const currency = company?.currency || "NGN";
   const fmt = (n) => `${currency === "NGN" ? "₦" : currency}${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  const handleScanResult = (text) => {
+    setSearchTerm(text);
+    setShowDropdown(true);
+    setHighlightedIndex(0);
+    const exact = activeProducts.find(p =>
+      p.sku === text || (p.barcodes || []).some(b => b === text)
+    );
+    if (exact) {
+      addToCart(exact);
+      setSearchTerm("");
+      setShowDropdown(false);
+      setHighlightedIndex(0);
+      searchInputRef.current?.focus();
+    } else {
+      playErrorBuzz();
+    }
+  };
+
   return (
     <div className="h-[100dvh] flex flex-col bg-slate-50 overflow-hidden">
       {/* Header */}
@@ -239,17 +258,16 @@ export default function StaffPOS() {
           {/* Search bar */}
           <div className="p-3 bg-white border-b shrink-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
-                ref={searchInputRef}
+              <SearchInput
+                inputRef={searchInputRef}
                 placeholder="Search product or scan barcode..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 onKeyDown={handleKeyDown}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                className="pl-9 h-10 text-sm"
-                autoComplete="off"
+                onScan={handleScanResult}
+                className="h-10 text-sm"
               />
               {showDropdown && (
                 <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden max-h-[50vh] overflow-y-auto">

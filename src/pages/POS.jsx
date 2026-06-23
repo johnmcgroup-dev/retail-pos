@@ -22,6 +22,7 @@ import { useOnlineStatus } from "../components/shared/useOnlineStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";
 import { playScanBeep, playErrorBuzz } from "../components/pos/scanSound";
+import SearchInput from "../components/shared/SearchInput";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -238,6 +239,25 @@ export default function POS() {
 
   // Dropdown search results (top 8) — show all products even with empty search
   const searchResults = filteredProducts.slice(0, 8);
+
+  const handleScanResult = (text) => {
+    setSearchTerm(text);
+    setHighlightedIndex(0);
+    setShowSearchDropdown(true);
+
+    const exact = products.find(p =>
+      p.sku === text || (p.barcodes || []).some(b => b === text)
+    );
+    if (exact) {
+      addToCart(exact);
+      setSearchTerm("");
+      setShowSearchDropdown(false);
+      setHighlightedIndex(0);
+      searchInputRef.current?.focus();
+    } else {
+      playErrorBuzz();
+    }
+  };
 
   const handleSearchKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -554,10 +574,8 @@ export default function POS() {
 
           <div className="p-3 bg-white border-b border-slate-200 shrink-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
-                ref={searchInputRef}
-                type="text"
+              <SearchInput
+                inputRef={searchInputRef}
                 placeholder="Search or scan barcode (Enter to add)..."
                 value={searchTerm}
                 onChange={(e) => {
@@ -586,8 +604,8 @@ export default function POS() {
                 onKeyDown={handleSearchKeyDown}
                 onBlur={() => setTimeout(() => setShowSearchDropdown(false), 150)}
                 onFocus={() => setShowSearchDropdown(true)}
-                className="pl-9 h-10 text-sm"
-                autoComplete="off"
+                onScan={handleScanResult}
+                className="h-10 text-sm"
               />
               {/* Live search dropdown — shows all products on focus, filters as you type/scan */}
               {showSearchDropdown && (

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
+import SearchInput from "../components/shared/SearchInput";
 
 export default function Products() {
   const queryClient = useQueryClient();
@@ -97,13 +98,11 @@ export default function Products() {
       <Card>
         <CardContent className="p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <Input
-              type="text"
+            <SearchInput
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10"
             />
           </div>
         </CardContent>
