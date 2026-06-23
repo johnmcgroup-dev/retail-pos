@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, DollarSign, Package, ArrowUpRight, ArrowDownRight, Calendar } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { formatCurrency } from "@/utils";
+import StaffPerformance from "@/components/reports/StaffPerformance";
 
 export default function SalesReport() {
   const [period, setPeriod] = useState("today");
@@ -245,6 +246,8 @@ export default function SalesReport() {
           )}
         </CardContent>
       </Card>
+      {/* Staff Performance */}
+      <StaffPerformance sales={sales} currency={currency} showSymbol={showSymbol} />
     </div>
   );
 }
