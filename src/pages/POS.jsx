@@ -176,6 +176,21 @@ export default function POS() {
     setPendingSyncCount(pending.length);
   }, []);
 
+  // Real-time sync: subscribe to Inventory & Product changes so that scanning
+  // and manual searches reflect the latest shared state across all linked devices.
+  useEffect(() => {
+    const unsubInventory = base44.entities.Inventory.subscribe(() => {
+      queryClient.invalidateQueries(["inventory"]);
+    });
+    const unsubProducts = base44.entities.Product.subscribe(() => {
+      queryClient.invalidateQueries(["products"]);
+    });
+    return () => {
+      if (unsubInventory) unsubInventory();
+      if (unsubProducts) unsubProducts();
+    };
+  }, [queryClient]);
+
   const syncOfflineSales = async () => {
     const pendingSales = offlineCache.getPendingOfflineSales();
     

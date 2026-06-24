@@ -121,7 +121,8 @@ export default function Inventory() {
     return daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   });
 
-  const totalValue = filteredInventory.reduce((sum, inv) => {
+  // Total valuation of ALL current stock at cost price (independent of the search filter)
+  const totalStockValue = enrichedInventory.reduce((sum, inv) => {
     return sum + (inv.quantity * (inv.product?.cost_price || 0));
   }, 0);
 
@@ -174,8 +175,8 @@ export default function Inventory() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">Total Value</p>
-                <p className="text-2xl font-bold text-slate-900">₦{totalValue.toFixed(2)}</p>
+                <p className="text-sm text-slate-600">Total Stock Valuation</p>
+                <p className="text-2xl font-bold text-slate-900">₦{totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <div className="text-green-500">₦</div>
             </div>
