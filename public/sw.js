@@ -1,6 +1,9 @@
 // My Retailer Pro — Service Worker
 // Strategy: cache-first for assets, network-first for API calls
-const CACHE_NAME = 'retailer-pro-v2';
+// Bump this version whenever you deploy a meaningful change so old
+// service-worker caches are wiped on activation. This is what guarantees
+// every device runs the SAME (latest) version of the app.
+const CACHE_NAME = 'retailer-pro-v3';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
 
 // Install: pre-cache shell
@@ -11,7 +14,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean ALL old caches and take over clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -21,7 +24,8 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch strategy
+// Fetch strategy — NETWORK FIRST so users always get the newest deployed code.
+// Cache is only used as a fallback when the network is unavailable (offline).
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -31,26 +35,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For navigation requests (HTML pages) — network first, fallback to cached /index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .catch(() => caches.match('/index.html'))
-    );
-    return;
-  }
+  // Only handle GET requests
+  if (request.method !== 'GET') return;
 
-  // For JS/CSS/images — cache first, then network; update cache in background
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkFetch = fetch(request).then((response) => {
+  const fetchFromNetworkAndCache = (cacheFallback) =>
+    fetch(request)
+      .then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      }).catch(() => cached);
-      return cached || networkFetch;
-    })
+      })
+      .catch(() => cacheFallback);
+
+  // Navigation requests — newest HTML from network, offline → cached shell
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // JS / CSS / images — newest from network first, fall back to cache only when offline
+  event.respondWith(
+    caches.match(request).then((cached) => fetchFromNetworkAndCache(cached))
   );
 });
