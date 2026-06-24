@@ -175,9 +175,9 @@ export default function Inventory() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Total Value</p>
-                <p className="text-2xl font-bold text-slate-900">${totalValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{totalValue.toFixed(2)}</p>
               </div>
-              <div className="text-green-500">$</div>
+              <div className="text-green-500">₦</div>
             </div>
           </CardContent>
         </Card>
@@ -286,7 +286,7 @@ export default function Inventory() {
                         )}
                       </td>
                       <td className="p-4 text-right font-medium text-slate-900">
-                        ${(inv.quantity * (inv.product?.cost_price || 0)).toFixed(2)}
+                        ₦{(inv.quantity * (inv.product?.cost_price || 0)).toFixed(2)}
                       </td>
                       <td className="p-4">
                         {isLowStock && (

@@ -247,7 +247,7 @@ export default function OnlineOrders() {
                       <div className="text-xs text-slate-500">{order.customer_email}</div>
                     </td>
                     <td className="p-4 text-right font-bold text-slate-900">
-                      ${order.total_amount?.toFixed(2)}
+                      ₦{order.total_amount?.toFixed(2)}
                     </td>
                     <td className="p-4">
                       <Badge className={getPaymentStatusColor(order.payment_status)}>
@@ -373,8 +373,8 @@ export default function OnlineOrders() {
                         <tr key={index}>
                           <td className="p-3">{item.product_name}</td>
                           <td className="p-3 text-right">{item.quantity}</td>
-                          <td className="p-3 text-right">${item.unit_price.toFixed(2)}</td>
-                          <td className="p-3 text-right font-semibold">${item.total.toFixed(2)}</td>
+                          <td className="p-3 text-right">₦{item.unit_price.toFixed(2)}</td>
+                          <td className="p-3 text-right font-semibold">₦{item.total.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -386,19 +386,19 @@ export default function OnlineOrders() {
               <div className="p-4 bg-slate-50 rounded-lg space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span className="font-semibold">${selectedOrder.subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">₦{selectedOrder.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax:</span>
-                  <span className="font-semibold">${selectedOrder.tax_amount.toFixed(2)}</span>
+                  <span className="font-semibold">₦{selectedOrder.tax_amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping:</span>
-                  <span className="font-semibold">${selectedOrder.shipping_fee.toFixed(2)}</span>
+                  <span className="font-semibold">₦{selectedOrder.shipping_fee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t">
                   <span>Total:</span>
-                  <span className="text-blue-600">${selectedOrder.total_amount.toFixed(2)}</span>
+                  <span className="text-blue-600">₦{selectedOrder.total_amount.toFixed(2)}</span>
                 </div>
               </div>
 

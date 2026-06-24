@@ -144,7 +144,7 @@ export default function OnlineStore() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Online Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">₦{totalRevenue.toFixed(2)}</p>
               </div>
               <CreditCard className="w-10 h-10 opacity-80" />
             </div>

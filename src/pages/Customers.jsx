@@ -104,9 +104,9 @@ export default function Customers() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Total Sales</p>
-                <p className="text-2xl font-bold text-slate-900">${totalPurchases.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{totalPurchases.toFixed(2)}</p>
               </div>
-              <div className="text-orange-500">$</div>
+              <div className="text-orange-500">₦</div>
             </div>
           </CardContent>
         </Card>
@@ -181,13 +181,13 @@ export default function Customers() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Total Purchases</p>
-                  <p className="font-bold text-slate-900">${(customer.total_purchases || 0).toFixed(2)}</p>
+                  <p className="font-bold text-slate-900">₦{(customer.total_purchases || 0).toFixed(2)}</p>
                 </div>
               </div>
 
               {customer.outstanding_balance > 0 && (
                 <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                  Outstanding: ${customer.outstanding_balance.toFixed(2)}
+                  Outstanding: ₦{customer.outstanding_balance.toFixed(2)}
                 </div>
               )}
             </CardContent>

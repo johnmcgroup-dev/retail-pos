@@ -73,7 +73,7 @@ export default function CRM() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Revenue</p>
-                <p className="text-3xl font-bold">${totalRevenue.toFixed(0)}</p>
+                <p className="text-3xl font-bold">₦{totalRevenue.toFixed(0)}</p>
                 <p className="text-xs opacity-80 mt-1">Lifetime value</p>
               </div>
               <TrendingUp className="w-12 h-12 opacity-80" />
@@ -86,7 +86,7 @@ export default function CRM() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Avg Order Value</p>
-                <p className="text-3xl font-bold">${avgOrderValue.toFixed(2)}</p>
+                <p className="text-3xl font-bold">₦{avgOrderValue.toFixed(2)}</p>
                 <p className="text-xs opacity-80 mt-1">Per customer</p>
               </div>
               <Target className="w-12 h-12 opacity-80" />

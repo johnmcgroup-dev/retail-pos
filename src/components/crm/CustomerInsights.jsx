@@ -59,7 +59,7 @@ export default function CustomerInsights({ customers }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Avg Lifetime Value</p>
-                <p className="text-2xl font-bold text-slate-900">${avgLifetimeValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{avgLifetimeValue.toFixed(2)}</p>
                 <p className="text-xs text-slate-500 mt-1">per customer</p>
               </div>
               <DollarSign className="w-10 h-10 text-green-500" />
@@ -174,13 +174,13 @@ export default function CustomerInsights({ customers }) {
                       </Badge>
                     </td>
                     <td className="p-4 text-right font-semibold text-slate-900">
-                      ${(customer.total_purchases || 0).toFixed(2)}
+                      ₦{(customer.total_purchases || 0).toFixed(2)}
                     </td>
                     <td className="p-4 text-right text-slate-600">
                       {customer.total_orders || 0}
                     </td>
                     <td className="p-4 text-right text-slate-600">
-                      ${(customer.average_order_value || 0).toFixed(2)}
+                      ₦{(customer.average_order_value || 0).toFixed(2)}
                     </td>
                     <td className="p-4 text-right font-semibold text-purple-600">
                       {customer.loyalty_points || 0}

@@ -297,7 +297,7 @@ export default function StockOrderForm({ products, vendors, companyId, onSuccess
                       />
                     </td>
                     <td className="p-2 text-right font-medium text-slate-900">
-                      ${lineTotal.toFixed(2)}
+                      ₦{lineTotal.toFixed(2)}
                     </td>
                     <td className="p-2">
                       <Button
@@ -351,15 +351,15 @@ export default function StockOrderForm({ products, vendors, companyId, onSuccess
       <div className="bg-slate-50 rounded-lg p-4 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-slate-600">Subtotal</span>
-          <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
+          <span className="font-medium text-slate-900">₦{subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-slate-600">Tax ({taxRate}%)</span>
-          <span className="font-medium text-slate-900">${taxAmount.toFixed(2)}</span>
+          <span className="font-medium text-slate-900">₦{taxAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-lg font-bold border-t pt-2">
           <span className="text-slate-900">Total</span>
-          <span className="text-blue-600">${total.toFixed(2)}</span>
+          <span className="text-blue-600">₦{total.toFixed(2)}</span>
         </div>
       </div>
 

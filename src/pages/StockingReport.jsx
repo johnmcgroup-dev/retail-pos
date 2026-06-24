@@ -88,7 +88,7 @@ export default function StockingReport() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Total Value</p>
-                <p className="text-2xl font-bold text-slate-900">${totalValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{totalValue.toFixed(2)}</p>
               </div>
               <Package className="w-8 h-8 text-green-500" />
             </div>

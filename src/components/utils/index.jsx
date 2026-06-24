@@ -15,14 +15,13 @@ export const CURRENCIES = {
   GHS: { name: 'Ghanaian Cedi', symbol: '₵', code: 'GHS' },
 };
 
-export function formatCurrency(amount, currencyCode = 'USD') {
-  const currency = CURRENCIES[currencyCode] || CURRENCIES.USD;
-  return `${currency.symbol}${parseFloat(amount || 0).toFixed(2)}`;
+export function formatCurrency(amount, _currencyCode) {
+  // All financial values are displayed in Nigerian Naira (₦), exclusively.
+  return `₦${parseFloat(amount || 0).toFixed(2)}`;
 }
 
-export function getCurrencySymbol(currencyCode = 'USD') {
-  const currency = CURRENCIES[currencyCode] || CURRENCIES.USD;
-  return currency.symbol;
+export function getCurrencySymbol(_currencyCode) {
+  return '₦';
 }
 
 // Page URL utility

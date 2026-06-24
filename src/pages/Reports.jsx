@@ -109,7 +109,7 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">₦{totalRevenue.toFixed(2)}</p>
                 <p className="text-xs opacity-80 mt-1">{filteredData.sales.length} transactions</p>
               </div>
               <DollarSign className="w-10 h-10 opacity-80" />
@@ -122,7 +122,7 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Expenses</p>
-                <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+                <p className="text-2xl font-bold">₦{totalExpenses.toFixed(2)}</p>
                 <p className="text-xs opacity-80 mt-1">{filteredData.expenses.length} expenses</p>
               </div>
               <TrendingUp className="w-10 h-10 opacity-80" />
@@ -135,7 +135,7 @@ export default function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Net Profit</p>
-                <p className="text-2xl font-bold">${netProfit.toFixed(2)}</p>
+                <p className="text-2xl font-bold">₦{netProfit.toFixed(2)}</p>
                 <p className="text-xs opacity-80 mt-1">{netProfit >= 0 ? 'Profitable' : 'Loss'}</p>
               </div>
               <BarChart3 className="w-10 h-10 opacity-80" />

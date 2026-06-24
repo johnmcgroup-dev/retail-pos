@@ -28,7 +28,7 @@ export default function Purchases() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Total Purchases</p>
-                <p className="text-2xl font-bold text-slate-900">${totalPurchases.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{totalPurchases.toFixed(2)}</p>
               </div>
               <DollarSign className="w-10 h-10 text-green-500" />
             </div>
@@ -86,7 +86,7 @@ export default function Purchases() {
                       {format(new Date(purchase.purchase_date), "MMM d, yyyy")}
                     </td>
                     <td className="p-4 text-right font-bold text-slate-900">
-                      ${purchase.total_amount?.toFixed(2)}
+                      ₦{purchase.total_amount?.toFixed(2)}
                     </td>
                     <td className="p-4">
                       <Badge variant={purchase.payment_status === 'paid' ? 'success' : 'destructive'}>

@@ -57,7 +57,7 @@ export default function CheckoutDialog({ open, onClose, total, onComplete, isPro
 
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
             <p className="text-sm text-slate-600 mb-1">Total Amount</p>
-            <p className="text-3xl font-bold text-slate-900">${total.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-slate-900">₦{total.toFixed(2)}</p>
           </div>
 
           <div>
@@ -99,7 +99,7 @@ export default function CheckoutDialog({ open, onClose, total, onComplete, isPro
               {change > 0 && (
                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-sm text-green-800">
-                    Change: <span className="font-bold text-lg">${change.toFixed(2)}</span>
+                    Change: <span className="font-bold text-lg">₦{change.toFixed(2)}</span>
                   </p>
                 </div>
               )}

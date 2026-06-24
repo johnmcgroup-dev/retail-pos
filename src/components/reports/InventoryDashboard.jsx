@@ -128,7 +128,7 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Inventory Value</p>
-                <p className="text-2xl font-bold text-slate-900">${inventoryValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{inventoryValue.toFixed(2)}</p>
                 <p className="text-xs text-slate-500 mt-1">At cost price</p>
               </div>
               <DollarSign className="w-10 h-10 text-green-500" />
@@ -141,7 +141,7 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Retail Value</p>
-                <p className="text-2xl font-bold text-slate-900">${retailValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{retailValue.toFixed(2)}</p>
                 <p className="text-xs text-slate-500 mt-1">Selling price</p>
               </div>
               <Package className="w-10 h-10 text-blue-500" />
@@ -190,7 +190,7 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry) => `${entry.name}: $${entry.value.toFixed(0)}`}
+                  label={(entry) => `${entry.name}: ₦${entry.value.toFixed(0)}`}
                   outerRadius={120}
                   fill="#8884d8"
                   dataKey="value"
@@ -200,7 +200,7 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value) => `$${value.toFixed(2)}`}
+                  formatter={(value) => `₦${value.toFixed(2)}`}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0' }}
                 />
               </PieChart>
@@ -256,9 +256,9 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
                     </td>
                     <td className="p-3 font-medium text-slate-900">{product.name}</td>
                     <td className="p-3 text-right text-slate-700">{product.quantity}</td>
-                    <td className="p-3 text-right text-slate-700">${product.costPrice.toFixed(2)}</td>
+                    <td className="p-3 text-right text-slate-700">₦{product.costPrice.toFixed(2)}</td>
                     <td className="p-3 text-right font-bold text-blue-600">
-                      ${product.value.toFixed(2)}
+                      ₦{product.value.toFixed(2)}
                     </td>
                     <td className="p-3 text-right text-slate-700">
                       {((product.value / inventoryValue) * 100).toFixed(1)}%

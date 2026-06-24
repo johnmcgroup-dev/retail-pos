@@ -27,7 +27,7 @@ export default function Expenses() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Expenses</p>
-                <p className="text-3xl font-bold">${totalExpenses.toFixed(2)}</p>
+                <p className="text-3xl font-bold">₦{totalExpenses.toFixed(2)}</p>
               </div>
               <TrendingDown className="w-10 h-10 opacity-80" />
             </div>
@@ -77,7 +77,7 @@ export default function Expenses() {
                     </td>
                     <td className="p-4 text-slate-900">{expense.description}</td>
                     <td className="p-4 text-right font-bold text-red-600">
-                      ${expense.amount?.toFixed(2)}
+                      ₦{expense.amount?.toFixed(2)}
                     </td>
                     <td className="p-4 text-slate-600 capitalize">
                       {expense.payment_method?.replace(/_/g, ' ')}

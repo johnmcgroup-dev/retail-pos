@@ -125,7 +125,7 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-slate-900">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{totalRevenue.toFixed(2)}</p>
                 <div className="flex items-center gap-1 mt-1">
                   {growth >= 0 ? (
                     <TrendingUp className="w-4 h-4 text-green-600" />
@@ -160,7 +160,7 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">Avg Transaction</p>
-                <p className="text-2xl font-bold text-slate-900">${avgTransaction.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900">₦{avgTransaction.toFixed(2)}</p>
                 <p className="text-xs text-slate-500 mt-1">Per order</p>
               </div>
               <Award className="w-10 h-10 text-purple-500" />
@@ -194,7 +194,7 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip 
-                formatter={(value) => `$${value.toFixed(2)}`}
+                formatter={(value) => `₦${value.toFixed(2)}`}
                 contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0' }}
               />
               <Legend />
@@ -225,7 +225,7 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
                 <YAxis dataKey="name" type="category" width={150} />
                 <Tooltip 
                   formatter={(value, name) => {
-                    if (name === 'revenue') return `$${value.toFixed(2)}`;
+                    if (name === 'revenue') return `₦${value.toFixed(2)}`;
                     return value;
                   }}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0' }}
@@ -250,7 +250,7 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry) => `${entry.name}: $${entry.value.toFixed(0)}`}
+                  label={(entry) => `${entry.name}: ₦${entry.value.toFixed(0)}`}
                   outerRadius={120}
                   fill="#8884d8"
                   dataKey="value"
@@ -260,7 +260,7 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value) => `$${value.toFixed(2)}`}
+                  formatter={(value) => `₦${value.toFixed(2)}`}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0' }}
                 />
               </PieChart>
@@ -312,10 +312,10 @@ export default function SalesPerformanceDashboard({ sales, products, dateRange, 
                     <td className="p-3 text-right text-slate-700">{product.quantity}</td>
                     <td className="p-3 text-right text-slate-700">{product.orders}</td>
                     <td className="p-3 text-right font-bold text-green-600">
-                      ${product.revenue.toFixed(2)}
+                      ₦{product.revenue.toFixed(2)}
                     </td>
                     <td className="p-3 text-right text-slate-700">
-                      ${(product.revenue / product.quantity).toFixed(2)}
+                      ₦{(product.revenue / product.quantity).toFixed(2)}
                     </td>
                   </tr>
                 ))}

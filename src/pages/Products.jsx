@@ -131,10 +131,10 @@ export default function Products() {
               <div className="space-y-1 text-sm text-slate-600 mb-3">
                 <p>SKU: {product.sku || "N/A"}</p>
                 <p className="font-semibold text-lg text-blue-600">
-                  ${product.selling_price?.toFixed(2)}
+                  ₦{product.selling_price?.toFixed(2)}
                 </p>
                 {product.cost_price && (
-                  <p className="text-xs">Cost: ${product.cost_price.toFixed(2)}</p>
+                  <p className="text-xs">Cost: ₦{product.cost_price.toFixed(2)}</p>
                 )}
               </div>
 

@@ -177,7 +177,7 @@ export default function MyLoyalty() {
             </div>
             <div className="text-right">
               <p className="text-sm opacity-90">Lifetime Purchases</p>
-              <p className="text-2xl font-bold">${(customer.total_purchases || 0).toFixed(2)}</p>
+              <p className="text-2xl font-bold">₦{(customer.total_purchases || 0).toFixed(2)}</p>
               <p className="text-xs opacity-80 mt-1">{mySales.length} orders</p>
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function MyLoyalty() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-slate-900">${sale.total_amount?.toFixed(2)}</p>
+                      <p className="text-lg font-bold text-slate-900">₦{sale.total_amount?.toFixed(2)}</p>
                       {sale.loyalty_points_earned > 0 && (
                         <p className="text-xs text-green-600">+{sale.loyalty_points_earned} pts</p>
                       )}

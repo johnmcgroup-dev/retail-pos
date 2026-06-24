@@ -20,16 +20,14 @@ export const CURRENCIES: Record<string, { name: string; symbol: string; code: st
   EGP: { name: 'Egyptian Pound', symbol: '£', code: 'EGP' },
 };
 
-export function formatCurrency(amount: number | string, currencyCode: string = 'NGN', showSymbol: boolean = true): string {
+export function formatCurrency(amount: number | string, _currencyCode?: string, _showSymbol?: boolean): string {
+  // All financial values are displayed in Nigerian Naira (₦), exclusively.
   const num = parseFloat(String(amount || 0)).toFixed(2);
-  const currency = CURRENCIES[currencyCode] || CURRENCIES.NGN;
-  if (!showSymbol) return num;
-  return `${currency.symbol}${num}`;
+  return `₦${num}`;
 }
 
-export function getCurrencySymbol(currencyCode: string = 'NGN'): string {
-  const currency = CURRENCIES[currencyCode] || CURRENCIES.NGN;
-  return currency.symbol;
+export function getCurrencySymbol(_currencyCode?: string): string {
+  return '₦';
 }
 
 export function createPageUrl(pageName: string): string {
@@ -100,11 +98,24 @@ export async function generateInventoryAlerts(companyId: string, inventory: any[
 export async function createAlertsIfNeeded(alerts: any[]) {
   // Dynamically import base44 to avoid circular dependencies
   const { base44 } = await import('@/api/base44Client');
+  // De-duplicate against already-active (non-dismissed) alerts so we never
+  // spam the notification center with repeat alerts for the same product + type.
+  let existing: any[] = [];
+  try {
+    existing = await base44.entities.Alert.filter({ is_dismissed: false });
+  } catch (_) {}
+  const keyOf = (a: any) => `${a.company_id}|${a.product_id || ''}|${a.type}`;
+  const existingKeys = new Set(existing.map(keyOf));
+  let created = 0;
   for (const alert of alerts) {
+    if (existingKeys.has(keyOf(alert))) continue;
     try {
       await base44.entities.Alert.create({ ...alert, is_read: false, is_dismissed: false });
+      existingKeys.add(keyOf(alert));
+      created++;
     } catch (e) {
-      // Ignore duplicate or failed alerts
+      // Ignore failed alert creation
     }
   }
+  return created;
 }

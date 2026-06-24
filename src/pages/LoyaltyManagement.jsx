@@ -311,7 +311,7 @@ export default function LoyaltyManagement() {
                           {customer.loyalty_points || 0}
                         </td>
                         <td className="p-3 text-right font-semibold text-slate-900">
-                          ${(customer.total_purchases || 0).toFixed(2)}
+                          ₦{(customer.total_purchases || 0).toFixed(2)}
                         </td>
                         <td className="p-3">
                           <Badge variant={customer.customer_type === 'vip' ? 'default' : 'secondary'}>
