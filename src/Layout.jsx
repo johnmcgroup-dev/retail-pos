@@ -31,7 +31,8 @@ import {
   PieChart,
   Upload,
   PackagePlus,
-  ClipboardList
+  ClipboardList,
+  Wallet
 } from "lucide-react";
 import {
   Sidebar,
@@ -137,6 +138,11 @@ const navigationItems = [
     title: "Vendors",
     url: createPageUrl("Vendors"),
     icon: Building2,
+  },
+  {
+    title: "Vendor Dashboard",
+    url: createPageUrl("VendorDashboard"),
+    icon: Wallet,
   },
   {
     title: "Expenses",

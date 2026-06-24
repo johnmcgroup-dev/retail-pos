@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History } from "lucide-react";
+import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck } from "lucide-react";
 import { format } from "date-fns";
 import AlertBanner from "../components/notifications/AlertBanner";
 import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
 import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
 import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
 import SearchInput from "../components/shared/SearchInput";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 export default function Inventory() {
   const queryClient = useQueryClient();
@@ -19,6 +21,7 @@ export default function Inventory() {
   const [isGeneratingAlerts, setIsGeneratingAlerts] = useState(false);
   const [adjustItem, setAdjustItem] = useState(null); // { inv, product }
   const [showLog, setShowLog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   
   const { data: inventory = [] } = useQuery({
     queryKey: ["inventory"],
@@ -43,6 +46,16 @@ export default function Inventory() {
   const { data: alerts = [] } = useQuery({
     queryKey: ["alerts"],
     queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
+  });
+
+  const { data: vendors = [] } = useQuery({
+    queryKey: ["vendors"],
+    queryFn: () => base44.entities.Vendor.list(),
+  });
+
+  const { data: purchases = [] } = useQuery({
+    queryKey: ["purchases"],
+    queryFn: () => base44.entities.Purchase.list("-purchase_date"),
   });
 
   const dismissAlertMutation = useMutation({
@@ -121,6 +134,106 @@ export default function Inventory() {
     return daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   });
 
+  // --- Bulk reorder: group selected low-stock items by their supplying vendor ---
+  const lowStockVisible = filteredInventory.filter(inv => inv.quantity <= (inv.product?.reorder_level ?? 10));
+  const allLowSelected = lowStockVisible.length > 0 && lowStockVisible.every(inv => selectedIds.has(inv.id));
+
+  const toggleAllLow = () => {
+    const next = new Set(selectedIds);
+    if (allLowSelected) {
+      lowStockVisible.forEach(inv => next.delete(inv.id));
+    } else {
+      lowStockVisible.forEach(inv => next.add(inv.id));
+    }
+    setSelectedIds(next);
+  };
+
+  const toggleRow = (id) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const reorderLevelFor = (inv) => (inv.product?.reorder_level == null ? 10 : inv.product.reorder_level);
+
+  const findVendorForProduct = (productId) => {
+    const sorted = [...purchases].sort(
+      (a, b) => new Date(b.purchase_date || b.created_date || 0) - new Date(a.purchase_date || a.created_date || 0)
+    );
+    const vendorById = new Map(vendors.map(v => [v.id, v]));
+    for (const p of sorted) {
+      if ((p.items || []).some(it => it.product_id === productId) && p.vendor_id && vendorById.has(p.vendor_id)) {
+        return vendorById.get(p.vendor_id);
+      }
+    }
+    return null;
+  };
+
+  const bulkReorderMutation = useMutation({
+    mutationFn: async () => {
+      const companyId = companies[0]?.id;
+      const now = new Date().toISOString();
+      const selected = enrichedInventory.filter(inv => selectedIds.has(inv.id));
+
+      const groups = {};
+      let skipped = 0;
+      for (const inv of selected) {
+        const product = inv.product;
+        if (!product) continue;
+        const reorder = reorderLevelFor(inv);
+        const suggested = Math.max(reorder * 2 - inv.quantity, reorder);
+        const vendor = findVendorForProduct(inv.product_id);
+        if (!vendor) { skipped++; continue; }
+        if (!groups[vendor.id]) groups[vendor.id] = { vendor, items: [] };
+        groups[vendor.id].items.push({ inv, product, suggested, unit_cost: product.cost_price || 0 });
+      }
+
+      const poNumbers = [];
+      for (const vid of Object.keys(groups)) {
+        const g = groups[vid];
+        const items = g.items.map(it => ({
+          product_id: it.product.id,
+          product_name: it.product.name,
+          quantity: it.suggested,
+          unit_cost: it.unit_cost,
+          total: it.suggested * it.unit_cost
+        }));
+        const subtotal = items.reduce((s, i) => s + i.total, 0);
+        const poNumber = `PO-${format(new Date(), "yyyyMMdd")}-${Date.now().toString().slice(-4)}-${vid.slice(-3)}`;
+        await base44.entities.Purchase.create({
+          company_id: companyId,
+          po_number: poNumber,
+          vendor_id: vid,
+          vendor_name: g.vendor.name,
+          purchase_date: now,
+          items,
+          subtotal,
+          tax_amount: 0,
+          total_amount: subtotal,
+          payment_status: "unpaid",
+          amount_paid: 0,
+          status: "pending",
+          notes: "Auto-generated bulk reorder from low stock"
+        });
+        poNumbers.push(poNumber);
+      }
+      return { poNumbers, vendorsCount: Object.keys(groups).length, skipped };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(["purchases"]);
+      setSelectedIds(new Set());
+      if (data.poNumbers.length === 0) {
+        toast.error("No reorderable items — the selected products have no linked vendor.");
+      } else {
+        toast.success(
+          `Created ${data.poNumbers.length} purchase order(s) for ${data.vendorsCount} vendor(s).` +
+          (data.skipped ? ` ${data.skipped} item(s) skipped (no vendor).` : "")
+        );
+      }
+    },
+    onError: (e) => toast.error("Bulk reorder failed: " + (e?.message || "unknown error"))
+  });
+
   // Total valuation of ALL current stock at cost price (independent of the search filter)
   const totalStockValue = enrichedInventory.reduce((sum, inv) => {
     return sum + (inv.quantity * (inv.product?.cost_price || 0));
@@ -133,7 +246,16 @@ export default function Inventory() {
           <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
           <p className="text-slate-500 mt-1">Track and manage stock levels</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            onClick={() => bulkReorderMutation.mutate()}
+            disabled={selectedIds.size === 0 || bulkReorderMutation.isPending}
+            className="gap-2 bg-blue-600 hover:bg-blue-700"
+          >
+            <Truck className="w-4 h-4" />
+            {bulkReorderMutation.isPending ? "Creating..." : "Bulk Reorder"}
+            {selectedIds.size > 0 && ` (${selectedIds.size})`}
+          </Button>
           <Button variant="outline" className="gap-2" onClick={() => setShowLog(true)}>
             <History className="w-4 h-4" />
             Adjustment Log
@@ -231,8 +353,15 @@ export default function Inventory() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b">
-                <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-700">Product</th>
+              <tr>
+                <th className="w-10 p-4">
+                  <Checkbox
+                    checked={allLowSelected}
+                    onCheckedChange={toggleAllLow}
+                    aria-label="Select all low-stock items"
+                  />
+                </th>
+                <th className="text-left p-4 text-sm font-semibold text-slate-700">Product</th>
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">SKU</th>
                   <th className="text-right p-4 text-sm font-semibold text-slate-700">Quantity</th>
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">Location</th>
@@ -251,7 +380,14 @@ export default function Inventory() {
                   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
                   
                   return (
-                    <tr key={inv.id} className="hover:bg-slate-50">
+                    <tr key={inv.id} className={`hover:bg-slate-50 ${selectedIds.has(inv.id) ? "bg-blue-50/60" : ""}`}>
+                      <td className="p-4">
+                        <Checkbox
+                          checked={selectedIds.has(inv.id)}
+                          onCheckedChange={() => toggleRow(inv.id)}
+                          aria-label={`Select ${inv.product?.name || "item"}`}
+                        />
+                      </td>
                       <td className="p-4">
                         <div className="font-medium text-slate-900">{inv.product?.name || "Unknown"}</div>
                         {inv.batch_number && (

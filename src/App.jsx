@@ -16,6 +16,7 @@ import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
 import Landing from '@/pages/Landing';
 import Storefront from '@/pages/Storefront';
+import VendorDashboard from '@/pages/VendorDashboard';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -109,7 +110,11 @@ const AuthenticatedApp = () => {
     const isTrial = company.status === 'trial' || !company.status;
     if (isTrial) {
       const createdDate = new Date(company.created_date);
-      const trialEnd = new Date(createdDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const fortyFiveDays = 45 * 24 * 60 * 60 * 1000;
+      const fallbackEnd = new Date(createdDate.getTime() + fortyFiveDays);
+      const trialEnd = company.trial_ends_at
+        ? new Date(Math.max(new Date(company.trial_ends_at).getTime(), fallbackEnd.getTime()))
+        : fallbackEnd;
       if (new Date() > trialEnd) {
         return <TrialExpired company={company} />;
       }
@@ -131,6 +136,7 @@ const AuthenticatedApp = () => {
         <Route path="/store/:slug" element={<Storefront />} />
         {/* Landing page — unauthenticated entry point, no layout */}
         <Route path="/" element={<Landing />} />
+        <Route path="/VendorDashboard" element={<LayoutWrapper currentPageName="VendorDashboard"><VendorDashboard /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route

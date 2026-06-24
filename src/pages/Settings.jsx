@@ -367,7 +367,7 @@ export default function Settings() {
                         {isTrialExpired ? (
                           <span><strong>Trial Expired!</strong> Please subscribe to continue using RetailPro.</span>
                         ) : (
-                          <span><strong>{daysLeftInTrial} days</strong> left in your 14-day free trial.</span>
+                          <span><strong>{daysLeftInTrial} days</strong> left in your 45-day free trial.</span>
                         )}
                       </AlertDescription>
                     </Alert>
