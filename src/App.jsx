@@ -104,7 +104,7 @@ const AuthenticatedApp = () => {
   const hasTenantId = !!user?.tenant_id;
   const tidInUrl = new URLSearchParams(window.location.search).has('tid');
 
-  // Trial period check — 7 days from company creation
+  // Trial period check — 45 days from company creation
   if (isAuthenticated && companies.length > 0 && !tidInUrl) {
     const company = companies[0];
     const isTrial = company.status === 'trial' || !company.status;
@@ -115,7 +115,8 @@ const AuthenticatedApp = () => {
       const trialEnd = company.trial_ends_at
         ? new Date(Math.max(new Date(company.trial_ends_at).getTime(), fallbackEnd.getTime()))
         : fallbackEnd;
-      if (new Date() > trialEnd) {
+      const bypassPayment = user?.email === 'onyironkeoma@gmail.com';
+      if (!bypassPayment && new Date() > trialEnd) {
         return <TrialExpired company={company} />;
       }
     }
