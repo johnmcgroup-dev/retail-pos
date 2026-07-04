@@ -112,7 +112,8 @@ export default function ProductDialog({ open, onClose, product, companies, inven
   };
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+    // Accept either a change event (from <input type="file">) or a raw File (from CameraCapture)
+    const file = e?.target?.files ? e.target.files[0] : e;
     if (!file) return;
 
     // Check file size (max 5MB)
