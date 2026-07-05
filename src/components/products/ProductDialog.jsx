@@ -19,11 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, X, Image as ImageIcon, Camera, Package } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Camera, Package, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CameraCapture from "./CameraCapture";
 
-export default function ProductDialog({ open, onClose, product, companies, inventoryItem }) {
+export default function ProductDialog({ open, onClose, product, companies, inventoryItem, products = [], onSwitchToExisting }) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     company_id: "",
@@ -49,8 +49,10 @@ export default function ProductDialog({ open, onClose, product, companies, inven
   const [barcodeInput, setBarcodeInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [duplicateError, setDuplicateError] = useState(null);
 
   useEffect(() => {
+    setDuplicateError(null);
     if (product) {
       setFormData({
         ...product,
@@ -106,8 +108,35 @@ export default function ProductDialog({ open, onClose, product, companies, inven
     },
   });
 
+  const checkDuplicate = () => {
+    const nameLower = formData.name?.trim().toLowerCase();
+    const skuLower = formData.sku?.trim().toLowerCase();
+    const barcodes = (formData.barcodes || []).map(b => b.trim()).filter(Boolean);
+
+    return products.find(p => {
+      if (nameLower && p.name?.trim().toLowerCase() === nameLower) return true;
+      if (skuLower && p.sku?.trim().toLowerCase() === skuLower) return true;
+      if (barcodes.length > 0) {
+        const pBarcodes = (p.barcodes || []).map(b => b.trim());
+        return barcodes.some(b => pBarcodes.includes(b));
+      }
+      return false;
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Only check for duplicates when creating a new product
+    if (!product) {
+      const existing = checkDuplicate();
+      if (existing) {
+        setDuplicateError(existing);
+        return;
+      }
+    }
+
+    setDuplicateError(null);
     saveMutation.mutate(formData);
   };
 
@@ -180,6 +209,27 @@ export default function ProductDialog({ open, onClose, product, companies, inven
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {duplicateError && (
+            <Alert className="bg-amber-50 border-amber-300">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                <p className="font-semibold mb-2">Product couldn't be registered because it already exists in the system.</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (onSwitchToExisting) onSwitchToExisting(duplicateError);
+                    setDuplicateError(null);
+                  }}
+                  className="h-7"
+                >
+                  Go to existing product
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Image Upload Section */}
           <div className="border-2 border-dashed border-slate-300 rounded-lg p-4">
             <Label className="mb-2 block">Product Images</Label>

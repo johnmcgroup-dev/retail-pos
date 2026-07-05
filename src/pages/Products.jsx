@@ -74,6 +74,10 @@ export default function Products() {
     setEditingProduct(null);
   };
 
+  const handleSwitchToExisting = (existingProduct) => {
+    setEditingProduct(existingProduct);
+  };
+
   const getInventoryForProduct = (productId) => inventory.find(inv => inv.product_id === productId);
   const getStockLevel = (productId) => getInventoryForProduct(productId)?.quantity ?? 0;
 
@@ -215,6 +219,8 @@ export default function Products() {
         onClose={handleCloseDialog}
         product={editingProduct}
         companies={companies}
+        products={products}
+        onSwitchToExisting={handleSwitchToExisting}
         inventoryItem={editingProduct ? getInventoryForProduct(editingProduct.id) : null}
       />
     </div>
