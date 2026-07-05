@@ -10,11 +10,13 @@ import {
   Plus,
   DollarSign,
   AlertCircle,
-  Package
+  Package,
+  Award
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
 import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
+import DiscountPanel from "../components/pos/DiscountPanel";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
 import { formatCurrency, getCurrencySymbol, offlineCache, CACHE_KEYS } from "../components/utils";
@@ -38,6 +40,9 @@ export default function POS() {
   const [usingCachedData, setUsingCachedData] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [mobileTab, setMobileTab] = useState("products");
+  const [orderDiscount, setOrderDiscount] = useState({ type: "percentage", value: 0 });
+  const [loyaltyRedeem, setLoyaltyRedeem] = useState({ enabled: false, points: 0 });
+  const loyaltyRedeemRef = useRef(loyaltyRedeem);
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -110,6 +115,24 @@ export default function POS() {
     queryKey: ["alerts"],
     queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
   });
+
+  const { data: loyaltyPrograms = [] } = useQuery({
+    queryKey: ["loyaltyPrograms", selectedCompany?.id],
+    queryFn: () =>
+      selectedCompany
+        ? base44.entities.LoyaltyProgram.filter({ company_id: selectedCompany.id, active: true })
+        : [],
+    enabled: !!selectedCompany && isOnline,
+  });
+  const loyaltyProgram = loyaltyPrograms[0];
+
+  useEffect(() => {
+    setLoyaltyRedeem({ enabled: false, points: 0 });
+  }, [selectedCustomer?.id]);
+
+  useEffect(() => {
+    loyaltyRedeemRef.current = loyaltyRedeem;
+  }, [loyaltyRedeem]);
 
   const dismissAlertMutation = useMutation({
     mutationFn: (alertId) => base44.entities.Alert.update(alertId, { is_dismissed: true }),
@@ -365,14 +388,25 @@ export default function POS() {
   const clearCart = () => {
     setCart([]);
     setSelectedCustomer(null);
+    setOrderDiscount({ type: "percentage", value: 0 });
+    setLoyaltyRedeem({ enabled: false, points: 0 });
   };
 
   const calculateTotals = () => {
     const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
     const taxAmount = cart.reduce((sum, item) => sum + (item.tax * item.quantity), 0);
-    const discountAmount = cart.reduce((sum, item) => sum + item.discount, 0);
-    const total = subtotal + taxAmount - discountAmount;
-    return { subtotal, taxAmount, discountAmount, total };
+    const itemDiscount = cart.reduce((sum, item) => sum + item.discount, 0);
+    const orderDiscountAmount =
+      orderDiscount.type === "percentage"
+        ? subtotal * ((orderDiscount.value || 0) / 100)
+        : orderDiscount.value || 0;
+    const loyaltyDiscountAmount = loyaltyRedeem.enabled
+      ? Math.min(loyaltyRedeem.points, selectedCustomer?.loyalty_points || 0) *
+        (loyaltyProgram?.redemption_value || 0)
+      : 0;
+    const discountAmount = itemDiscount + orderDiscountAmount + loyaltyDiscountAmount;
+    const total = Math.max(0, subtotal + taxAmount - discountAmount);
+    return { subtotal, taxAmount, discountAmount, orderDiscountAmount, loyaltyDiscountAmount, total };
   };
 
   const createSaleMutation = useMutation({
@@ -418,12 +452,17 @@ export default function POS() {
         if (loyaltyPrograms.length > 0) {
           const program = loyaltyPrograms[0];
           const pointsEarned = Math.floor(saleData.total_amount * program.points_per_dollar);
-          
-          if (pointsEarned > 0) {
-            const customer = customers.find(c => c.id === saleData.customer_id);
-            if (customer) {
-              const newBalance = (customer.loyalty_points || 0) + pointsEarned;
-              
+          const redeem = loyaltyRedeemRef.current;
+          const customer = customers.find(c => c.id === saleData.customer_id);
+          const pointsRedeemed = (redeem?.enabled && redeem.points > 0 && customer)
+            ? Math.min(redeem.points, customer.loyalty_points || 0)
+            : 0;
+
+          if (customer && (pointsEarned > 0 || pointsRedeemed > 0)) {
+            let newBalance = customer.loyalty_points || 0;
+
+            if (pointsEarned > 0) {
+              newBalance += pointsEarned;
               await base44.entities.LoyaltyTransaction.create({
                 company_id: selectedCompany.id,
                 customer_id: customer.id,
@@ -435,15 +474,30 @@ export default function POS() {
                 balance_after: newBalance,
                 transaction_date: new Date().toISOString()
               });
+            }
 
-              await base44.entities.Customer.update(customer.id, {
-                loyalty_points: newBalance
-              });
-
-              await base44.entities.Sale.update(sale.id, {
-                loyalty_points_earned: pointsEarned
+            if (pointsRedeemed > 0) {
+              newBalance -= pointsRedeemed;
+              await base44.entities.LoyaltyTransaction.create({
+                company_id: selectedCompany.id,
+                customer_id: customer.id,
+                transaction_type: "redeemed",
+                points: -pointsRedeemed,
+                reference_type: "sale",
+                reference_id: sale.id,
+                description: `Redeemed for discount on ${sale.invoice_number}`,
+                balance_after: newBalance,
+                transaction_date: new Date().toISOString()
               });
             }
+
+            await base44.entities.Customer.update(customer.id, {
+              loyalty_points: newBalance
+            });
+
+            await base44.entities.Sale.update(sale.id, {
+              loyalty_points_earned: pointsEarned
+            });
           }
         }
       }
@@ -715,8 +769,18 @@ export default function POS() {
             />
           </div>
 
-          <div className="border-t border-slate-200 p-4 bg-slate-50 shrink-0">
-            <div className="space-y-2 mb-3 text-sm">
+          <div className="border-t border-slate-200 p-4 bg-slate-50 shrink-0 space-y-3">
+            <DiscountPanel
+              subtotal={totals.subtotal}
+              customer={selectedCustomer}
+              loyaltyProgram={loyaltyProgram}
+              orderDiscount={orderDiscount}
+              setOrderDiscount={setOrderDiscount}
+              loyaltyRedeem={loyaltyRedeem}
+              setLoyaltyRedeem={setLoyaltyRedeem}
+              currency={currency}
+            />
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal:</span>
                 <span className="font-semibold">{formatCurrency(totals.subtotal, currency)}</span>
@@ -725,10 +789,16 @@ export default function POS() {
                 <span className="text-slate-600">Tax:</span>
                 <span className="font-semibold">{formatCurrency(totals.taxAmount, currency)}</span>
               </div>
-              {totals.discountAmount > 0 && (
+              {totals.orderDiscountAmount > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Discount:</span>
-                  <span className="font-semibold text-green-600">-{formatCurrency(totals.discountAmount, currency)}</span>
+                  <span className="text-slate-600">Order Discount:</span>
+                  <span className="font-semibold text-green-600">-{formatCurrency(totals.orderDiscountAmount, currency)}</span>
+                </div>
+              )}
+              {totals.loyaltyDiscountAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-600 flex items-center gap-1"><Award className="w-3 h-3 text-purple-600" /> Reward:</span>
+                  <span className="font-semibold text-purple-600">-{formatCurrency(totals.loyaltyDiscountAmount, currency)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-300">

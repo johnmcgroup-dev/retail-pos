@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Users, Award, Edit, Mail, Phone } from "lucide-react";
+import { Plus, Search, Users, Award, Edit, Mail, Phone, Contact } from "lucide-react";
 import CustomerDialog from "../components/customers/CustomerDialog";
+import GoogleContactsImport from "../components/customers/GoogleContactsImport";
 
 export default function Customers() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [showImport, setShowImport] = useState(false);
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
@@ -52,13 +54,23 @@ export default function Customers() {
           <h1 className="text-3xl font-bold text-slate-900">Customers</h1>
           <p className="text-slate-500 mt-1">Manage customer accounts and loyalty</p>
         </div>
-        <Button
-          onClick={() => setShowDialog(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Customer
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowImport(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Contact className="w-4 h-4" />
+            Import Google Contacts
+          </Button>
+          <Button
+            onClick={() => setShowDialog(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Customer
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -207,6 +219,12 @@ export default function Customers() {
         onClose={handleCloseDialog}
         customer={editingCustomer}
         companies={companies}
+      />
+
+      <GoogleContactsImport
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        company={companies[0]}
       />
     </div>
   );

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
@@ -36,6 +36,15 @@ export default function Products() {
     onSuccess: () => {
       queryClient.invalidateQueries(["products"]);
     },
+  });
+
+  const generateImageMutation = useMutation({
+    mutationFn: async (product) => {
+      const prompt = `Professional e-commerce product photograph of ${product.name}${product.description ? `, ${product.description.slice(0, 80)}` : ""}${product.category ? `, ${product.category} category` : ""}, clean white background, studio lighting, high resolution, centered, no text`;
+      const { url } = await base44.integrations.Core.GenerateImage({ prompt });
+      return base44.entities.Product.update(product.id, { image_url: url });
+    },
+    onSuccess: () => queryClient.invalidateQueries(["products"]),
   });
 
   const filteredProducts = products.filter(p => {
@@ -116,7 +125,20 @@ export default function Products() {
                 {product.image_url ? (
                   <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                 ) : (
-                  <Package className="w-16 h-16 text-slate-400" />
+                  <button
+                    onClick={() => generateImageMutation.mutate(product)}
+                    disabled={generateImageMutation.isPending}
+                    className="flex flex-col items-center justify-center w-full h-full gap-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    {generateImageMutation.isPending && generateImageMutation.variables?.id === product.id ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        <span className="text-xs font-medium">Generate</span>
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
               
