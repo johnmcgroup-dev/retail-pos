@@ -1,0 +1,94 @@
+{
+  "name": "Return",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "return_number": {
+      "type": "string",
+      "description": "Unique return reference number"
+    },
+    "original_sale_id": {
+      "type": "string",
+      "description": "Reference to the original Sale"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "refund_amount": {
+      "type": "number"
+    },
+    "refund_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "card",
+        "bank_transfer",
+        "mobile_money",
+        "store_credit"
+      ],
+      "default": "cash"
+    },
+    "return_reason": {
+      "type": "string"
+    },
+    "loyalty_points_reversed": {
+      "type": "number",
+      "default": 0,
+      "description": "Loyalty points reversed due to this return"
+    },
+    "processed_by": {
+      "type": "string",
+      "description": "Email of staff who processed the return"
+    },
+    "return_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "partial"
+      ],
+      "default": "completed"
+    }
+  },
+  "required": [
+    "company_id",
+    "return_number",
+    "original_sale_id",
+    "refund_amount",
+    "return_date"
+  ]
+}

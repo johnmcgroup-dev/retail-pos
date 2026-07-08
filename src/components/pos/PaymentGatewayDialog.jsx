@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Smartphone, DollarSign, AlertCircle, Printer } from "lucide-react";
-import InvoiceReceipt from "./InvoiceReceipt";
+import PrintableReceipt from "./PrintableReceipt";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
 
 export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline, currency = 'USD' }) {
@@ -54,9 +54,17 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   }, [total]);
 
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'height=800,width=800');
-    printWindow.document.write('<html><head><title>Invoice</title>');
-    printWindow.document.write('<style>body{font-family:Arial,sans-serif;padding:20px;}</style>');
+    const printWindow = window.open('', '', 'width=380,height=600');
+    printWindow.document.write('<html><head><title>Receipt</title>');
+    printWindow.document.write('<style>');
+    printWindow.document.write('@page { margin: 6mm; }');
+    printWindow.document.write('body { font-family: "Courier New", monospace; margin: 0; padding: 8px; color: #1e293b; }');
+    printWindow.document.write('.dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }');
+    printWindow.document.write('.row { display: flex; justify-content: space-between; }');
+    printWindow.document.write('.center { text-align: center; }');
+    printWindow.document.write('.bold { font-weight: 700; }');
+    printWindow.document.write('.item-line { margin: 3px 0; }');
+    printWindow.document.write('</style>');
     printWindow.document.write('</head><body>');
     printWindow.document.write(invoiceRef.current.innerHTML);
     printWindow.document.write('</body></html>');
@@ -233,7 +241,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
             <DialogTitle>Invoice Generated</DialogTitle>
           </DialogHeader>
           <div ref={invoiceRef} className="overflow-y-auto max-h-[70vh]">
-            <InvoiceReceipt 
+            <PrintableReceipt
               sale={completedSale}
               company={companies[0]}
               customer={customers.find(c => c.id === completedSale?.customer_id)}

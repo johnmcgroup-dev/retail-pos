@@ -15,6 +15,7 @@ import {
   Store,
   Truck,
   Receipt,
+  RotateCcw,
   BarChart3,
   LogOut,
   Menu,
@@ -99,6 +100,12 @@ const navigationItems = [
     title: "Sales",
     url: createPageUrl("Sales"),
     icon: TrendingUp,
+  },
+  {
+    title: "Returns",
+    url: createPageUrl("Returns"),
+    icon: RotateCcw,
+    highlight: true
   },
   {
     title: "Online Store",

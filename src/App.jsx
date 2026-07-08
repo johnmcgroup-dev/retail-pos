@@ -17,6 +17,7 @@ import RoleGuard from '@/components/shared/RoleGuard';
 import Landing from '@/pages/Landing';
 import Storefront from '@/pages/Storefront';
 import VendorDashboard from '@/pages/VendorDashboard';
+import Returns from '@/pages/Returns';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
         {/* Landing page — unauthenticated entry point, no layout */}
         <Route path="/" element={<Landing />} />
         <Route path="/VendorDashboard" element={<LayoutWrapper currentPageName="VendorDashboard"><VendorDashboard /></LayoutWrapper>} />
+        <Route path="/Returns" element={<LayoutWrapper currentPageName="Returns"><Returns /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route
