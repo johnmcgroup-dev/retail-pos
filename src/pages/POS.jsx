@@ -257,15 +257,17 @@ export default function POS() {
     setPendingSyncCount(0);
   };
 
-  // Build a map of total available stock per product from inventory
+  // Build a map of net available stock per product from inventory (includes negative adjustments)
   const stockByProduct = inventory.reduce((acc, inv) => {
-    if (inv.quantity > 0) {
-      acc[inv.product_id] = (acc[inv.product_id] || 0) + inv.quantity;
-    }
+    acc[inv.product_id] = (acc[inv.product_id] || 0) + (inv.quantity || 0);
     return acc;
   }, {});
 
+  const getAvailableStock = (productId) => stockByProduct[productId] || 0;
+
   const filteredProducts = products.filter(p => {
+    // Hide products with zero or negative stock
+    if (getAvailableStock(p.id) <= 0) return false;
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return (
@@ -347,8 +349,17 @@ export default function POS() {
   };
 
   const addToCart = (product) => {
-    playScanBeep();
+    const availableStock = getAvailableStock(product.id);
     const existingItem = cart.find(item => item.product_id === product.id);
+    const currentQtyInCart = existingItem?.quantity || 0;
+
+    // Disallow adding more than available stock
+    if (currentQtyInCart + 1 > availableStock) {
+      playErrorBuzz();
+      return;
+    }
+
+    playScanBeep();
     if (existingItem) {
       const newQty = existingItem.quantity + 1;
       setCart(cart.map(item =>
@@ -370,6 +381,12 @@ export default function POS() {
   };
 
   const updateQuantity = (productId, newQuantity) => {
+    const availableStock = getAvailableStock(productId);
+    // Disallow setting quantity above available stock
+    if (newQuantity > availableStock) {
+      playErrorBuzz();
+      return;
+    }
     if (newQuantity <= 0) {
       removeFromCart(productId);
     } else {
