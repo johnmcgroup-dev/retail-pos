@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 const REASONS = [
   { value: "stock_count", label: "Stock Count / Audit" },
   { value: "damage", label: "Damage" },
+  { value: "expired", label: "Expired / Spoiled" },
   { value: "theft", label: "Theft / Loss" },
   { value: "return", label: "Customer Return" },
   { value: "supplier_delivery", label: "Supplier Delivery" },

@@ -37,6 +37,7 @@
       "enum": [
         "stock_count",
         "damage",
+        "expired",
         "theft",
         "return",
         "supplier_delivery",
