@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { Building2, Wallet, CreditCard, Landmark, ArrowLeft, Phone, Mail } from "lucide-react";
+import { Building2, Wallet, CreditCard, Landmark, ArrowLeft, Phone, Mail, Plus } from "lucide-react";
+import RecordVendorPaymentDialog from "@/components/vendors/RecordVendorPaymentDialog";
 
 const naira = (n) => "₦" + (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function VendorDashboard() {
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [preselectedVendorId, setPreselectedVendorId] = useState(null);
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => base44.entities.Company.list(),
+  });
   const { data: vendors = [], isLoading: loadingVendors } = useQuery({
     queryKey: ["vendors"],
     queryFn: () => base44.entities.Vendor.list("-created_date"),
@@ -64,9 +71,14 @@ export default function VendorDashboard() {
           </div>
           <p className="text-slate-500 mt-1 ml-10 md:ml-12">Outstanding balances and payment history per vendor</p>
         </div>
-        <Link to="/Stocking">
-          <Button variant="outline" className="gap-2"><Building2 className="w-4 h-4" /> New Supply Order</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowPaymentDialog(true)} className="gap-2 bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4" /> Record Payment
+          </Button>
+          <Link to="/Stocking">
+            <Button variant="outline" className="gap-2"><Building2 className="w-4 h-4" /> New Supply Order</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -126,7 +138,14 @@ export default function VendorDashboard() {
                       </td>
                       <td className="p-3 text-right font-medium text-slate-900">{naira(v.total_purchases || 0)}</td>
                       <td className="p-3 text-right">
-                        <span className={`font-bold ${(v.outstanding_balance || 0) > 0 ? "text-red-600" : "text-green-600"}`}>{naira(v.outstanding_balance || 0)}</span>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className={`font-bold ${(v.outstanding_balance || 0) > 0 ? "text-red-600" : "text-green-600"}`}>{naira(v.outstanding_balance || 0)}</span>
+                          {(v.outstanding_balance || 0) > 0 && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPreselectedVendorId(v.id); setShowPaymentDialog(true); }}>
+                              Pay
+                            </Button>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
                         <Badge className={v.status === "active" || !v.status ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"}>
@@ -187,6 +206,14 @@ export default function VendorDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <RecordVendorPaymentDialog
+        open={showPaymentDialog}
+        onClose={() => { setShowPaymentDialog(false); setPreselectedVendorId(null); }}
+        vendors={vendors}
+        company={companies[0]}
+        preselectedVendorId={preselectedVendorId}
+      />
     </div>
   );
 }

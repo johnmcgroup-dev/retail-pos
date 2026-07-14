@@ -58,8 +58,8 @@ export default function TrialExpired({ company }) {
               className="border-2 border-slate-200 rounded-xl p-4 text-center hover:border-slate-400 transition-colors disabled:opacity-50"
             >
               <p className="text-sm font-semibold text-slate-700">Monthly</p>
-              <p className="text-3xl font-bold text-slate-900">${company?.monthly_price || 9.99}</p>
-              <p className="text-xs text-slate-500">per month</p>
+              <p className="text-3xl font-bold text-slate-900">${company?.first_month_price ?? 1}</p>
+              <p className="text-xs text-slate-500">first month, then ${company?.monthly_price || 9.9}/mo</p>
               {loading === 'monthly' && <Loader2 className="w-4 h-4 animate-spin mx-auto mt-2" />}
             </button>
             <button
@@ -68,9 +68,9 @@ export default function TrialExpired({ company }) {
               className="border-2 border-blue-500 bg-blue-50 rounded-xl p-4 text-center hover:bg-blue-100 transition-colors disabled:opacity-50"
             >
               <p className="text-sm font-semibold text-blue-700">Yearly</p>
-              <p className="text-3xl font-bold text-slate-900">${company?.yearly_price || 99.9}</p>
+              <p className="text-3xl font-bold text-slate-900">${company?.yearly_price || 127}</p>
               <p className="text-xs text-slate-500">per year</p>
-              <p className="text-xs text-green-600 font-semibold mt-1">Save 2 months!</p>
+              <p className="text-xs text-green-600 font-semibold mt-1">Best value!</p>
               {loading === 'yearly' && <Loader2 className="w-4 h-4 animate-spin mx-auto mt-2" />}
             </button>
           </div>

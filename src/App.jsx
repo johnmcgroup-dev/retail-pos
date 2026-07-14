@@ -123,8 +123,9 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // New tenant: authenticated user with no company, no tenant_id, and no ?tid= → show onboarding
-  if (isAuthenticated && companies.length === 0 && !hasTenantId && !tidInUrl && user?.role !== 'user') {
+  // New tenant: authenticated user with no company and no tenant_id → show onboarding.
+  // Only users who carry a tenant_id (invited staff) are added to existing tenants.
+  if (isAuthenticated && companies.length === 0 && !hasTenantId && !tidInUrl) {
     return (
       <TenantSetup onComplete={() => queryClient.invalidateQueries({ queryKey: ["companies_check"] })} />
     );

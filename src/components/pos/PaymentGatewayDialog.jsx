@@ -23,6 +23,9 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   const [amountReceived, setAmountReceived] = useState(total);
   const [completedSale, setCompletedSale] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [paystackReference, setPaystackReference] = useState(null);
+  const [paystackStep, setPaystackStep] = useState(null);
+  const [customerEmail, setCustomerEmail] = useState("");
   const invoiceRef = useRef();
 
   const { data: companies = [] } = useQuery({
@@ -74,7 +77,76 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
     printWindow.close();
   };
 
+  const handlePaystackPayment = async () => {
+    setError("");
+
+    // Step 2: Verify payment after customer has paid
+    if (paystackStep === "link_ready") {
+      setIsProcessing(true);
+      try {
+        const response = await base44.functions.invoke("verifyPaystackTransaction", {
+          reference: paystackReference,
+        });
+        const result = response.data;
+        if (result.status === "success") {
+          const paymentData = {
+            payment_method: "paystack",
+            amount_paid: total,
+            amount_due: 0,
+            payment_data: {
+              method: "paystack",
+              gateway: "paystack",
+              transaction_id: String(result.transaction_id || paystackReference),
+              transaction_reference: paystackReference,
+              payment_status: "completed",
+            },
+          };
+          await onComplete(paymentData);
+          setCompletedSale(paymentData);
+          setShowInvoice(true);
+        } else {
+          setError("Payment not yet confirmed. Please complete payment on the Paystack page, then click Verify again.");
+          setIsProcessing(false);
+        }
+      } catch (err) {
+        setError(err.message || "Verification failed. Please try again.");
+        setIsProcessing(false);
+      }
+      return;
+    }
+
+    // Step 1: Initialize payment and open Paystack checkout
+    if (!customerEmail) {
+      setError("Customer email is required for Paystack payment");
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const response = await base44.functions.invoke("initializePosPayment", {
+        amount: total,
+        email: customerEmail,
+        currency: currency,
+      });
+      if (response.data?.authorization_url) {
+        window.open(response.data.authorization_url, "_blank");
+        setPaystackReference(response.data.reference);
+        setPaystackStep("link_ready");
+        setIsProcessing(false);
+      } else {
+        setError("Failed to generate Paystack payment link");
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to initialize Paystack payment");
+      setIsProcessing(false);
+    }
+  };
+
   const handlePayment = async () => {
+    if (paymentMethod === "paystack") {
+      return handlePaystackPayment();
+    }
+
     setError("");
     setIsProcessing(true);
 
@@ -201,6 +273,20 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
                   <CreditCard className="w-8 h-8 mx-auto mb-2 text-indigo-600" />
                   <p className="font-semibold text-slate-900">Bank Transfer</p>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setPaymentMethod("paystack"); setPaystackStep(null); setPaystackReference(null); setError(""); }}
+                  disabled={isOffline}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    paymentMethod === "paystack"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-slate-200 hover:border-slate-300"
+                  } ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <CreditCard className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                  <p className="font-semibold text-slate-900">Paystack</p>
+                </button>
               </div>
             </div>
 
@@ -221,6 +307,37 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
                 )}
               </div>
             )}
+
+            {paymentMethod === "paystack" && (
+              <div className="space-y-3">
+                {paystackStep !== "link_ready" ? (
+                  <div>
+                    <Label>Customer Email (for Paystack receipt)</Label>
+                    <Input
+                      type="email"
+                      placeholder="customer@example.com"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      A Paystack payment link will be generated for ₦{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}.
+                      The customer pays on the Paystack page, then you verify the payment here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                    <p className="text-sm font-semibold text-blue-900">Payment link opened!</p>
+                    <p className="text-xs text-blue-700">
+                      Reference: <span className="font-mono">{paystackReference}</span>
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Ask the customer to complete payment on the Paystack page, then click "Verify Payment" below.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -228,7 +345,10 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
               Cancel
             </Button>
             <Button onClick={handlePayment} disabled={isProcessingPayment}>
-              {isProcessingPayment ? "Processing..." : "Complete Payment"}
+              {isProcessingPayment ? "Processing..." :
+                paymentMethod === "paystack" && paystackStep === "link_ready" ? "Verify Payment" :
+                paymentMethod === "paystack" ? "Generate Payment Link" :
+                "Complete Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>

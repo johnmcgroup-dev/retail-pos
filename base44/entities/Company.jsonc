@@ -83,11 +83,16 @@
     },
     "monthly_price": {
       "type": "number",
-      "default": 9.99
+      "default": 9.9
     },
     "yearly_price": {
       "type": "number",
-      "default": 99.9
+      "default": 127
+    },
+    "first_month_price": {
+      "type": "number",
+      "default": 1,
+      "description": "Introductory price for the first month of a monthly subscription"
     },
     "status": {
       "type": "string",

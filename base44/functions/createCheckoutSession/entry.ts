@@ -23,9 +23,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No company found for this user.' }, { status: 404 });
     }
 
-    const amount = plan === 'monthly'
-      ? (company.monthly_price || 9.90)
-      : (company.yearly_price || 99.90);
+    // Determine if this is the first payment (no prior subscription)
+    const hasPriorSubscription = !!company.subscription_start_date && company.status !== 'trial';
+
+    let amount;
+    if (plan === 'monthly' && !hasPriorSubscription) {
+      // First month introductory price
+      amount = company.first_month_price ?? 1;
+    } else if (plan === 'monthly') {
+      amount = company.monthly_price || 9.9;
+    } else {
+      amount = company.yearly_price || 127;
+    }
 
     // Paystack expects amounts in the smallest currency unit (kobo for NGN, cents for USD)
     const amountInSmallestUnit = Math.round(amount * 100);
@@ -55,6 +64,7 @@ Deno.serve(async (req) => {
           company_id: company.id,
           user_id: user.id,
           plan,
+          is_first_payment: !hasPriorSubscription,
           base44_app_id: Deno.env.get('BASE44_APP_ID')
         }
       })
@@ -67,7 +77,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: data.message || 'Failed to initialize payment' }, { status: 500 });
     }
 
-    console.log(`Paystack transaction initialized for user ${user.email}, plan: ${plan}, reference: ${reference}`);
+    console.log(`Paystack transaction initialized for user ${user.email}, plan: ${plan}, amount: ${amount}, first payment: ${!hasPriorSubscription}, reference: ${reference}`);
 
     return Response.json({ url: data.data.authorization_url });
   } catch (error) {
