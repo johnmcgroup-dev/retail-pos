@@ -1,8 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import Stripe from 'npm:stripe@16.2.0';
-
-const MONTHLY_PRICE_ID = 'price_1Ts3UQIveb6OSAWQHvW21hqc';
-const YEARLY_PRICE_ID = 'price_1Ts3UQIveb6OSAWQiU2RJrzE';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 Deno.serve(async (req) => {
   try {
@@ -27,39 +23,53 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No company found for this user.' }, { status: 404 });
     }
 
-    const priceId = plan === 'monthly' ? MONTHLY_PRICE_ID : YEARLY_PRICE_ID;
+    const amount = plan === 'monthly'
+      ? (company.monthly_price || 9.90)
+      : (company.yearly_price || 99.90);
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+    // Paystack expects amounts in the smallest currency unit (kobo for NGN, cents for USD)
+    const amountInSmallestUnit = Math.round(amount * 100);
+    const currency = company.currency || 'NGN';
 
-    // Build success/cancel URLs based on origin
+    // Generate a unique reference for this transaction
+    const reference = `mrp_${company.id}_${plan}_${Date.now()}`;
+
+    // Build callback URL based on origin
     const origin = req.headers.get('origin') || 'https://app.base44.com';
-    const successUrl = `${origin}/Dashboard?payment=success`;
-    const cancelUrl = `${origin}/?payment=cancelled`;
+    const callbackUrl = `${origin}/Dashboard?payment=success`;
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: user.email,
-      metadata: {
-        base44_app_id: Deno.env.get('BASE44_APP_ID'),
-        company_id: company.id,
-        user_id: user.id,
-        plan
+    // Initialize transaction via Paystack API
+    const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('PAYSTACK_SECRET_KEY')}`,
+        'Content-Type': 'application/json'
       },
-      subscription_data: {
+      body: JSON.stringify({
+        email: user.email,
+        amount: amountInSmallestUnit,
+        currency,
+        reference,
+        callback_url: callbackUrl,
         metadata: {
-          base44_app_id: Deno.env.get('BASE44_APP_ID'),
           company_id: company.id,
-          plan
+          user_id: user.id,
+          plan,
+          base44_app_id: Deno.env.get('BASE44_APP_ID')
         }
-      }
+      })
     });
 
-    console.log(`Checkout session created for user ${user.email}, plan: ${plan}, session: ${session.id}`);
+    const data = await paystackResponse.json();
 
-    return Response.json({ url: session.url });
+    if (!data.status || !data.data?.authorization_url) {
+      console.error('Paystack initialization failed:', data);
+      return Response.json({ error: data.message || 'Failed to initialize payment' }, { status: 500 });
+    }
+
+    console.log(`Paystack transaction initialized for user ${user.email}, plan: ${plan}, reference: ${reference}`);
+
+    return Response.json({ url: data.data.authorization_url });
   } catch (error) {
     console.error('Error creating checkout session:', error);
     return Response.json({ error: error.message || 'Failed to create checkout session' }, { status: 500 });

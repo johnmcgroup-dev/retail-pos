@@ -12,7 +12,7 @@ export default function TrialExpired({ company }) {
   };
 
   const handlePayment = async (plan) => {
-    // Check if running in an iframe — Stripe checkout doesn't work inside iframes
+    // Check if running in an iframe — Paystack checkout doesn't work inside iframes
     if (window.self !== window.top) {
       toast.error("Checkout works only from the published app. Please open the app in a new tab.");
       return;
