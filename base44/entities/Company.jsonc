@@ -115,7 +115,7 @@
     "read": {
       "$or": [
         {
-          "id": "{{user.company_id}}"
+          "id": "{{user.data.company_id}}"
         },
         {
           "created_by_id": "{{user.id}}"
@@ -128,35 +128,47 @@
       ]
     },
     "update": {
-      "id": "{{user.company_id}}",
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "id": "{{user.data.company_id}}"
         },
         {
-          "user_condition": {
-            "role": "owner"
-          }
-        },
-        {
-          "created_by_id": "{{user.id}}"
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "created_by_id": "{{user.id}}"
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "id": "{{user.company_id}}",
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "id": "{{user.data.company_id}}"
         },
         {
-          "user_condition": {
-            "role": "owner"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
         }
       ]
     }

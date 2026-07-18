@@ -93,50 +93,68 @@
   ],
   "rls": {
     "create": {
-      "data.company_id": "{{user.company_id}}",
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "user_condition": {
-            "role": "owner"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
         }
       ]
     },
     "read": {
-      "data.company_id": "{{user.company_id}}"
+      "data.company_id": "{{user.data.company_id}}"
     },
     "update": {
-      "data.company_id": "{{user.company_id}}",
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "user_condition": {
-            "role": "owner"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "data.company_id": "{{user.company_id}}",
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "user_condition": {
-            "role": "owner"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
         }
       ]
     }
