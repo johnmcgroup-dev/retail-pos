@@ -154,5 +154,51 @@
     "order_number",
     "customer_email",
     "total_amount"
-  ]
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "data.company_id": "{{user.company_id}}"
+    },
+    "update": {
+      "data.company_id": "{{user.company_id}}",
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "manager"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "supervisor"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "data.company_id": "{{user.company_id}}",
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
 }
