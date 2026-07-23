@@ -92,6 +92,9 @@ Return ONLY valid JSON.`,
         trial_ends_at: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       });
 
+      // Persist company_id on the user so RLS can authorize Sale creation
+      await base44.auth.updateMe({ company_id: company.id });
+
       setStep(1);
       await seedGroceryProducts(company.id);
 
