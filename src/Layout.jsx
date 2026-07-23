@@ -179,6 +179,12 @@ const navigationItems = [
     adminOnly: true
   },
   {
+    title: "Tenant Management",
+    url: createPageUrl("TenantManagement"),
+    icon: Building2,
+    adminOnly: true
+  },
+  {
     title: "User Management",
     url: createPageUrl("UserManagement"),
     icon: UserCheck,
