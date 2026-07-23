@@ -18,6 +18,7 @@ import Landing from '@/pages/Landing';
 import Storefront from '@/pages/Storefront';
 import VendorDashboard from '@/pages/VendorDashboard';
 import TenantManagement from '@/pages/TenantManagement';
+import StaffSales from '@/pages/StaffSales';
 import Returns from '@/pages/Returns';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -140,6 +141,7 @@ const AuthenticatedApp = () => {
         <Route path="/store/:slug" element={<Storefront />} />
         {/* Landing page — unauthenticated entry point, no layout */}
         <Route path="/" element={<Landing />} />
+        <Route path="/StaffSales" element={<LayoutWrapper currentPageName="StaffSales"><StaffSales /></LayoutWrapper>} />
         <Route path="/TenantManagement" element={<LayoutWrapper currentPageName="TenantManagement"><TenantManagement /></LayoutWrapper>} />
         <Route path="/VendorDashboard" element={<LayoutWrapper currentPageName="VendorDashboard"><VendorDashboard /></LayoutWrapper>} />
         <Route path="/Returns" element={<LayoutWrapper currentPageName="Returns"><Returns /></LayoutWrapper>} />

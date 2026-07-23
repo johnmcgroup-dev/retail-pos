@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck } from "lucide-react";
+import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck, Layers } from "lucide-react";
 import { format } from "date-fns";
 import AlertBanner from "../components/notifications/AlertBanner";
 import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
 import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
 import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
+import BulkAdjustDialog from "../components/inventory/BulkAdjustDialog";
 import SearchInput from "../components/shared/SearchInput";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ export default function Inventory() {
   const [isGeneratingAlerts, setIsGeneratingAlerts] = useState(false);
   const [adjustItem, setAdjustItem] = useState(null); // { inv, product }
   const [showLog, setShowLog] = useState(false);
+  const [showBulkAdjust, setShowBulkAdjust] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   
   const { data: inventory = [] } = useQuery({
@@ -247,6 +249,15 @@ export default function Inventory() {
           <p className="text-slate-500 mt-1">Track and manage stock levels</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button
+            onClick={() => setShowBulkAdjust(true)}
+            disabled={selectedIds.size === 0}
+            className="gap-2 bg-green-600 hover:bg-green-700"
+          >
+            <Layers className="w-4 h-4" />
+            Bulk Adjust
+            {selectedIds.size > 0 && ` (${selectedIds.size})`}
+          </Button>
           <Button
             onClick={() => bulkReorderMutation.mutate()}
             disabled={selectedIds.size === 0 || bulkReorderMutation.isPending}
@@ -481,6 +492,18 @@ export default function Inventory() {
           }}
         />
       )}
+
+      <BulkAdjustDialog
+        open={showBulkAdjust}
+        onClose={() => setShowBulkAdjust(false)}
+        selectedItems={enrichedInventory.filter(inv => selectedIds.has(inv.id))}
+        companyId={companies[0]?.id}
+        onSuccess={() => {
+          queryClient.invalidateQueries(["inventory"]);
+          queryClient.invalidateQueries(["adjustmentLogs"]);
+          setSelectedIds(new Set());
+        }}
+      />
 
       <AdjustmentLogDrawer
         open={showLog}

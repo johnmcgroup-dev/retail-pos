@@ -173,6 +173,12 @@ const navigationItems = [
     adminOnly: true
   },
   {
+    title: "Staff Sales",
+    url: createPageUrl("StaffSales"),
+    icon: UserCheck,
+    adminOnly: true
+  },
+  {
     title: "Sales Report",
     url: createPageUrl("SalesReport"),
     icon: PieChart,
