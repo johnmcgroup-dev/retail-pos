@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { CURRENCIES } from "@/utils";
 import CurrencyCalculator from "@/components/settings/CurrencyCalculator";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 import { useCurrency } from "@/hooks/useCurrency";
 import { Calculator, Globe, MapPin, FileSpreadsheet, Download, ExternalLink } from "lucide-react";
 
@@ -313,31 +314,29 @@ export default function Settings() {
                   </div>
                   <div>
                     <label className="text-sm font-semibold text-slate-700">Business Type</label>
-                    <select
+                    <DrawerSelect
                       value={companyForm.type}
-                      onChange={(e) => setCompanyForm({ ...companyForm, type: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      <option value="retail_store">Retail Store</option>
-                      <option value="warehouse">Warehouse</option>
-                      <option value="restaurant">Restaurant</option>
-                      <option value="pharmacy">Pharmacy</option>
-                      <option value="other">Other</option>
-                    </select>
+                      onValueChange={(value) => setCompanyForm({ ...companyForm, type: value })}
+                      options={[
+                        { value: "retail_store", label: "Retail Store" },
+                        { value: "warehouse", label: "Warehouse" },
+                        { value: "restaurant", label: "Restaurant" },
+                        { value: "pharmacy", label: "Pharmacy" },
+                        { value: "other", label: "Other" },
+                      ]}
+                      triggerClassName="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                      label="Business Type"
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-semibold text-slate-700">Currency *</label>
-                    <select
+                    <DrawerSelect
                       value={companyForm.currency}
-                      onChange={(e) => setCompanyForm({ ...companyForm, currency: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      {Object.entries(CURRENCIES).map(([code, currency]) => (
-                        <option key={code} value={code}>
-                          {currency.symbol} - {currency.name} ({code})
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={(value) => setCompanyForm({ ...companyForm, currency: value })}
+                      options={Object.entries(CURRENCIES).map(([code, c]) => ({ value: code, label: `${c.symbol} - ${c.name} (${code})` }))}
+                      triggerClassName="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                      label="Currency"
+                    />
                     <p className="text-xs text-slate-500 mt-1">This currency will be used throughout your app</p>
                     {detectedCurrency && detectedCurrency !== companyForm.currency && (
                       <div className="mt-2 flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">

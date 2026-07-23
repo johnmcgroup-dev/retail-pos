@@ -229,7 +229,7 @@ export default function StaffPOS() {
   return (
     <div className="h-[100dvh] flex flex-col bg-slate-50 overflow-hidden">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-lg">
+      <header className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-lg safe-area-top">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
             <ShoppingCart className="w-4 h-4" />

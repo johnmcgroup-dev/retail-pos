@@ -22,6 +22,7 @@ import {
 import { Upload, X, Image as ImageIcon, Camera, Package, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CameraCapture from "./CameraCapture";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 
 export default function ProductDialog({ open, onClose, product, companies, inventoryItem, products = [], onSwitchToExisting }) {
   const queryClient = useQueryClient();
@@ -322,19 +323,20 @@ export default function ProductDialog({ open, onClose, product, companies, inven
 
             <div>
               <Label>Unit</Label>
-              <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="piece">Piece</SelectItem>
-                  <SelectItem value="kg">Kilogram</SelectItem>
-                  <SelectItem value="liter">Liter</SelectItem>
-                  <SelectItem value="meter">Meter</SelectItem>
-                  <SelectItem value="box">Box</SelectItem>
-                  <SelectItem value="pack">Pack</SelectItem>
-                </SelectContent>
-              </Select>
+              <DrawerSelect
+                value={formData.unit}
+                onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                options={[
+                  { value: "piece", label: "Piece" },
+                  { value: "kg", label: "Kilogram" },
+                  { value: "liter", label: "Liter" },
+                  { value: "meter", label: "Meter" },
+                  { value: "box", label: "Box" },
+                  { value: "pack", label: "Pack" },
+                ]}
+                triggerClassName="w-full h-9 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                label="Unit"
+              />
             </div>
 
             <div>
@@ -425,16 +427,17 @@ export default function ProductDialog({ open, onClose, product, companies, inven
 
             <div>
               <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="discontinued">Discontinued</SelectItem>
-                </SelectContent>
-              </Select>
+              <DrawerSelect
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                  { value: "discontinued", label: "Discontinued" },
+                ]}
+                triggerClassName="w-full h-9 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                label="Status"
+              />
             </div>
           </div>
 

@@ -164,4 +164,8 @@ button:focus-visible {
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  button, header, svg {
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
+import PullToRefresh from "@/components/shared/PullToRefresh";
 import SearchInput from "../components/shared/SearchInput";
 
 export default function Products() {
@@ -82,7 +83,7 @@ export default function Products() {
   const getStockLevel = (productId) => getInventoryForProduct(productId)?.quantity ?? 0;
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries(["products"]); }} className="p-6 md:p-8 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Products</h1>
@@ -223,6 +224,6 @@ export default function Products() {
         onSwitchToExisting={handleSwitchToExisting}
         inventoryItem={editingProduct ? getInventoryForProduct(editingProduct.id) : null}
       />
-    </div>
+    </PullToRefresh>
   );
 }

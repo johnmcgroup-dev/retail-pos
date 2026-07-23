@@ -72,7 +72,7 @@ export default function Storefront() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header
-        className="text-white py-5 px-4 shadow-lg"
+        className="text-white py-5 px-4 shadow-lg safe-area-top"
         style={{ background: `linear-gradient(135deg, ${store.theme_color || '#3b82f6'}, ${store.theme_color || '#3b82f6'}cc)` }}
       >
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">

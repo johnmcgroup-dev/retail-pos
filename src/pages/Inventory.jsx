@@ -12,6 +12,7 @@ import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
 import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
 import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
 import BulkAdjustDialog from "../components/inventory/BulkAdjustDialog";
+import PullToRefresh from "@/components/shared/PullToRefresh";
 import SearchInput from "../components/shared/SearchInput";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -242,7 +243,7 @@ export default function Inventory() {
   }, 0);
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries(["inventory"]); await queryClient.invalidateQueries(["products"]); }} className="p-6 md:p-8 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
@@ -554,6 +555,6 @@ export default function Inventory() {
         onClose={() => setShowLog(false)}
         companyId={companies[0]?.id}
       />
-    </div>
+    </PullToRefresh>
   );
 }

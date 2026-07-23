@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, Globe, ArrowRight, RefreshCw, MapPin, TrendingUp } from "lucide-react";
 import { CURRENCIES } from "@/utils";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 
 const QUICK_AMOUNTS = [100, 500, 1000, 5000, 10000, 50000];
 
@@ -78,17 +79,13 @@ export default function CurrencyCalculator() {
                   className="mt-1 text-lg font-semibold"
                   placeholder="0.00"
                 />
-                <select
+                <DrawerSelect
                   value={fromCurrency}
-                  onChange={e => setFromCurrency(e.target.value)}
-                  className="w-full mt-2 px-3 py-2 border border-slate-300 rounded-md text-sm"
-                >
-                  {Object.entries(CURRENCIES).map(([code, c]) => (
-                    <option key={code} value={code}>
-                      {c.symbol} {code} — {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setFromCurrency}
+                  options={Object.entries(CURRENCIES).map(([code, c]) => ({ value: code, label: `${c.symbol} ${code} — ${c.name}` }))}
+                  triggerClassName="w-full mt-2 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                  label="From Currency"
+                />
               </div>
 
               {/* Swap button */}
@@ -115,17 +112,13 @@ export default function CurrencyCalculator() {
                     <span className="text-slate-400 text-sm">—</span>
                   )}
                 </div>
-                <select
+                <DrawerSelect
                   value={toCurrency}
-                  onChange={e => setToCurrency(e.target.value)}
-                  className="w-full mt-2 px-3 py-2 border border-slate-300 rounded-md text-sm"
-                >
-                  {Object.entries(CURRENCIES).map(([code, c]) => (
-                    <option key={code} value={code}>
-                      {c.symbol} {code} — {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setToCurrency}
+                  options={Object.entries(CURRENCIES).map(([code, c]) => ({ value: code, label: `${c.symbol} ${code} — ${c.name}` }))}
+                  triggerClassName="w-full mt-2 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                  label="To Currency"
+                />
               </div>
             </div>
 

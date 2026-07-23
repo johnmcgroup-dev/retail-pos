@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import PullToRefresh from "@/components/shared/PullToRefresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/utils";
 
 export default function Sales() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   
   const { data: sales = [] } = useQuery({
@@ -37,7 +39,7 @@ export default function Sales() {
   const unpaidSales = sales.filter(s => s.payment_status === 'unpaid');
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries(["sales"]); }} className="p-6 md:p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Sales History</h1>
         <p className="text-slate-500 mt-1">View and manage all transactions</p>
@@ -217,6 +219,6 @@ export default function Sales() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PullToRefresh>
   );
 }
