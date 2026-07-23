@@ -12,6 +12,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import PasswordChangeDialog from "../components/settings/PasswordChangeDialog";
 import { Input } from "@/components/ui/input";
 import { CURRENCIES } from "@/utils";
+import CurrencyCalculator from "@/components/settings/CurrencyCalculator";
+import { useCurrency } from "@/hooks/useCurrency";
+import { Calculator, Globe, MapPin } from "lucide-react";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -28,6 +31,8 @@ export default function Settings() {
     show_currency_symbol: false,
     goodwill_message: "Thank you for your business!"
   });
+
+  const { detectedCountry, detectedCurrency, loading: currencyLoading } = useCurrency();
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -129,6 +134,11 @@ export default function Settings() {
             <span className="hidden sm:inline">Offline</span>
             <span className="sm:hidden">Cache</span>
           </TabsTrigger>
+          <TabsTrigger value="currency" className="flex items-center gap-2">
+            <Calculator className="w-4 h-4" />
+            <span className="hidden sm:inline">Currency</span>
+            <span className="sm:hidden">FX</span>
+          </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="w-4 h-4" />
             <span className="hidden sm:inline">Alerts</span>
@@ -180,6 +190,20 @@ export default function Settings() {
                       ))}
                     </select>
                     <p className="text-xs text-slate-500 mt-1">This currency will be used throughout your app</p>
+                    {detectedCurrency && detectedCurrency !== companyForm.currency && (
+                      <div className="mt-2 flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                        <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                        <p className="text-xs text-blue-700 flex-1">
+                          Detected: <strong>{detectedCurrency}</strong> ({detectedCountry || "your location"})
+                        </p>
+                        <button
+                          onClick={() => setCompanyForm({ ...companyForm, currency: detectedCurrency, show_currency_symbol: true })}
+                          className="text-xs font-semibold text-blue-600 hover:underline whitespace-nowrap"
+                        >
+                          Use {detectedCurrency}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-start justify-between p-3 border rounded-lg bg-slate-50">
                     <div>
@@ -664,6 +688,10 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="currency">
+          <CurrencyCalculator />
         </TabsContent>
 
         <TabsContent value="notifications">
