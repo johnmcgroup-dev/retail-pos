@@ -155,4 +155,13 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
+  html, body {
+    overscroll-behavior-y: none;
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

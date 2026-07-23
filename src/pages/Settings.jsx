@@ -10,11 +10,79 @@ import { format } from "date-fns";
 import { offlineCache } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import PasswordChangeDialog from "../components/settings/PasswordChangeDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { CURRENCIES } from "@/utils";
 import CurrencyCalculator from "@/components/settings/CurrencyCalculator";
 import { useCurrency } from "@/hooks/useCurrency";
 import { Calculator, Globe, MapPin, FileSpreadsheet, Download, ExternalLink } from "lucide-react";
+
+function DeleteAccountSection({ user, company }) {
+  const [open, setOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (company?.id) {
+        await base44.entities.Company.delete(company.id);
+      }
+      await base44.auth.logout();
+    } catch (err) {
+      console.error("Account deletion failed:", err);
+      alert("Failed to delete account. Please contact support.");
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="p-4 border-2 border-red-200 rounded-lg bg-red-50">
+      <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+        <Trash2 className="w-5 h-5" />
+        Delete Account
+      </h4>
+      <p className="text-sm text-red-800 mb-4">
+        Permanently delete your account and all associated data. This action cannot be undone.
+      </p>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" className="gap-2">
+            <Trash2 className="w-4 h-4" />
+            Delete Account
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action is permanent and cannot be undone. Deleting your account will remove your company, products, sales, and all associated data. You will be logged out immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? "Deleting..." : "Yes, delete my account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
 
 function GoogleSheetsExportButton() {
   const [isExporting, setIsExporting] = useState(false);
@@ -695,6 +763,8 @@ export default function Settings() {
                 <p className="text-sm text-slate-500">
                   To manage other users and roles, contact your system administrator or use the Dashboard → Users section.
                 </p>
+
+                <DeleteAccountSection user={user} company={company} />
               </div>
             </CardContent>
           </Card>

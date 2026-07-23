@@ -217,7 +217,7 @@ export default function OnlineOrders() {
           <CardTitle>All Orders</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b">
                 <tr>
@@ -304,6 +304,51 @@ export default function OnlineOrders() {
                 ))}
               </tbody>
             </table>
+            {filteredOrders.length === 0 && (
+              <div className="text-center py-12">
+                <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">No orders found</p>
+              </div>
+            )}
+          </div>
+          {/* Mobile card layout */}
+          <div className="block md:hidden divide-y">
+            {filteredOrders.map((order) => (
+              <div key={order.id} className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-blue-600">{order.order_number}</span>
+                  <Badge className={getPaymentStatusColor(order.payment_status)}>{order.payment_status}</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="min-w-0">
+                    <p className="text-slate-900 font-medium truncate">{order.customer_name}</p>
+                    <p className="text-xs text-slate-500 truncate">{order.customer_email}</p>
+                    <p className="text-xs text-slate-500">{format(new Date(order.order_date), "MMM d, yyyy h:mm a")}</p>
+                  </div>
+                  <p className="font-bold text-slate-900 flex-shrink-0 ml-2">₦{order.total_amount?.toFixed(2)}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select value={order.order_status} onValueChange={(value) => handleStatusChange(order.id, "order_status", value)}>
+                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" variant="outline" onClick={() => { setSelectedOrder(order); setShowDetails(true); }}>
+                    <Eye className="w-4 h-4 mr-1" /> View
+                  </Button>
+                  {order.order_status === "pending" && order.payment_status === "paid" && (
+                    <Button size="sm" onClick={() => syncToInventoryMutation.mutate(order)} disabled={syncToInventoryMutation.isPending} className="bg-green-600 hover:bg-green-700">
+                      <RefreshCw className="w-4 h-4 mr-1" /> Sync
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
             {filteredOrders.length === 0 && (
               <div className="text-center py-12">
                 <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />

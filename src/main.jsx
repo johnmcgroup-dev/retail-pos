@@ -3,6 +3,14 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
+// Adaptive dark mode — follow system preference in real-time
+const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const applyDarkMode = (isDark) => {
+  document.documentElement.classList.toggle('dark', isDark);
+};
+applyDarkMode(darkModeQuery.matches);
+darkModeQuery.addEventListener('change', (e) => applyDarkMode(e.matches));
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   // <React.StrictMode>
   <App />

@@ -361,7 +361,7 @@ export default function Inventory() {
           <CardTitle>Stock Levels</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b">
               <tr>
@@ -469,6 +469,50 @@ export default function Inventory() {
                 })}
               </tbody>
             </table>
+            {filteredInventory.length === 0 && (
+              <div className="text-center py-12">
+                <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">No inventory records found</p>
+              </div>
+            )}
+          </div>
+          {/* Mobile card layout */}
+          <div className="block md:hidden divide-y">
+            {filteredInventory.map((inv) => {
+              const isLowStock = inv.quantity <= (inv.product?.reorder_level || 10);
+              const daysUntilExpiry = inv.expiration_date
+                ? Math.ceil((new Date(inv.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
+                : null;
+              const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
+              return (
+                <div key={inv.id} className={`p-4 space-y-2 ${selectedIds.has(inv.id) ? "bg-blue-50/60" : ""}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <Checkbox checked={selectedIds.has(inv.id)} onCheckedChange={() => toggleRow(inv.id)} />
+                      <div className="min-w-0">
+                        <div className="font-medium text-slate-900 truncate">{inv.product?.name || "Unknown"}</div>
+                        <div className="text-xs text-slate-500">SKU: {inv.product?.sku || "N/A"}</div>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-1 text-xs flex-shrink-0" onClick={() => setAdjustItem({ inv, product: inv.product })}>
+                      <SlidersHorizontal className="w-3 h-3" /> Adjust
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pl-10">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold ${isLowStock ? "text-red-600" : "text-slate-900"}`}>Qty: {inv.quantity}</span>
+                      {inv.location && <span className="text-slate-500 flex items-center gap-0.5"><MapPin className="w-3 h-3" />{inv.location}</span>}
+                    </div>
+                    <span className="font-medium text-slate-900">₦{(inv.quantity * (inv.product?.cost_price || 0)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex gap-1 pl-10 flex-wrap">
+                    {isLowStock && <Badge variant="destructive" className="bg-red-100 text-red-700">Low Stock</Badge>}
+                    {isExpiringSoon && <Badge variant="warning" className="bg-yellow-100 text-yellow-700">Expiring ({daysUntilExpiry}d)</Badge>}
+                    {!isLowStock && !isExpiringSoon && <Badge variant="success" className="bg-green-100 text-green-700">Good</Badge>}
+                  </div>
+                </div>
+              );
+            })}
             {filteredInventory.length === 0 && (
               <div className="text-center py-12">
                 <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />

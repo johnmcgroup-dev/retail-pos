@@ -59,6 +59,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import MobileBottomNav from "@/components/shared/MobileBottomNav";
 import OfflineIndicator from "@/components/shared/OfflineIndicator";
 import InstallPrompt from "@/components/shared/InstallPrompt";
 import { useAuth } from "@/lib/AuthContext";
@@ -297,7 +298,7 @@ export default function Layout({ children, currentPageName }) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100">
         <OfflineIndicator />
-        <header className="bg-white border-b border-slate-200 px-4 py-3 shadow-sm flex items-center justify-between">
+        <header className="bg-white border-b border-slate-200 px-4 py-3 shadow-sm flex items-center justify-between select-none safe-area-top">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
               <ShoppingCart className="w-4 h-4 text-white" />
@@ -309,7 +310,7 @@ export default function Layout({ children, currentPageName }) {
             Logout
           </Button>
         </header>
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto pb-20 md:pb-0">
           {children}
         </div>
       </div>
@@ -322,7 +323,7 @@ export default function Layout({ children, currentPageName }) {
       <InstallPrompt />
       
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
-        <Sidebar className="border-r border-slate-200 bg-white" collapsible="icon">
+        <Sidebar className="border-r border-slate-200 bg-white select-none hidden md:flex" collapsible="icon">
           <SidebarHeader className="border-b border-slate-200 p-3 md:p-5">
             <div className="flex items-center gap-2 md:gap-3">
               {/* JmtSolution Logo */}
@@ -393,10 +394,10 @@ export default function Layout({ children, currentPageName }) {
         </Sidebar>
 
         <main className="flex-1 flex flex-col overflow-hidden w-full min-w-0">
-          <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-2 md:py-3 shadow-sm sticky top-0 z-10">
+          <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-2 md:py-3 shadow-sm sticky top-0 z-10 select-none safe-area-top">
             <div className="flex items-center justify-between gap-2 md:gap-4">
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                <SidebarTrigger className="hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
+                <SidebarTrigger className="hidden md:flex hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
                   <Menu className="w-5 h-5 md:w-6 md:h-6" />
                 </SidebarTrigger>
                 <div className="min-w-0 flex-1">
@@ -423,11 +424,13 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto w-full">
+          <div className="flex-1 overflow-auto w-full pb-20 md:pb-0">
             {children}
           </div>
         </main>
       </div>
+
+      <MobileBottomNav />
 
       <NotificationCenter 
         open={showNotifications} 

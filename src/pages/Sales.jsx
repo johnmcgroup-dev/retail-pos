@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -117,7 +116,7 @@ export default function Sales() {
           <CardTitle>All Sales</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b">
                 <tr>
@@ -172,6 +171,43 @@ export default function Sales() {
                 ))}
               </tbody>
             </table>
+            {filteredSales.length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">No sales records found</p>
+              </div>
+            )}
+          </div>
+          {/* Mobile card layout */}
+          <div className="block md:hidden divide-y">
+            {filteredSales.map((sale) => (
+              <div key={sale.id} className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-blue-600">{sale.invoice_number}</span>
+                  <Badge
+                    variant={sale.payment_status === "paid" ? "success" : sale.payment_status === "partial" ? "warning" : "destructive"}
+                    className={
+                      sale.payment_status === "paid" ? "bg-green-100 text-green-700"
+                      : sale.payment_status === "partial" ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                    }
+                  >
+                    {sale.payment_status}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <p className="text-slate-900 font-medium">{sale.customer_name}</p>
+                    <p className="text-xs text-slate-500">{format(new Date(sale.sale_date), "MMM d, yyyy h:mm a")}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-slate-900">{formatCurrency(sale.total_amount || 0, currency)}</p>
+                    <p className="text-xs text-slate-500">{sale.items?.length || 0} items · {sale.cashier?.split("@")[0]}</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="capitalize">{sale.payment_method?.replace(/_/g, " ")}</Badge>
+              </div>
+            ))}
             {filteredSales.length === 0 && (
               <div className="text-center py-12">
                 <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
