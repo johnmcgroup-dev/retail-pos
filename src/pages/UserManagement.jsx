@@ -60,7 +60,7 @@ export default function UserManagement() {
   const company = companies[0];
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { role }),
+    mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { role_level: role }),
     onSuccess: () => {
       queryClient.invalidateQueries(["users"]);
       toast({ title: "Role updated successfully" });
@@ -78,27 +78,24 @@ export default function UserManagement() {
   const handleInvite = async () => {
     if (!inviteForm.email || !company) return;
     try {
-      const safeRole = inviteForm.role === "super_admin" ? "admin" : inviteForm.role;
+      // Map role_level to platform role (admin or user)
+      const platformRole = ["super_admin", "owner", "admin", "manager"].includes(inviteForm.role) ? "admin" : "user";
 
-      // Build a login redirect URL that carries the tenant ID so the invited user
-      // auto-claims this tenant on their very first login — no onboarding shown
-      const redirectAfterLogin = `${window.location.origin}/Dashboard?tid=${company.id}`;
+      await base44.users.inviteUser(inviteForm.email, platformRole);
 
-      // Send the platform invitation with the tenant-aware redirect
-      await base44.users.inviteUser(inviteForm.email, safeRole);
-
-      // Immediately try to tag if user record already exists (returning user)
+      // Tag user with tenant_id, company_id, and role_level
       try {
         const existingUsers = await base44.entities.User.filter({ email: inviteForm.email });
         if (existingUsers.length > 0 && !existingUsers[0].tenant_id) {
           await base44.entities.User.update(existingUsers[0].id, {
             tenant_id: company.id,
             company_id: company.id,
+            role_level: inviteForm.role,
           });
         }
       } catch (_) { /* not critical */ }
 
-      // Also schedule a retry after 3 s for brand-new users whose record appears with a delay
+      // Retry after 3s for brand-new users whose record appears with a delay
       setTimeout(async () => {
         try {
           const users2 = await base44.entities.User.filter({ email: inviteForm.email });
@@ -106,6 +103,7 @@ export default function UserManagement() {
             await base44.entities.User.update(users2[0].id, {
               tenant_id: company.id,
               company_id: company.id,
+              role_level: inviteForm.role,
             });
           }
         } catch (_) {}
@@ -123,7 +121,7 @@ export default function UserManagement() {
     }
   };
 
-  const myRole = currentUser?.role || "user";
+  const myRole = currentUser?.role_level || currentUser?.role || "user";
   const myRoleLevel = ROLE_ORDER.indexOf(myRole);
   const isSuperAdmin = myRole === "super_admin";
   const isOwner = myRole === "owner";
@@ -193,8 +191,8 @@ export default function UserManagement() {
               <div key={user.id} className="p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm text-white
-                    ${user.role === "super_admin" ? "bg-gradient-to-br from-yellow-400 to-orange-500" :
-                      user.role === "owner" ? "bg-gradient-to-br from-red-500 to-pink-600" :
+                    ${(user.role_level || user.role) === "super_admin" ? "bg-gradient-to-br from-yellow-400 to-orange-500" :
+                      (user.role_level || user.role) === "owner" ? "bg-gradient-to-br from-red-500 to-pink-600" :
                       "bg-gradient-to-br from-purple-500 to-indigo-600"}`}>
                     {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
                   </div>
@@ -218,7 +216,7 @@ export default function UserManagement() {
                   {canEditUser(user) ? (
                     <>
                       <Select
-                        value={user.role || "user"}
+                        value={user.role_level || user.role || "user"}
                         onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
                       >
                         <SelectTrigger className="w-36">
@@ -256,7 +254,7 @@ export default function UserManagement() {
                       </AlertDialog>
                     </>
                   ) : (
-                    <RoleBadge role={user.role || "user"} />
+                    <RoleBadge role={user.role_level || user.role || "user"} />
                   )}
                 </div>
               </div>
