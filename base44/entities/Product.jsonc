@@ -92,15 +92,36 @@
   ],
   "rls": {
     "create": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
     },
     "read": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
     },
     "update": {
       "$and": [
         {
-          "data.company_id": "{{user.data.company_id}}"
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
         },
         {
           "$or": [
@@ -131,7 +152,14 @@
     "delete": {
       "$and": [
         {
-          "data.company_id": "{{user.data.company_id}}"
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
         },
         {
           "$or": [
