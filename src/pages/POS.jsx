@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import AlertBanner from "../components/notifications/AlertBanner";
 import { playScanBeep, playErrorBuzz } from "../components/pos/scanSound";
 import SearchInput from "../components/shared/SearchInput";
+import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -400,6 +401,41 @@ export default function POS() {
 
   const removeFromCart = (productId) => {
     setCart(cart.filter(item => item.product_id !== productId));
+  };
+
+  // Voice-ordered add: supports adding a specific quantity in one call
+  const handleVoiceAddToCart = (product, quantity = 1) => {
+    const availableStock = getAvailableStock(product.id);
+    const existingItem = cart.find(item => item.product_id === product.id);
+    const currentQty = existingItem?.quantity || 0;
+
+    if (currentQty + quantity > availableStock) {
+      playErrorBuzz();
+      return { success: false, reason: "stock" };
+    }
+
+    playScanBeep();
+
+    if (existingItem) {
+      const newQty = currentQty + quantity;
+      setCart(cart.map(item =>
+        item.product_id === product.id
+          ? { ...item, quantity: newQty, total: item.unit_price * newQty }
+          : item
+      ));
+    } else {
+      setCart([...cart, {
+        product_id: product.id,
+        product_name: product.name,
+        unit_price: product.selling_price,
+        quantity: quantity,
+        tax: (product.selling_price * (product.tax_rate || 0)) / 100,
+        discount: 0,
+        total: product.selling_price * quantity,
+      }]);
+    }
+
+    return { success: true };
   };
 
   const clearCart = () => {
@@ -844,6 +880,19 @@ export default function POS() {
         isProcessing={createSaleMutation.isPending}
         isOffline={!isOnline}
         currency={currency}
+      />
+
+      <VoiceOrderingButton
+        products={products}
+        cart={cart}
+        onAddToCart={handleVoiceAddToCart}
+        onRemoveFromCart={removeFromCart}
+        onClearCart={clearCart}
+        onCheckout={handleCheckout}
+        totals={totals}
+        currency={currency}
+        formatCurrency={formatCurrency}
+        isProcessing={createSaleMutation.isPending}
       />
     </div>
   );
