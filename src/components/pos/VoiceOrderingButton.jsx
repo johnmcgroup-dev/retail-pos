@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mic, X, Volume2, Sparkles } from "lucide-react";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 
@@ -52,6 +52,7 @@ export default function VoiceOrderingButton({
   currency,
   formatCurrency,
   isProcessing = false,
+  saleCompleted = null,
 }) {
   const [isActive, setIsActive] = useState(false);
   const [lastFeedback, setLastFeedback] = useState("");
@@ -65,12 +66,40 @@ export default function VoiceOrderingButton({
     window.speechSynthesis.speak(u);
   };
 
+  // Speak sale completion confirmation when POS signals a completed sale
+  useEffect(() => {
+    if (saleCompleted) {
+      setLastFeedback(saleCompleted);
+      speak(saleCompleted);
+    }
+  }, [saleCompleted]);
+
   const handleCommand = (transcript) => {
     const text = transcript.toLowerCase().trim();
 
+    // Combined one-step checkout: "checkout with cash", "pay with card", etc.
+    const combinedMatch = text.match(/^(checkout|check out|pay)\s+(?:with\s+)?(cash|card|mobile|bank|transfer)/);
+    if (combinedMatch) {
+      if (cart.length === 0) { speak("Cart is empty"); return; }
+      const method = combinedMatch[2];
+      if (method.includes("mobile")) {
+        const msg = `Processing mobile money payment of ${formatCurrency(totals.total, currency)}`;
+        setLastFeedback(msg); speak(msg);
+        onCheckout({ payment_method: "mobile_money", amount_paid: totals.total }); return;
+      }
+      if (method.includes("bank") || method.includes("transfer")) {
+        const msg = `Processing bank transfer of ${formatCurrency(totals.total, currency)}`;
+        setLastFeedback(msg); speak(msg);
+        onCheckout({ payment_method: "bank_transfer", amount_paid: totals.total }); return;
+      }
+      const msg = `Processing ${method} payment of ${formatCurrency(totals.total, currency)}`;
+      setLastFeedback(msg); speak(msg);
+      onCheckout({ payment_method: method, amount_paid: totals.total }); return;
+    }
+
     // Help
     if (text === "help" || text.includes("what can you do") || text.includes("commands")) {
-      const msg = "You can say: add a product name, remove an item, clear cart, checkout, what's the total, or what's in my cart";
+      const msg = "You can say: add a product name, remove an item, clear cart, checkout with cash, checkout with card, what's the total, or what's in my cart";
       setLastFeedback(msg); speak(msg); return;
     }
 
@@ -226,7 +255,7 @@ export default function VoiceOrderingButton({
                 <p>• "Add Coca Cola" / "Add 3 Pepsi"</p>
                 <p>• "Remove Sprite"</p>
                 <p>• "What's the total?"</p>
-                <p>• "Checkout" → then "Cash" / "Card"</p>
+                <p>• "Checkout with cash" / "Pay with card"</p>
               </div>
             )}
           </div>

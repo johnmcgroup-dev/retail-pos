@@ -13,6 +13,7 @@ import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
 import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
 import BulkAdjustDialog from "../components/inventory/BulkAdjustDialog";
 import PullToRefresh from "@/components/shared/PullToRefresh";
+import InventoryReportDownload from "@/components/inventory/InventoryReportDownload";
 import SearchInput from "../components/shared/SearchInput";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -281,6 +282,12 @@ export default function Inventory() {
             <RefreshCw className={`w-4 h-4 ${isGeneratingAlerts ? 'animate-spin' : ''}`} />
             {isGeneratingAlerts ? 'Checking...' : 'Check Alerts'}
           </Button>
+          <InventoryReportDownload
+            inventory={enrichedInventory}
+            companies={companies}
+            totalStockValue={totalStockValue}
+            currency={companies[0]?.currency || "NGN"}
+          />
         </div>
       </div>
 

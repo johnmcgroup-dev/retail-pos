@@ -26,6 +26,7 @@ import AlertBanner from "../components/notifications/AlertBanner";
 import { playScanBeep, playErrorBuzz } from "../components/pos/scanSound";
 import SearchInput from "../components/shared/SearchInput";
 import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
+import PinnedItems from "../components/pos/PinnedItems";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -43,6 +44,7 @@ export default function POS() {
   const [mobileTab, setMobileTab] = useState("products");
   const [orderDiscount, setOrderDiscount] = useState({ type: "percentage", value: 0 });
   const [loyaltyRedeem, setLoyaltyRedeem] = useState({ enabled: false, points: 0 });
+  const [saleCompleted, setSaleCompleted] = useState(null);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
 
   const { data: companies = [] } = useQuery({
@@ -126,6 +128,12 @@ export default function POS() {
     enabled: !!selectedCompany && isOnline,
   });
   const loyaltyProgram = loyaltyPrograms[0];
+
+  const { data: sales = [] } = useQuery({
+    queryKey: ["sales"],
+    queryFn: () => base44.entities.Sale.list("-sale_date", 200),
+    enabled: isOnline,
+  });
 
   useEffect(() => {
     setLoyaltyRedeem({ enabled: false, points: 0 });
@@ -584,7 +592,7 @@ export default function POS() {
       
       return sale;
     },
-    onSuccess: async () => {
+    onSuccess: async (result, saleData) => {
       queryClient.invalidateQueries(["sales"]);
       queryClient.invalidateQueries(["inventory"]);
       queryClient.invalidateQueries(["customers"]);
@@ -599,6 +607,9 @@ export default function POS() {
           offlineCache.set(CACHE_KEYS.PRODUCTS, freshProducts);
         } catch (_) {}
       }
+      // Voice checkout: announce completion
+      setSaleCompleted(`Sale completed for ${formatCurrency(saleData?.total_amount || 0, currency)}`);
+      setTimeout(() => setSaleCompleted(null), 200);
       clearCart();
       setShowCheckout(false);
     },
@@ -777,6 +788,14 @@ export default function POS() {
             )}
           </div>
 
+          <PinnedItems
+            products={products}
+            sales={sales}
+            onAddToCart={(product) => { addToCart(product); setMobileTab("cart"); }}
+            currency={currency}
+            stockByProduct={stockByProduct}
+          />
+
           <div className="flex-1 overflow-auto p-3">
             <ProductGrid
               products={filteredProducts}
@@ -893,6 +912,7 @@ export default function POS() {
         currency={currency}
         formatCurrency={formatCurrency}
         isProcessing={createSaleMutation.isPending}
+        saleCompleted={saleCompleted}
       />
     </div>
   );
