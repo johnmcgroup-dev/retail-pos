@@ -14,7 +14,88 @@ import { Input } from "@/components/ui/input";
 import { CURRENCIES } from "@/utils";
 import CurrencyCalculator from "@/components/settings/CurrencyCalculator";
 import { useCurrency } from "@/hooks/useCurrency";
-import { Calculator, Globe, MapPin } from "lucide-react";
+import { Calculator, Globe, MapPin, FileSpreadsheet, Download, ExternalLink } from "lucide-react";
+
+function GoogleSheetsExportButton() {
+  const [isExporting, setIsExporting] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleExport = async (monthOffset = 0) => {
+    setIsExporting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const now = new Date();
+      const target = new Date(now.getFullYear(), now.getMonth() - 1 + monthOffset, 1);
+      const res = await base44.functions.invoke("exportMonthlyReportToSheets", {
+        year: target.getFullYear(),
+        month: target.getMonth() + 1,
+      });
+      setResult(res.data);
+    } catch (err) {
+      setError(err?.message || "Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={() => handleExport(0)}
+          disabled={isExporting}
+          className="bg-green-600 hover:bg-green-700 gap-2"
+        >
+          <Download className="w-4 h-4" />
+          {isExporting ? "Exporting..." : `Export ${lastMonth.toLocaleString('default', { month: 'long' })} ${lastMonth.getFullYear()}`}
+        </Button>
+        <Button
+          onClick={() => handleExport(-1)}
+          disabled={isExporting}
+          variant="outline"
+          className="gap-2"
+        >
+          <Download className="w-4 h-4" />
+          {isExporting ? "..." : `Export ${twoMonthsAgo.toLocaleString('default', { month: 'long' })} ${twoMonthsAgo.getFullYear()}`}
+        </Button>
+      </div>
+
+      {result && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <p className="font-semibold text-green-900">
+              Export complete — {result.totalTransactions} transactions, {result.totalRevenue?.toLocaleString()} in revenue
+            </p>
+          </div>
+          {result.spreadsheetUrl && (
+            <a
+              href={result.spreadsheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-green-700 hover:underline font-medium"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Open Google Sheet
+            </a>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -692,6 +773,26 @@ export default function Settings() {
 
         <TabsContent value="currency">
           <CurrencyCalculator />
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                Google Sheets Export
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600">
+                  Automatically export your monthly revenue and sales reports to a Google Sheet. A new spreadsheet is created on the 1st of each month with daily revenue, staff performance, top products, and all transactions. You can also trigger an export manually below.
+                </p>
+                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <Badge className="bg-green-100 text-green-700">Auto-scheduled</Badge>
+                  <span className="text-xs text-green-700">Runs on the 1st of each month at 9:00 AM</span>
+                </div>
+                <GoogleSheetsExportButton />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="notifications">
