@@ -104,16 +104,7 @@
     "total_amount"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        {
-          "data.company_id": "{{user.data.company_id}}"
-        },
-        {
-          "data.company_id": "{{user.data.tenant_id}}"
-        }
-      ]
-    },
+    "create": null,
     "read": {
       "$or": [
         {
