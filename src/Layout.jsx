@@ -9,7 +9,6 @@ import {
   Package,
   Users,
   TrendingUp,
-  DollarSign,
   FileText,
   Settings,
   Store,
@@ -295,31 +294,6 @@ export default function Layout({ children, currentPageName }) {
 
   const unreadAlerts = alerts.filter(a => !a.is_read).length;
   const criticalAlerts = alerts.filter(a => a.severity === "critical").length;
-
-  // Regular "user" role → POS-only minimal shell
-  const isUserRole = (authUser?.role === "user") || (user?.role === "user");
-  if (isUserRole) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100">
-        <OfflineIndicator />
-        <header className="bg-white border-b border-slate-200 px-4 py-3 shadow-sm flex items-center justify-between select-none safe-area-top">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 text-sm">My Retailer Pro</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 gap-2">
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
-        </header>
-        <div className="flex-1 overflow-auto pb-20 md:pb-0">
-          {children}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider defaultOpen={false}>
