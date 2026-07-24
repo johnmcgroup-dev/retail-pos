@@ -23,6 +23,7 @@ export default function StaffPOS() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [saleComplete, setSaleComplete] = useState(false);
+  const [saleError, setSaleError] = useState("");
   const [user, setUser] = useState(null);
   const [company, setCompany] = useState(null);
 
@@ -157,9 +158,12 @@ export default function StaffPOS() {
 
   const createSaleMutation = useMutation({
     mutationFn: async () => {
+      if (!company?.id) {
+        throw new Error("Company not loaded yet. Please wait a moment and try again.");
+      }
       const invoiceNumber = `INV-${Date.now()}`;
       const saleData = {
-        company_id: company?.id,
+        company_id: company.id,
         invoice_number: invoiceNumber,
         customer_name: "Walk-in Customer",
         sale_date: new Date().toISOString(),
@@ -178,7 +182,7 @@ export default function StaffPOS() {
 
       // FEFO deduction
       for (const item of cart) {
-        const records = await base44.entities.Inventory.filter({ product_id: item.product_id, company_id: company?.id });
+        const records = await base44.entities.Inventory.filter({ product_id: item.product_id, company_id: company.id });
         const sorted = [...records].sort((a, b) => {
           if (!a.expiration_date && !b.expiration_date) return 0;
           if (!a.expiration_date) return 1;
@@ -201,7 +205,11 @@ export default function StaffPOS() {
       setCart([]);
       setCheckoutOpen(false);
       setSaleComplete(true);
+      setSaleError("");
       setTimeout(() => setSaleComplete(false), 3000);
+    },
+    onError: (error) => {
+      setSaleError(error?.message || "Sale failed. Please try again.");
     }
   });
 
@@ -396,7 +404,7 @@ export default function StaffPOS() {
       </div>
 
       {/* Checkout dialog */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+      <Dialog open={checkoutOpen} onOpenChange={(o) => { setCheckoutOpen(o); if (!o) setSaleError(""); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Complete Sale</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
@@ -425,9 +433,14 @@ export default function StaffPOS() {
                 </SelectContent>
               </Select>
             </div>
+            {saleError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                {saleError}
+              </div>
+            )}
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setCheckoutOpen(false)}>Cancel</Button>
-              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => createSaleMutation.mutate()} disabled={createSaleMutation.isPending}>
+              <Button variant="outline" className="flex-1" onClick={() => { setCheckoutOpen(false); setSaleError(""); }}>Cancel</Button>
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => createSaleMutation.mutate()} disabled={createSaleMutation.isPending || !company}>
                 {createSaleMutation.isPending ? "Processing..." : "Confirm Sale"}
               </Button>
             </div>
