@@ -52,8 +52,6 @@ export default function PinnedItems({ products = [], sales = [], onAddToCart, cu
 
   const visiblePinned = pinnedProducts.filter(p => (stockByProduct[p.id] || 0) > 0);
 
-  if (visiblePinned.length === 0 && !showManage) return null;
-
   // Candidates for the manage view: best sellers first, then any pinned items not in best sellers
   const extraPinned = pinnedIds
     .filter(id => !bestSellers.some(s => s.product_id === id))
@@ -110,6 +108,15 @@ export default function PinnedItems({ products = [], sales = [], onAddToCart, cu
         </div>
       ) : (
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "thin" }}>
+          {visiblePinned.length === 0 && (
+            <button
+              onClick={() => setShowManage(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-dashed border-blue-300 text-xs text-blue-600 font-medium hover:bg-blue-50 transition-colors"
+            >
+              <Pin className="w-3.5 h-3.5" />
+              Tap to pin your best-selling items for one-tap access
+            </button>
+          )}
           {visiblePinned.map(product => (
             <button
               key={product.id}

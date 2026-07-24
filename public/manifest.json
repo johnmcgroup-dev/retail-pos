@@ -3,19 +3,24 @@
   "short_name": "Retailer Pro",
   "description": "Smart POS for modern businesses",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "orientation": "any",
-  "scope": "/",
+  "categories": ["business", "productivity", "shopping"],
   "icons": [
     {
       "src": "https://base44.com/logo_v2.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://base44.com/logo_v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ],
-  "categories": ["business", "productivity", "shopping"],
-  "prefer_related_applications": false
+  ]
 }

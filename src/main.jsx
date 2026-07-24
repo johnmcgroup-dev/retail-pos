@@ -17,19 +17,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   // </React.StrictMode>,
 )
 
-// Online-only mode: unregister any service worker and clear all caches so the
-// app always fetches fresh data from the server.
-if ('serviceWorker' in navigator) {
+// Online-only mode: clear any stale caches from previous versions so the app
+// always fetches fresh data. The service worker (registered in index.html)
+// stays active for PWA installability but performs no caching.
+if (window.caches) {
   window.addEventListener('load', async () => {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    for (const reg of registrations) {
-      await reg.unregister();
-    }
-    if (window.caches) {
-      const keys = await window.caches.keys();
-      for (const key of keys) {
-        await window.caches.delete(key);
-      }
+    const keys = await window.caches.keys();
+    for (const key of keys) {
+      await window.caches.delete(key);
     }
   });
 }
