@@ -1,24 +1,4 @@
-import { useState, useEffect } from 'react';
-
+// App is online-only — always reports connected so all data comes from the server.
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [wasOffline, setWasOffline] = useState(false);
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setWasOffline(!isOnline);
-      setIsOnline(true);
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [isOnline]);
-
-  return { isOnline, wasOffline };
+  return { isOnline: true, wasOffline: false };
 }

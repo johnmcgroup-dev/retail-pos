@@ -17,16 +17,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   // </React.StrictMode>,
 )
 
-// Register service worker for PWA / offline support — only in production
-if ('serviceWorker' in navigator && !import.meta.env.DEV) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
-
-// In dev mode, unregister any stale service worker and clear caches to prevent
-// "Cannot read properties of null (reading 'useState')" from stale JS bundles
-if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+// Online-only mode: unregister any service worker and clear all caches so the
+// app always fetches fresh data from the server.
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const reg of registrations) {
