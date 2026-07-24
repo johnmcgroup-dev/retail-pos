@@ -832,6 +832,20 @@ export default function POS() {
             />
           </div>
 
+          {selectedCustomer && loyaltyProgram && (
+            <div className="px-3 py-2 bg-purple-50 border-b border-purple-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 text-purple-700">
+                <Award className="w-3.5 h-3.5" />
+                <span className="font-medium">Current Balance: {selectedCustomer.loyalty_points || 0} pts</span>
+              </div>
+              {totals.total > 0 && (
+                <span className="text-purple-600 font-medium">
+                  +{Math.floor(totals.total * (loyaltyProgram.points_per_dollar || 0))} pts this sale
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="flex-1 overflow-auto min-h-0">
             <CartPanel
               cart={cart}

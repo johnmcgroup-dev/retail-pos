@@ -19,6 +19,7 @@ import { format, startOfMonth } from "date-fns";
 import OfflineIndicator from "../components/shared/OfflineIndicator";
 import StaffSalesWidget from "../components/dashboard/StaffSalesWidget";
 import LowStockAlerts from "../components/dashboard/LowStockAlerts";
+import RevenueChart from "../components/dashboard/RevenueChart";
 
 export default function Dashboard() {
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -241,6 +242,9 @@ export default function Dashboard() {
         </Link>
       </div>
       
+      {/* Daily Revenue Chart */}
+      <RevenueChart sales={sales} currency={currency} showSymbol={showSymbol} />
+
       {/* Staff Sales Widget */}
       <StaffSalesWidget sales={sales} currency={currency} showSymbol={showSymbol} />
 
