@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Users, UserPlus, Mail, Shield, Building2, Crown, Star, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -173,16 +173,13 @@ export default function UserManagement() {
             <div className="min-w-0">
               <p className="text-xs text-slate-500">Tenant / Company</p>
               {companies.length > 1 ? (
-                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                  <SelectTrigger className="w-full h-8 text-sm font-bold text-slate-900 border-blue-200 bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DrawerSelect
+                  value={selectedCompanyId}
+                  onValueChange={setSelectedCompanyId}
+                  options={companies.map(c => ({ value: c.id, label: c.name }))}
+                  triggerClassName="w-full h-8 text-sm font-bold text-slate-900 border-blue-200 bg-white rounded-md border px-3"
+                  label="Select Company"
+                />
               ) : (
                 <p className="font-bold text-slate-900">{company.name}</p>
               )}
@@ -240,19 +237,13 @@ export default function UserManagement() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {canEditUser(user) ? (
                     <>
-                      <Select
+                      <DrawerSelect
                         value={user.role_level || user.role || "user"}
                         onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {assignableRoles.map(r => (
-                            <SelectItem key={r} value={r}>{ROLE_CONFIG[r]?.label || r}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }))}
+                        triggerClassName="w-36 h-9 text-sm rounded-md border px-3"
+                        label="Assign Role"
+                      />
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50 hover:text-red-600">
@@ -326,16 +317,13 @@ export default function UserManagement() {
             </div>
             <div>
               <Label>Assign Role</Label>
-              <Select value={inviteForm.role} onValueChange={(role) => setInviteForm({ ...inviteForm, role })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {assignableRoles.map(r => (
-                    <SelectItem key={r} value={r}>{ROLE_CONFIG[r]?.label || r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DrawerSelect
+                value={inviteForm.role}
+                onValueChange={(role) => setInviteForm({ ...inviteForm, role })}
+                options={assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }))}
+                triggerClassName="w-full h-9 text-sm rounded-md border px-3"
+                label="Assign Role"
+              />
             </div>
           </div>
           <DialogFooter>

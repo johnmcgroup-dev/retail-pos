@@ -158,6 +158,9 @@ button:focus-visible {
   html, body {
     overscroll-behavior-y: none;
   }
+  .overflow-auto, .overflow-y-auto, [data-pull-scroll] {
+    overscroll-behavior-y: none;
+  }
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }

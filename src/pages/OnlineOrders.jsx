@@ -21,13 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 
 export default function OnlineOrders() {
   const queryClient = useQueryClient();
@@ -42,7 +36,18 @@ export default function OnlineOrders() {
 
   const updateOrderMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.OnlineOrder.update(id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries(["onlineOrders"]);
+      const previousOrders = queryClient.getQueryData(["onlineOrders"]);
+      queryClient.setQueryData(["onlineOrders"], (old = []) =>
+        old.map(o => (o.id === id ? { ...o, ...data } : o))
+      );
+      return { previousOrders };
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(["onlineOrders"], context.previousOrders);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(["onlineOrders"]);
       setShowDetails(false);
     },
@@ -258,21 +263,19 @@ export default function OnlineOrders() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Select
+                      <DrawerSelect
                         value={order.order_status}
                         onValueChange={(value) => handleStatusChange(order.id, 'order_status', value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={[
+                          { value: "pending", label: "Pending" },
+                          { value: "processing", label: "Processing" },
+                          { value: "shipped", label: "Shipped" },
+                          { value: "delivered", label: "Delivered" },
+                          { value: "cancelled", label: "Cancelled" },
+                        ]}
+                        triggerClassName="w-32 h-9 text-sm rounded-md border px-3"
+                        label="Order Status"
+                      />
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
@@ -328,16 +331,19 @@ export default function OnlineOrders() {
                   <p className="font-bold text-slate-900 flex-shrink-0 ml-2">₦{order.total_amount?.toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Select value={order.order_status} onValueChange={(value) => handleStatusChange(order.id, "order_status", value)}>
-                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <DrawerSelect
+                    value={order.order_status}
+                    onValueChange={(value) => handleStatusChange(order.id, "order_status", value)}
+                    options={[
+                      { value: "pending", label: "Pending" },
+                      { value: "processing", label: "Processing" },
+                      { value: "shipped", label: "Shipped" },
+                      { value: "delivered", label: "Delivered" },
+                      { value: "cancelled", label: "Cancelled" },
+                    ]}
+                    triggerClassName="w-32 h-9 text-sm rounded-md border px-3"
+                    label="Order Status"
+                  />
                   <Button size="sm" variant="outline" onClick={() => { setSelectedOrder(order); setShowDetails(true); }}>
                     <Eye className="w-4 h-4 mr-1" /> View
                   </Button>

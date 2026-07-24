@@ -34,7 +34,16 @@ export default function Products() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Product.delete(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries(["products"]);
+      const previousProducts = queryClient.getQueryData(["products"]);
+      queryClient.setQueryData(["products"], (old = []) => old.filter(p => p.id !== id));
+      return { previousProducts };
+    },
+    onError: (_err, _id, context) => {
+      queryClient.setQueryData(["products"], context.previousProducts);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(["products"]);
     },
   });

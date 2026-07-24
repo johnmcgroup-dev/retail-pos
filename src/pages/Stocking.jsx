@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -104,15 +104,18 @@ function PayPurchaseDialog({ open, onClose, purchase, vendor, companyId }) {
           </div>
           <div>
             <Label>Payment Method</Label>
-            <Select value={method} onValueChange={setMethod}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="check">Cheque</SelectItem>
-                <SelectItem value="mobile_money">Mobile Money</SelectItem>
-              </SelectContent>
-            </Select>
+            <DrawerSelect
+              value={method}
+              onValueChange={setMethod}
+              options={[
+                { value: "bank_transfer", label: "Bank Transfer" },
+                { value: "cash", label: "Cash" },
+                { value: "check", label: "Cheque" },
+                { value: "mobile_money", label: "Mobile Money" },
+              ]}
+              triggerClassName="mt-1 w-full h-9 text-sm rounded-md border px-3"
+              label="Payment Method"
+            />
           </div>
           <div>
             <Label>Reference</Label>
@@ -378,18 +381,17 @@ export default function Stocking() {
                   {/* Vendor Selection */}
                   <div>
                     <Label>Vendor / Supplier *</Label>
-                    <Select value={vendorId} onValueChange={setVendorId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a vendor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vendors.filter(v => v.status === 'active' || !v.status).map(v => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.name}{v.contact_person ? ` — ${v.contact_person}` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <DrawerSelect
+                      value={vendorId}
+                      onValueChange={setVendorId}
+                      options={vendors.filter(v => v.status === 'active' || !v.status).map(v => ({
+                        value: v.id,
+                        label: v.contact_person ? `${v.name} — ${v.contact_person}` : v.name
+                      }))}
+                      placeholder="Select a vendor"
+                      triggerClassName="mt-1 w-full h-9 text-sm rounded-md border px-3"
+                      label="Select Vendor"
+                    />
                     {selectedVendor && (
                       <div className="mt-2 p-2 bg-blue-50 rounded-lg text-xs text-blue-800 flex flex-wrap gap-3">
                         {selectedVendor.phone && <span>📞 {selectedVendor.phone}</span>}
@@ -421,14 +423,17 @@ export default function Stocking() {
                             return (
                               <tr key={index}>
                                 <td className="p-2">
-                                  <Select value={item.product_id} onValueChange={v => updateItem(index, "product_id", v)}>
-                                    <SelectTrigger className="text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                                    <SelectContent>
-                                      {products.filter(p => p.status === 'active' || !p.status).map(p => (
-                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <DrawerSelect
+                                    value={item.product_id}
+                                    onValueChange={v => updateItem(index, "product_id", v)}
+                                    options={products.filter(p => p.status === 'active' || !p.status).map(p => ({
+                                      value: p.id,
+                                      label: p.name
+                                    }))}
+                                    placeholder="Select"
+                                    triggerClassName="text-xs w-full h-8 rounded-md border px-2"
+                                    label="Select Product"
+                                  />
                                 </td>
                                 <td className="p-2">
                                   <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(index, "quantity", parseInt(e.target.value) || 0)} className="text-xs text-right w-20" />
