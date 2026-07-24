@@ -42,6 +42,7 @@ export default function UserManagement() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "user" });
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -57,7 +58,18 @@ export default function UserManagement() {
     queryFn: () => base44.entities.Company.list(),
   });
 
-  const company = companies[0];
+  useEffect(() => {
+    if (companies.length > 0 && !selectedCompanyId) {
+      setSelectedCompanyId(companies[0].id);
+    }
+  }, [companies, selectedCompanyId]);
+
+  const company = companies.find(c => c.id === selectedCompanyId) || companies[0];
+
+  // Only show users whose tenant_id or company_id matches the selected company
+  const companyUsers = company
+    ? users.filter(u => u.tenant_id === company.id || u.company_id === company.id)
+    : users;
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { role_level: role }),
@@ -68,7 +80,7 @@ export default function UserManagement() {
   });
 
   const removeUserMutation = useMutation({
-    mutationFn: ({ userId }) => base44.entities.User.update(userId, { tenant_id: null, role: "user" }),
+    mutationFn: ({ userId }) => base44.entities.User.update(userId, { tenant_id: null, company_id: null, role: "user" }),
     onSuccess: () => {
       queryClient.invalidateQueries(["users"]);
       toast({ title: "User removed from tenant" });
@@ -158,13 +170,26 @@ export default function UserManagement() {
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <CardContent className="p-4 flex items-center gap-3">
             <Building2 className="w-6 h-6 text-blue-600 flex-shrink-0" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-slate-500">Tenant / Company</p>
-              <p className="font-bold text-slate-900">{company.name}</p>
+              {companies.length > 1 ? (
+                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                  <SelectTrigger className="w-full h-8 text-sm font-bold text-slate-900 border-blue-200 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="font-bold text-slate-900">{company.name}</p>
+              )}
               <p className="text-xs text-slate-500">ID: <code className="bg-slate-100 px-1 rounded">{company.id}</code></p>
             </div>
-            <Badge className="ml-auto bg-blue-100 text-blue-700">
-              {users.length} member{users.length !== 1 ? "s" : ""}
+            <Badge className="ml-auto bg-blue-100 text-blue-700 flex-shrink-0">
+              {companyUsers.length} member{companyUsers.length !== 1 ? "s" : ""}
             </Badge>
           </CardContent>
         </Card>
@@ -187,7 +212,7 @@ export default function UserManagement() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
-            {users.map((user) => (
+            {companyUsers.map((user) => (
               <div key={user.id} className="p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm text-white
@@ -259,7 +284,7 @@ export default function UserManagement() {
                 </div>
               </div>
             ))}
-            {users.length === 0 && (
+            {companyUsers.length === 0 && (
               <div className="text-center py-12 text-slate-500">
                 <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                 <p>No users found</p>
