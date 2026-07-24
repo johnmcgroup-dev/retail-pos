@@ -169,3 +169,13 @@ button:focus-visible {
     user-select: none;
   }
 }
+
+@layer utilities {
+  @media (max-width: 768px) {
+    /* Apple HIG: 44px minimum tap target on mobile */
+    .tap-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}

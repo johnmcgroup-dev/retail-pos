@@ -5,7 +5,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { setupIframeMessaging } from './lib/iframe-messaging';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -14,6 +14,7 @@ import TenantSetup from '@/pages/TenantSetup';
 import TrialExpired from '@/components/shared/TrialExpired';
 import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
+import PageTransition from "@/components/shared/PageTransition";
 import Landing from '@/pages/Landing';
 import Storefront from '@/pages/Storefront';
 import VendorDashboard from '@/pages/VendorDashboard';
@@ -36,6 +37,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, user } = useAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
 
   // On first login, if ?tid= is in the URL, claim that tenant for this user
   useEffect(() => {
@@ -136,7 +138,8 @@ const AuthenticatedApp = () => {
   // Render the main app, wrapped with role guard
   return (
     <RoleGuard user={user}>
-      <Routes>
+      <PageTransition location={location}>
+      <Routes location={location}>
         {/* Public storefront — no auth required, no layout */}
         <Route path="/store/:slug" element={<Storefront />} />
         {/* Landing page — unauthenticated entry point, no layout */}
@@ -155,6 +158,7 @@ const AuthenticatedApp = () => {
         ))}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
+      </PageTransition>
     </RoleGuard>
   );
 };

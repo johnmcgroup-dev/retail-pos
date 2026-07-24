@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, ShoppingCart, Package, Settings } from "lucide-react";
 
@@ -9,29 +9,54 @@ const tabs = [
   { label: "Settings", path: "/Settings", icon: Settings },
 ];
 
+function getTabForPath(pathname) {
+  return tabs.find(
+    (t) => pathname === t.path || pathname.startsWith(t.path + "/")
+  );
+}
+
 export default function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const tabHistoryRef = useRef({});
+
+  // Record the current path under its tab whenever location changes
+  useEffect(() => {
+    const tab = getTabForPath(location.pathname);
+    if (tab) {
+      tabHistoryRef.current[tab.path] = location.pathname;
+    }
+  }, [location.pathname]);
 
   const handleTabClick = (e, tab) => {
+    const currentTab = getTabForPath(location.pathname);
     const isOnRoot = location.pathname === tab.path;
-    const isOnSubPage = location.pathname.startsWith(tab.path + "/");
 
-    if (isOnRoot) {
-      // Already on root — scroll to top
-      e.preventDefault();
-      const scrollEl = document.querySelector('[data-pull-scroll]') || document.scrollingElement || window;
-      if (scrollEl.scrollTo) {
-        scrollEl.scrollTo({ top: 0, behavior: "smooth" });
+    if (currentTab?.path === tab.path) {
+      // Clicking the active tab
+      if (isOnRoot) {
+        // Already on root — scroll to top
+        e.preventDefault();
+        const scrollEl =
+          document.querySelector("[data-pull-scroll]") ||
+          document.scrollingElement ||
+          window;
+        if (scrollEl.scrollTo) {
+          scrollEl.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // On a sub-page of this tab — navigate back to root
+        e.preventDefault();
+        navigate(tab.path);
       }
-    } else if (isOnSubPage) {
-      // On a sub-page of this tab — navigate back to root
+    } else {
+      // Different tab — restore the last route visited within that tab, or root
       e.preventDefault();
-      navigate(tab.path);
+      const lastPath = tabHistoryRef.current[tab.path] || tab.path;
+      navigate(lastPath);
     }
-    // else: different tab — let the Link navigate normally
   };
 
   return (
@@ -41,18 +66,26 @@ export default function MobileBottomNav() {
     >
       <div className="flex items-center justify-around px-2 py-1.5">
         {tabs.map((tab) => {
-          const isActive = location.pathname === tab.path || location.pathname.startsWith(tab.path + "/");
+          const isActive =
+            location.pathname === tab.path ||
+            location.pathname.startsWith(tab.path + "/");
           const Icon = tab.icon;
           return (
             <Link
               key={tab.path}
               to={tab.path}
               onClick={(e) => handleTabClick(e, tab)}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${
-                isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600"
+              className={`tap-target flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${
+                isActive
+                  ? "text-blue-600"
+                  : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              <div className={`p-1.5 rounded-xl transition-all ${isActive ? "bg-blue-100" : ""}`}>
+              <div
+                className={`p-1.5 rounded-xl transition-all ${
+                  isActive ? "bg-blue-100" : ""
+                }`}
+              >
                 <Icon className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-medium">{tab.label}</span>

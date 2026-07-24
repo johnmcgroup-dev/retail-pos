@@ -28,7 +28,7 @@ export default function DrawerSelect({ value, onValueChange, options, placeholde
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`md:hidden flex items-center justify-between text-left ${triggerClassName}`}
+        className={`md:hidden flex items-center justify-between text-left min-h-[44px] ${triggerClassName}`}
       >
         <span className="truncate">{selected?.label || placeholder || "Select..."}</span>
         <ChevronDown className="w-4 h-4 opacity-50 flex-shrink-0 ml-2" />
@@ -44,7 +44,7 @@ export default function DrawerSelect({ value, onValueChange, options, placeholde
               <button
                 key={o.value}
                 onClick={() => { onValueChange(o.value); setOpen(false); }}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center justify-between transition-colors ${
+                className={`w-full text-left px-4 py-3 rounded-lg flex items-center justify-between transition-colors min-h-[44px] ${
                   o.value === value ? "bg-blue-50 text-blue-700 font-semibold" : "hover:bg-slate-50"
                 }`}
               >
