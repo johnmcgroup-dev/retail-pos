@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Smartphone, DollarSign, AlertCircle, Printer } from "lucide-react";
 import InvoiceReceipt from "./InvoiceReceipt";
+import PrintableReceipt from "./PrintableReceipt";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
 
 export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline, currency = 'USD' }) {
@@ -23,6 +24,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   const [amountReceived, setAmountReceived] = useState(total);
   const [completedSale, setCompletedSale] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [receiptView, setReceiptView] = useState("invoice");
   const [paystackReference, setPaystackReference] = useState(null);
   const [paystackStep, setPaystackStep] = useState(null);
   const [customerEmail, setCustomerEmail] = useState("");
@@ -57,19 +59,40 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   }, [total]);
 
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write('<html><head><title>Invoice</title>');
-    printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
-    printWindow.document.write('<style>@page { margin: 12mm; } body { margin: 0; padding: 16px; }</style>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(invoiceRef.current.innerHTML);
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
+    if (receiptView === "thermal") {
+      const printWindow = window.open('', '', 'width=380,height=600');
+      printWindow.document.write('<html><head><title>Receipt</title>');
+      printWindow.document.write('<style>');
+      printWindow.document.write('@page { margin: 6mm; }');
+      printWindow.document.write('body { font-family: "Courier New", monospace; margin: 0; padding: 8px; color: #1e293b; }');
+      printWindow.document.write('.dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }');
+      printWindow.document.write('.row { display: flex; justify-content: space-between; }');
+      printWindow.document.write('.center { text-align: center; }');
+      printWindow.document.write('.bold { font-weight: 700; }');
+      printWindow.document.write('.item-line { margin: 3px 0; }');
+      printWindow.document.write('</style>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(invoiceRef.current.innerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
       printWindow.print();
       printWindow.close();
-    }, 1000);
+    } else {
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write('<html><head><title>Invoice</title>');
+      printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+      printWindow.document.write('<style>@page { margin: 12mm; } body { margin: 0; padding: 16px; }</style>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(invoiceRef.current.innerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 1000);
+    }
   };
 
   const handlePaystackPayment = async () => {
@@ -353,15 +376,40 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
       <Dialog open={showInvoice} onOpenChange={handleCloseInvoice}>
         <DialogContent className="fixed inset-4 md:inset-8 max-w-none w-auto h-auto max-h-none overflow-y-auto z-[100] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Invoice Generated</DialogTitle>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <DialogTitle>Sale Completed</DialogTitle>
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setReceiptView("invoice")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${receiptView === "invoice" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+                >
+                  Standard Invoice
+                </button>
+                <button
+                  onClick={() => setReceiptView("thermal")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${receiptView === "thermal" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+                >
+                  Thermal Receipt
+                </button>
+              </div>
+            </div>
           </DialogHeader>
           <div ref={invoiceRef} className="overflow-y-auto max-h-[70vh]">
-            <InvoiceReceipt
-              sale={completedSale}
-              company={companies[0]}
-              customer={customers.find(c => c.id === completedSale?.customer_id)}
-              user={user}
-            />
+            {receiptView === "thermal" ? (
+              <PrintableReceipt
+                sale={completedSale}
+                company={companies[0]}
+                customer={customers.find(c => c.id === completedSale?.customer_id)}
+                user={user}
+              />
+            ) : (
+              <InvoiceReceipt
+                sale={completedSale}
+                company={companies[0]}
+                customer={customers.find(c => c.id === completedSale?.customer_id)}
+                user={user}
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseInvoice}>
@@ -369,7 +417,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
             </Button>
             <Button onClick={handlePrint} className="bg-blue-600">
               <Printer className="w-4 h-4 mr-2" />
-              Print Invoice
+              {receiptView === "thermal" ? "Print Receipt" : "Print Invoice"}
             </Button>
           </DialogFooter>
         </DialogContent>
