@@ -567,7 +567,7 @@ export default function POS() {
       for (const item of cart) {
         const inventoryRecords = await base44.entities.Inventory.filter({
           product_id: item.product_id,
-          company_id: selectedCompany.id
+          company_id: saleData.company_id
         });
 
         // Sort by expiration_date ascending (nulls last)
@@ -620,17 +620,21 @@ export default function POS() {
     const invoiceNumber = `INV-${Date.now()}`;
     
     let cashierEmail = "offline_user";
+    let companyId = selectedCompany?.id || companies[0]?.id;
     if (isOnline) {
       try {
         const currentUser = await base44.auth.me();
         cashierEmail = currentUser.email;
+        if (!companyId) {
+          companyId = currentUser.company_id || currentUser.tenant_id;
+        }
       } catch (error) {
         console.error("Error getting user:", error);
       }
     }
     
     const saleData = {
-      company_id: selectedCompany?.id || companies[0]?.id,
+      company_id: companyId,
       invoice_number: invoiceNumber,
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || "Walk-in Customer",
