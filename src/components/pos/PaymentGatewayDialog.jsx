@@ -24,7 +24,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   const [amountReceived, setAmountReceived] = useState(total);
   const [completedSale, setCompletedSale] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
-  const [receiptView, setReceiptView] = useState("invoice");
+  const [receiptView, setReceiptView] = useState("thermal");
   const [paystackReference, setPaystackReference] = useState(null);
   const [paystackStep, setPaystackStep] = useState(null);
   const [customerEmail, setCustomerEmail] = useState("");
@@ -195,6 +195,14 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
       setIsProcessing(false);
     }
   };
+
+  // Auto-print thermal receipt immediately when a sale completes
+  useEffect(() => {
+    if (showInvoice && completedSale) {
+      const timer = setTimeout(() => handlePrint(), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [showInvoice, completedSale]);
 
   const handleCloseInvoice = () => {
     setShowInvoice(false);
