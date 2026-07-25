@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, RotateCcw, ArrowLeft, Package, CheckCircle2, Loader2 } from "lucide-react";
+import { Search, RotateCcw, ArrowLeft, Package, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/utils";
 import { format } from "date-fns";
 
@@ -27,6 +27,9 @@ export default function Returns() {
   const [refundMethod, setRefundMethod] = useState("cash");
   const [returnReason, setReturnReason] = useState("");
   const [successMsg, setSuccessMsg] = useState(null);
+  const [mode, setMode] = useState("invoice");
+  const [bulkItems, setBulkItems] = useState([]);
+  const [bulkSearch, setBulkSearch] = useState("");
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -38,6 +41,11 @@ export default function Returns() {
   const { data: recentReturns = [] } = useQuery({
     queryKey: ["returns"],
     queryFn: () => base44.entities.Return.list("-return_date", 10),
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => base44.entities.Product.list(),
   });
 
   const searchMutation = useMutation({
@@ -174,7 +182,99 @@ export default function Returns() {
     setReturnSelections({});
     setSuccessMsg(null);
     setReturnReason("");
+    setBulkItems([]);
   };
+
+  // --- Bulk return logic ---
+  const bulkSearchResults = products.filter(p =>
+    p.name?.toLowerCase().includes(bulkSearch.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(bulkSearch.toLowerCase())
+  ).filter(p => !bulkItems.find(bi => bi.product_id === p.id)).slice(0, 6);
+
+  const addBulkItem = (product) => {
+    setBulkItems(prev => [...prev, {
+      product_id: product.id,
+      product_name: product.name,
+      quantity: 1,
+      unit_price: product.selling_price || 0,
+    }]);
+    setBulkSearch("");
+  };
+
+  const updateBulkItem = (productId, field, value) => {
+    setBulkItems(prev => prev.map(bi =>
+      bi.product_id === productId ? { ...bi, [field]: value } : bi
+    ));
+  };
+
+  const removeBulkItem = (productId) => {
+    setBulkItems(prev => prev.filter(bi => bi.product_id !== productId));
+  };
+
+  const bulkRefundTotal = bulkItems.reduce((sum, item) =>
+    sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)), 0
+  );
+
+  const processBulkReturnMutation = useMutation({
+    mutationFn: async () => {
+      const user = await base44.auth.me();
+      const returnNumber = `RET-${Date.now()}`;
+
+      const returnItems = bulkItems.map(item => ({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: parseFloat(item.quantity) || 0,
+        unit_price: parseFloat(item.unit_price) || 0,
+        total: (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0),
+      }));
+
+      const returnRecord = await base44.entities.Return.create({
+        company_id: company.id,
+        return_number: returnNumber,
+        original_sale_id: "BULK",
+        invoice_number: "BULK-RETURN",
+        customer_id: null,
+        customer_name: "Bulk Return",
+        items: returnItems,
+        refund_amount: bulkRefundTotal,
+        refund_method: refundMethod,
+        return_reason: returnReason || "Bulk return",
+        processed_by: user.email,
+        return_date: new Date().toISOString(),
+        status: "completed",
+      });
+
+      for (const item of returnItems) {
+        const invRecords = await base44.entities.Inventory.filter({
+          product_id: item.product_id,
+          company_id: company.id,
+        });
+        if (invRecords.length > 0) {
+          const inv = invRecords[0];
+          await base44.entities.Inventory.update(inv.id, {
+            quantity: (inv.quantity || 0) + item.quantity,
+            last_updated: new Date().toISOString(),
+          });
+        } else {
+          await base44.entities.Inventory.create({
+            company_id: company.id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            last_updated: new Date().toISOString(),
+          });
+        }
+      }
+
+      return returnRecord;
+    },
+    onSuccess: (returnRecord) => {
+      queryClient.invalidateQueries(["returns"]);
+      queryClient.invalidateQueries(["inventory"]);
+      setSuccessMsg(returnRecord);
+      setBulkItems([]);
+      setReturnReason("");
+    },
+  });
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-4xl mx-auto">
@@ -205,8 +305,26 @@ export default function Returns() {
         </Card>
       )}
 
-      {/* Search section */}
+      {/* Mode toggle */}
       {!successMsg && (
+        <div className="flex gap-2 bg-slate-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setMode("invoice")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === "invoice" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            By Invoice
+          </button>
+          <button
+            onClick={() => setMode("bulk")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === "bulk" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            Bulk Return
+          </button>
+        </div>
+      )}
+
+      {/* Search section */}
+      {!successMsg && mode === "invoice" && (
         <Card>
           <CardContent className="p-6">
             <form onSubmit={handleSearch} className="flex gap-2">
@@ -229,7 +347,7 @@ export default function Returns() {
       )}
 
       {/* Return form */}
-      {foundSale && !successMsg && (
+      {foundSale && !successMsg && mode === "invoice" && (
         <Card>
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center justify-between">
@@ -324,6 +442,159 @@ export default function Returns() {
               >
                 {processReturnMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
                 Process Return
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk return form */}
+      {!successMsg && mode === "bulk" && (
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">Bulk Return</h2>
+              <p className="text-sm text-slate-500">Add multiple items to a single return transaction. Inventory will be restocked automatically.</p>
+            </div>
+
+            {/* Product search */}
+            <div>
+              <Label>Add Products to Return</Label>
+              <div className="relative mt-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  value={bulkSearch}
+                  onChange={(e) => setBulkSearch(e.target.value)}
+                  placeholder="Search products by name or SKU..."
+                  className="pl-10 h-11"
+                />
+              </div>
+              {bulkSearch && bulkSearchResults.length > 0 && (
+                <div className="mt-2 border rounded-lg divide-y max-h-56 overflow-y-auto">
+                  {bulkSearchResults.map(product => (
+                    <button
+                      key={product.id}
+                      onClick={() => addBulkItem(product)}
+                      className="w-full flex items-center justify-between p-3 hover:bg-slate-50 text-left"
+                    >
+                      <div>
+                        <span className="font-medium text-sm text-slate-900">{product.name}</span>
+                        {product.sku && <span className="text-xs text-slate-500 ml-2">{product.sku}</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-blue-600">{formatCurrency(product.selling_price || 0, currency)}</span>
+                        <Plus className="w-4 h-4 text-blue-600" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {bulkSearch && bulkSearchResults.length === 0 && (
+                <p className="text-sm text-slate-400 mt-2">No matching products found.</p>
+              )}
+            </div>
+
+            {/* Selected items */}
+            {bulkItems.length > 0 ? (
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b">
+                    <tr>
+                      <th className="text-left p-3 font-semibold text-slate-700">Product</th>
+                      <th className="text-center p-3 font-semibold text-slate-700">Qty</th>
+                      <th className="text-center p-3 font-semibold text-slate-700">Unit Price</th>
+                      <th className="text-right p-3 font-semibold text-slate-700">Refund</th>
+                      <th className="p-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkItems.map(item => (
+                      <tr key={item.product_id} className="border-b last:border-0">
+                        <td className="p-3 font-medium text-slate-900">{item.product_name}</td>
+                        <td className="p-3 text-center">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => updateBulkItem(item.product_id, "quantity", e.target.value)}
+                            className="w-16 h-8 mx-auto text-center"
+                          />
+                        </td>
+                        <td className="p-3 text-center">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unit_price}
+                            onChange={(e) => updateBulkItem(item.product_id, "unit_price", e.target.value)}
+                            className="w-24 h-8 mx-auto text-center"
+                          />
+                        </td>
+                        <td className="p-3 text-right font-semibold text-slate-900">
+                          {formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0), currency)}
+                        </td>
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => removeBulkItem(item.product_id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 border rounded-lg border-dashed border-slate-300">
+                <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                <p className="text-slate-400 text-sm">Search and add products above to start a bulk return.</p>
+              </div>
+            )}
+
+            {/* Refund method and reason */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Refund Method</Label>
+                <Select value={refundMethod} onValueChange={setRefundMethod}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                    <SelectItem value="store_credit">Store Credit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Reason for Return</Label>
+                <Textarea
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder="e.g., Damaged goods, expired stock..."
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700">Total Refund Amount</p>
+              <span className="text-2xl font-bold text-blue-900">{formatCurrency(bulkRefundTotal, currency)}</span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={handleReset}>Cancel</Button>
+              <Button
+                onClick={() => processBulkReturnMutation.mutate()}
+                disabled={bulkItems.length === 0 || processBulkReturnMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {processBulkReturnMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
+                Process Bulk Return
               </Button>
             </div>
           </CardContent>

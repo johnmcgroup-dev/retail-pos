@@ -21,6 +21,7 @@ import { toast } from "sonner";
 export default function Inventory() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [isGeneratingAlerts, setIsGeneratingAlerts] = useState(false);
   const [adjustItem, setAdjustItem] = useState(null); // { inv, product }
   const [showLog, setShowLog] = useState(false);
@@ -123,10 +124,15 @@ export default function Inventory() {
     product: getProductDetails(inv.product_id)
   }));
 
-  const filteredInventory = enrichedInventory.filter(inv =>
-    inv.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    inv.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+
+  const filteredInventory = enrichedInventory.filter(inv => {
+    const matchesSearch =
+      inv.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inv.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || inv.product?.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   const lowStockItems = filteredInventory.filter(inv =>
     inv.quantity <= (inv.product?.reorder_level || 10)
@@ -360,6 +366,25 @@ export default function Inventory() {
               className="pl-10 h-10"
             />
           </div>
+          {categories.length > 0 && (
+            <div className="flex gap-2 flex-wrap mt-3">
+              <button
+                onClick={() => setCategoryFilter("all")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${categoryFilter === "all" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              >
+                All
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${categoryFilter === cat ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
