@@ -647,7 +647,8 @@ export default function POS() {
       cashier: cashierEmail,
     };
 
-    await createSaleMutation.mutateAsync(saleData);
+    const result = await createSaleMutation.mutateAsync(saleData);
+    return { ...saleData, ...result };
   };
 
   const totals = calculateTotals();

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Smartphone, DollarSign, AlertCircle, Printer } from "lucide-react";
-import PrintableReceipt from "./PrintableReceipt";
+import InvoiceReceipt from "./InvoiceReceipt";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
 
 export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline, currency = 'USD' }) {
@@ -57,24 +57,19 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   }, [total]);
 
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=380,height=600');
-    printWindow.document.write('<html><head><title>Receipt</title>');
-    printWindow.document.write('<style>');
-    printWindow.document.write('@page { margin: 6mm; }');
-    printWindow.document.write('body { font-family: "Courier New", monospace; margin: 0; padding: 8px; color: #1e293b; }');
-    printWindow.document.write('.dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }');
-    printWindow.document.write('.row { display: flex; justify-content: space-between; }');
-    printWindow.document.write('.center { text-align: center; }');
-    printWindow.document.write('.bold { font-weight: 700; }');
-    printWindow.document.write('.item-line { margin: 3px 0; }');
-    printWindow.document.write('</style>');
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write('<html><head><title>Invoice</title>');
+    printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+    printWindow.document.write('<style>@page { margin: 12mm; } body { margin: 0; padding: 16px; }</style>');
     printWindow.document.write('</head><body>');
     printWindow.document.write(invoiceRef.current.innerHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 1000);
   };
 
   const handlePaystackPayment = async () => {
@@ -101,8 +96,8 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
               payment_status: "completed",
             },
           };
-          await onComplete(paymentData);
-          setCompletedSale(paymentData);
+          const sale = await onComplete(paymentData);
+          setCompletedSale(sale || paymentData);
           setShowInvoice(true);
         } else {
           setError("Payment not yet confirmed. Please complete payment on the Paystack page, then click Verify again.");
@@ -169,8 +164,8 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
-      await onComplete(paymentData);
-      setCompletedSale(paymentData);
+      const sale = await onComplete(paymentData);
+      setCompletedSale(sale || paymentData);
       setShowInvoice(true);
     } catch (error) {
       setError(error.message || "Payment failed");
@@ -361,7 +356,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
             <DialogTitle>Invoice Generated</DialogTitle>
           </DialogHeader>
           <div ref={invoiceRef} className="overflow-y-auto max-h-[70vh]">
-            <PrintableReceipt
+            <InvoiceReceipt
               sale={completedSale}
               company={companies[0]}
               customer={customers.find(c => c.id === completedSale?.customer_id)}
