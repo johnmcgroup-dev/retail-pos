@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck, Layers } from "lucide-react";
+import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck, Layers, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import AlertBanner from "../components/notifications/AlertBanner";
 import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
@@ -355,36 +356,35 @@ export default function Inventory() {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search & Filter */}
       <Card>
         <CardContent className="p-6">
-          <div className="relative">
-            <SearchInput
-              placeholder="Search inventory..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10"
-            />
-          </div>
-          {categories.length > 0 && (
-            <div className="flex gap-2 flex-wrap mt-3">
-              <button
-                onClick={() => setCategoryFilter("all")}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${categoryFilter === "all" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-              >
-                All
-              </button>
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${categoryFilter === cat ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-                >
-                  {cat}
-                </button>
-              ))}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <SearchInput
+                placeholder="Search inventory..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10"
+              />
             </div>
-          )}
+            {categories.length > 0 && (
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full md:w-56 h-10">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <SelectValue placeholder="All Categories" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </CardContent>
       </Card>
 
