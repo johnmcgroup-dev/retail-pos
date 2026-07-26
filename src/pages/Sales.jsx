@@ -6,14 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import { Search, FileText, TrendingUp, DollarSign, Calendar, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/utils";
+import SaleHistoryDialog from "@/components/pos/SaleHistoryDialog";
 
 export default function Sales() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [receiptSale, setReceiptSale] = useState(null);
+
   const { data: sales = [] } = useQuery({
     queryKey: ["sales"],
     queryFn: () => base44.entities.Sale.list("-sale_date"),
@@ -24,7 +26,8 @@ export default function Sales() {
     queryFn: () => base44.entities.Company.list(),
   });
 
-  const currency = companies[0]?.currency || 'USD';
+  const company = companies[0];
+  const currency = company?.currency || 'USD';
 
   const filteredSales = sales.filter(sale =>
     sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,6 +133,7 @@ export default function Sales() {
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">Payment</th>
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">Status</th>
                   <th className="text-left p-4 text-sm font-semibold text-slate-700">Cashier</th>
+                  <th className="text-center p-4 text-sm font-semibold text-slate-700">Receipt</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -169,6 +173,11 @@ export default function Sales() {
                       </Badge>
                     </td>
                     <td className="p-4 text-slate-600 text-sm">{sale.cashier?.split('@')[0]}</td>
+                    <td className="p-4 text-center">
+                      <Button variant="ghost" size="sm" className="h-8 gap-1 text-blue-600 hover:text-blue-700" onClick={() => setReceiptSale(sale)}>
+                        <Printer className="w-3.5 h-3.5" /> Print
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -208,6 +217,9 @@ export default function Sales() {
                   </div>
                 </div>
                 <Badge variant="outline" className="capitalize">{sale.payment_method?.replace(/_/g, " ")}</Badge>
+                <Button variant="outline" size="sm" className="h-7 gap-1 text-blue-600" onClick={() => setReceiptSale(sale)}>
+                  <Printer className="w-3 h-3" /> Reprint
+                </Button>
               </div>
             ))}
             {filteredSales.length === 0 && (
@@ -219,6 +231,15 @@ export default function Sales() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Receipt reprint dialog */}
+      <SaleHistoryDialog
+        open={!!receiptSale}
+        onClose={() => setReceiptSale(null)}
+        companyId={company?.id}
+        company={company}
+        initialSale={receiptSale}
+      />
     </PullToRefresh>
   );
 }

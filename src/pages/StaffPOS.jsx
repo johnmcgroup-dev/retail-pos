@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle } from "lucide-react";
+import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle, History } from "lucide-react";
+import SaleHistoryDialog from "@/components/pos/SaleHistoryDialog";
 import { offlineCache, CACHE_KEYS } from "@/components/utils";
 import { useOnlineStatus } from "@/components/shared/useOnlineStatus";
 import { playScanBeep, playErrorBuzz } from "@/components/pos/scanSound";
@@ -27,6 +28,7 @@ export default function StaffPOS() {
   const [user, setUser] = useState(null);
   const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -261,10 +263,16 @@ export default function StaffPOS() {
             {user && <p className="text-xs text-blue-200">{user.full_name || user.email}</p>}
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => base44.auth.logout()} className="text-white hover:bg-white/20 gap-2 text-xs">
-          <LogOut className="w-4 h-4" />
-          Logout
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowHistory(true)} className="text-white hover:bg-white/20 gap-2 text-xs">
+            <History className="w-4 h-4" />
+            History
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => base44.auth.logout()} className="text-white hover:bg-white/20 gap-2 text-xs">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
+        </div>
       </header>
 
       {/* Sale success banner */}
@@ -470,6 +478,15 @@ export default function StaffPOS() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Sale History — view & reprint past receipts */}
+      <SaleHistoryDialog
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        companyId={company?.id || user?.company_id}
+        company={company}
+        user={user}
+      />
     </div>
   );
 }
