@@ -380,6 +380,7 @@ export default function POS() {
       setCart([...cart, {
         product_id: product.id,
         product_name: product.name,
+        image_url: product.image_url,
         unit_price: product.selling_price,
         quantity: 1,
         tax: (product.selling_price * (product.tax_rate || 0)) / 100,
@@ -435,6 +436,7 @@ export default function POS() {
       setCart([...cart, {
         product_id: product.id,
         product_name: product.name,
+        image_url: product.image_url,
         unit_price: product.selling_price,
         quantity: quantity,
         tax: (product.selling_price * (product.tax_rate || 0)) / 100,

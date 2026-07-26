@@ -13,6 +13,7 @@ import { generateInventoryAlerts, createAlertsIfNeeded } from "@/utils";
 import AdjustStockDialog from "../components/inventory/AdjustStockDialog";
 import AdjustmentLogDrawer from "../components/inventory/AdjustmentLogDrawer";
 import BulkAdjustDialog from "../components/inventory/BulkAdjustDialog";
+import ReorderSuggestionsDialog from "../components/inventory/ReorderSuggestionsDialog";
 import PullToRefresh from "@/components/shared/PullToRefresh";
 import InventoryReportDownload from "@/components/inventory/InventoryReportDownload";
 import SearchInput from "../components/shared/SearchInput";
@@ -27,6 +28,7 @@ export default function Inventory() {
   const [adjustItem, setAdjustItem] = useState(null); // { inv, product }
   const [showLog, setShowLog] = useState(false);
   const [showBulkAdjust, setShowBulkAdjust] = useState(false);
+  const [showReorderSuggestions, setShowReorderSuggestions] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   
   const { data: inventory = [] } = useQuery({
@@ -258,6 +260,13 @@ export default function Inventory() {
           <p className="text-slate-500 mt-1">Track and manage stock levels</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button
+            onClick={() => setShowReorderSuggestions(true)}
+            className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+          >
+            <Truck className="w-4 h-4" />
+            Reorder Suggestions
+          </Button>
           <Button
             onClick={() => setShowBulkAdjust(true)}
             disabled={selectedIds.size === 0}
@@ -586,6 +595,19 @@ export default function Inventory() {
         open={showLog}
         onClose={() => setShowLog(false)}
         companyId={companies[0]?.id}
+      />
+
+      <ReorderSuggestionsDialog
+        open={showReorderSuggestions}
+        onClose={() => setShowReorderSuggestions(false)}
+        inventory={inventory}
+        products={products}
+        vendors={vendors}
+        purchases={purchases}
+        company={companies[0]}
+        onSuccess={() => {
+          queryClient.invalidateQueries(["purchases"]);
+        }}
       />
     </PullToRefresh>
   );

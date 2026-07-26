@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Package } from "lucide-react";
 import { formatCurrency } from "@/utils";
 
 export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, currency = 'USD' }) {
@@ -18,9 +18,18 @@ export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, curren
           {cart.map((item) => (
             <div key={item.product_id} className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-blue-300 transition-colors">
               <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900">{item.product_name}</h4>
-                  <p className="text-sm text-slate-600">{formatCurrency(item.unit_price, currency)} each</p>
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-12 h-12 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-5 h-5 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-slate-900 truncate">{item.product_name}</h4>
+                    <p className="text-sm text-slate-600">{formatCurrency(item.unit_price, currency)} each</p>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
