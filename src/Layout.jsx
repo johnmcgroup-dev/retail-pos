@@ -295,6 +295,30 @@ export default function Layout({ children, currentPageName }) {
   const unreadAlerts = alerts.filter(a => !a.is_read).length;
   const criticalAlerts = alerts.filter(a => a.severity === "critical").length;
 
+  // Minimal shell for "user" (staff) role — no sidebar, just header + content
+  if (authUser?.role === 'user') {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <header className="bg-white border-b border-slate-200 px-4 py-3 shadow-sm sticky top-0 z-10 safe-area-top">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <ShoppingCart className="w-4 h-4 text-white" />
+              </div>
+              <h1 className="text-sm font-bold text-slate-900">My Retailer Pro</h1>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-red-600">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </header>
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider defaultOpen={false}>
       <OfflineIndicator />
