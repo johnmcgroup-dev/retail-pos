@@ -59,38 +59,53 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   }, [total]);
 
   const handlePrint = () => {
-    if (receiptView === "thermal") {
-      const printWindow = window.open('', '', 'width=380,height=600');
-      printWindow.document.write('<html><head><title>Receipt</title>');
-      printWindow.document.write('<style>');
-      printWindow.document.write('@page { margin: 6mm; }');
-      printWindow.document.write('body { font-family: "Courier New", monospace; margin: 0; padding: 8px; color: #1e293b; }');
-      printWindow.document.write('.dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }');
-      printWindow.document.write('.row { display: flex; justify-content: space-between; }');
-      printWindow.document.write('.center { text-align: center; }');
-      printWindow.document.write('.bold { font-weight: 700; }');
-      printWindow.document.write('.item-line { margin: 3px 0; }');
-      printWindow.document.write('</style>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(invoiceRef.current.innerHTML);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
+    // Use a hidden inline iframe instead of window.open() to avoid WebView sandbox blockages
+    const existingIframe = document.getElementById('print-iframe');
+    if (existingIframe) existingIframe.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'print-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '0';
+    iframe.style.width = receiptView === 'thermal' ? '380px' : '800px';
+    iframe.style.height = '600px';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+
+    if (receiptView === 'thermal') {
+      doc.write('<html><head><title>Receipt</title>');
+      doc.write('<style>');
+      doc.write('@page { margin: 6mm; }');
+      doc.write('body { font-family: "Courier New", monospace; margin: 0; padding: 8px; color: #1e293b; }');
+      doc.write('.dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }');
+      doc.write('.row { display: flex; justify-content: space-between; }');
+      doc.write('.center { text-align: center; }');
+      doc.write('.bold { font-weight: 700; }');
+      doc.write('.item-line { margin: 3px 0; }');
+      doc.write('</style>');
+      doc.write('</head><body>');
+      doc.write(invoiceRef.current.innerHTML);
+      doc.write('</body></html>');
+      doc.close();
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => iframe.remove(), 500);
     } else {
-      const printWindow = window.open('', '', 'width=800,height=600');
-      printWindow.document.write('<html><head><title>Invoice</title>');
-      printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
-      printWindow.document.write('<style>@page { margin: 12mm; } body { margin: 0; padding: 16px; }</style>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(invoiceRef.current.innerHTML);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.focus();
+      doc.write('<html><head><title>Invoice</title>');
+      doc.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+      doc.write('<style>@page { margin: 12mm; } body { margin: 0; padding: 16px; }</style>');
+      doc.write('</head><body>');
+      doc.write(invoiceRef.current.innerHTML);
+      doc.write('</body></html>');
+      doc.close();
+      iframe.contentWindow.focus();
       setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
+        iframe.contentWindow.print();
+        setTimeout(() => iframe.remove(), 500);
       }, 1000);
     }
   };

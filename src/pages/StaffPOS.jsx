@@ -10,7 +10,7 @@ import { useOnlineStatus } from "@/components/shared/useOnlineStatus";
 import { playScanBeep, playErrorBuzz } from "@/components/pos/scanSound";
 import SearchInput from "@/components/shared/SearchInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 
 export default function StaffPOS() {
   const queryClient = useQueryClient();
@@ -423,15 +423,19 @@ export default function StaffPOS() {
             </div>
             <div>
               <p className="text-sm font-medium text-slate-700 mb-1">Payment Method</p>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                </SelectContent>
-              </Select>
+              <DrawerSelect
+                value={paymentMethod}
+                onValueChange={setPaymentMethod}
+                options={[
+                  { value: "cash", label: "Cash" },
+                  { value: "card", label: "Card" },
+                  { value: "mobile_money", label: "Mobile Money" },
+                  { value: "bank_transfer", label: "Bank Transfer" },
+                ]}
+                placeholder="Select payment method"
+                label="Payment Method"
+                triggerClassName="w-full h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+              />
             </div>
             {saleError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">

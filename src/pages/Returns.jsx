@@ -7,13 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Search, RotateCcw, ArrowLeft, Package, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/utils";
 import { format } from "date-fns";
@@ -399,16 +393,20 @@ export default function Returns() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Refund Method</Label>
-                <Select value={refundMethod} onValueChange={setRefundMethod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                    <SelectItem value="store_credit">Store Credit</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DrawerSelect
+                  value={refundMethod}
+                  onValueChange={setRefundMethod}
+                  options={[
+                    { value: "cash", label: "Cash" },
+                    { value: "card", label: "Card" },
+                    { value: "bank_transfer", label: "Bank Transfer" },
+                    { value: "mobile_money", label: "Mobile Money" },
+                    { value: "store_credit", label: "Store Credit" },
+                  ]}
+                  placeholder="Select refund method"
+                  label="Refund Method"
+                  triggerClassName="w-full h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+                />
               </div>
               <div>
                 <Label>Reason for Return</Label>
@@ -557,16 +555,20 @@ export default function Returns() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Refund Method</Label>
-                <Select value={refundMethod} onValueChange={setRefundMethod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                    <SelectItem value="store_credit">Store Credit</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DrawerSelect
+                  value={refundMethod}
+                  onValueChange={setRefundMethod}
+                  options={[
+                    { value: "cash", label: "Cash" },
+                    { value: "card", label: "Card" },
+                    { value: "bank_transfer", label: "Bank Transfer" },
+                    { value: "mobile_money", label: "Mobile Money" },
+                    { value: "store_credit", label: "Store Credit" },
+                  ]}
+                  placeholder="Select refund method"
+                  label="Refund Method"
+                  triggerClassName="w-full h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+                />
               </div>
               <div>
                 <Label>Reason for Return</Label>

@@ -19,6 +19,7 @@ import {
   LogOut,
   Menu,
   ChevronDown,
+  ChevronLeft,
   Building2,
   Award,
   Gift,
@@ -295,6 +296,9 @@ export default function Layout({ children, currentPageName }) {
   const unreadAlerts = alerts.filter(a => !a.is_read).length;
   const criticalAlerts = alerts.filter(a => a.severity === "critical").length;
 
+  const MAIN_TAB_ROUTES = ['/Dashboard', '/POS', '/Products', '/Settings'];
+  const isSubPage = !MAIN_TAB_ROUTES.includes(location.pathname);
+
   // Minimal shell for "user" (staff) role — no sidebar, just header + content
   if (authUser?.role === 'user') {
     return (
@@ -402,8 +406,18 @@ export default function Layout({ children, currentPageName }) {
                 <SidebarTrigger className="hidden md:flex hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
                   <Menu className="w-5 h-5 md:w-6 md:h-6" />
                 </SidebarTrigger>
+                {isSubPage && (
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="md:hidden flex items-center justify-center w-9 h-9 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-slate-700" />
+                  </button>
+                )}
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-sm md:text-base font-bold text-slate-900 truncate">My Retailer Pro</h1>
+                  <h1 className="text-sm md:text-base font-bold text-slate-900 truncate">
+                    {isSubPage ? (currentPageName || 'Back') : 'My Retailer Pro'}
+                  </h1>
                 </div>
               </div>
 

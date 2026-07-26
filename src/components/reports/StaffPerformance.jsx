@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
@@ -81,30 +79,32 @@ export default function StaffPerformance({ sales = [], currency = "USD", showSym
           <p className="text-slate-500 text-sm mt-0.5">Track individual employee sales performance</p>
         </div>
         <div className="flex gap-2">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-40">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="yesterday">Yesterday</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="last7">Last 7 Days</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="last30">Last 30 Days</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={selectedStaff} onValueChange={setSelectedStaff}>
-            <SelectTrigger className="w-44">
-              <User className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Staff</SelectItem>
-              {allStaff.map(c => <SelectItem key={c} value={c}>{c.split("@")[0]}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <DrawerSelect
+            value={period}
+            onValueChange={setPeriod}
+            options={[
+              { value: "today", label: "Today" },
+              { value: "yesterday", label: "Yesterday" },
+              { value: "week", label: "This Week" },
+              { value: "last7", label: "Last 7 Days" },
+              { value: "month", label: "This Month" },
+              { value: "last30", label: "Last 30 Days" },
+            ]}
+            placeholder="Select period"
+            label="Select Period"
+            triggerClassName="w-40 h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+          />
+          <DrawerSelect
+            value={selectedStaff}
+            onValueChange={setSelectedStaff}
+            options={[
+              { value: "all", label: "All Staff" },
+              ...allStaff.map(c => ({ value: c, label: c.split("@")[0] })),
+            ]}
+            placeholder="Select staff"
+            label="Select Staff"
+            triggerClassName="w-44 h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+          />
         </div>
       </div>
 

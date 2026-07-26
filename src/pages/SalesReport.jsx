@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DrawerSelect from "@/components/shared/DrawerSelect";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp, DollarSign, Package, ArrowUpRight, ArrowDownRight, Calendar } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
@@ -119,20 +119,21 @@ export default function SalesReport() {
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Sales Report</h1>
           <p className="text-slate-500 mt-1">Daily revenue, top sellers & profit margins</p>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-44">
-            <Calendar className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="yesterday">Yesterday</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="last7">Last 7 Days</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="last30">Last 30 Days</SelectItem>
-          </SelectContent>
-        </Select>
+        <DrawerSelect
+          value={period}
+          onValueChange={setPeriod}
+          options={[
+            { value: "today", label: "Today" },
+            { value: "yesterday", label: "Yesterday" },
+            { value: "week", label: "This Week" },
+            { value: "last7", label: "Last 7 Days" },
+            { value: "month", label: "This Month" },
+            { value: "last30", label: "Last 30 Days" },
+          ]}
+          placeholder="Select period"
+          label="Select Period"
+          triggerClassName="w-44 h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+        />
       </div>
 
       {/* KPI Cards */}
