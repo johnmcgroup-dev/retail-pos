@@ -26,10 +26,23 @@ export default function StaffPOS() {
   const [saleError, setSaleError] = useState("");
   const [user, setUser] = useState(null);
   const [company, setCompany] = useState(null);
+  const [companyLoading, setCompanyLoading] = useState(true);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-    base44.entities.Company.list().then(cs => cs.length > 0 && setCompany(cs[0])).catch(() => {});
+    base44.auth.me().then(u => {
+      setUser(u);
+      // Load company by the user's company_id — more reliable than list() which depends on RLS
+      if (u?.company_id) {
+        base44.entities.Company.filter({ id: u.company_id })
+          .then(cs => {
+            if (cs.length > 0) setCompany(cs[0]);
+            setCompanyLoading(false);
+          })
+          .catch(() => setCompanyLoading(false));
+      } else {
+        setCompanyLoading(false);
+      }
+    }).catch(() => setCompanyLoading(false));
     const timer = setTimeout(() => searchInputRef.current?.focus(), 300);
     return () => clearTimeout(timer);
   }, []);
@@ -158,12 +171,13 @@ export default function StaffPOS() {
 
   const createSaleMutation = useMutation({
     mutationFn: async () => {
-      if (!company?.id) {
+      const companyId = company?.id || user?.company_id;
+      if (!companyId) {
         throw new Error("Company not loaded yet. Please wait a moment and try again.");
       }
       const invoiceNumber = `INV-${Date.now()}`;
       const saleData = {
-        company_id: company.id,
+        company_id: companyId,
         invoice_number: invoiceNumber,
         customer_name: "Walk-in Customer",
         sale_date: new Date().toISOString(),
@@ -182,7 +196,7 @@ export default function StaffPOS() {
 
       // FEFO deduction
       for (const item of cart) {
-        const records = await base44.entities.Inventory.filter({ product_id: item.product_id, company_id: company.id });
+        const records = await base44.entities.Inventory.filter({ product_id: item.product_id, company_id: companyId });
         const sorted = [...records].sort((a, b) => {
           if (!a.expiration_date && !b.expiration_date) return 0;
           if (!a.expiration_date) return 1;
@@ -442,10 +456,15 @@ export default function StaffPOS() {
                 {saleError}
               </div>
             )}
+            {!company && !companyLoading && !user?.company_id && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                Company data not found. Please contact your administrator.
+              </div>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setCheckoutOpen(false); setSaleError(""); }}>Cancel</Button>
-              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => createSaleMutation.mutate()} disabled={createSaleMutation.isPending || !company}>
-                {createSaleMutation.isPending ? "Processing..." : "Confirm Sale"}
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => createSaleMutation.mutate()} disabled={createSaleMutation.isPending || (!company && !user?.company_id)}>
+                {createSaleMutation.isPending ? "Processing..." : companyLoading ? "Loading..." : "Confirm Sale"}
               </Button>
             </div>
           </div>
