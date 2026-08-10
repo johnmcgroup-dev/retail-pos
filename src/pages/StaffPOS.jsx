@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle, History } from "lucide-react";
+import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle, History, Keyboard } from "lucide-react";
 import SaleHistoryDialog from "@/components/pos/SaleHistoryDialog";
 import { offlineCache, CACHE_KEYS } from "@/components/utils";
 import { useOnlineStatus } from "@/components/shared/useOnlineStatus";
@@ -29,6 +29,7 @@ export default function StaffPOS() {
   const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -52,6 +53,41 @@ export default function StaffPOS() {
   useEffect(() => {
     if (!checkoutOpen) setTimeout(() => searchInputRef.current?.focus(), 100);
   }, [checkoutOpen]);
+
+  // Global keyboard shortcuts — only function keys and Esc, safe while typing in inputs
+  useEffect(() => {
+    const handler = (e) => {
+      const key = e.key;
+      // F1: toggle shortcuts help
+      if (key === "F1") { e.preventDefault(); setShowShortcuts(s => !s); return; }
+      // F2: focus search bar
+      if (key === "F2") { e.preventDefault(); searchInputRef.current?.focus(); searchInputRef.current?.select(); return; }
+      // F9: complete sale
+      if (key === "F9") {
+        e.preventDefault();
+        if (saleComplete || createSaleMutation.isPending) return;
+        if (checkoutOpen) {
+          if (company || user?.company_id) createSaleMutation.mutate();
+        } else if (cart.length > 0) {
+          setCheckoutOpen(true);
+        }
+        return;
+      }
+      // F4: clear cart
+      if (key === "F4") {
+        e.preventDefault();
+        if (!checkoutOpen && cart.length > 0) setCart([]);
+        return;
+      }
+      // Escape handled by search input already; here close dialogs when not focused on input
+      if (key === "Escape") {
+        if (checkoutOpen) { setCheckoutOpen(false); setSaleError(""); }
+        else if (showDropdown) setShowDropdown(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [checkoutOpen, cart.length, saleComplete, createSaleMutation, company, user, showDropdown]);
 
   // Products — online-first, cache fallback
   const { data: products = [] } = useQuery({
@@ -268,6 +304,10 @@ export default function StaffPOS() {
             <History className="w-4 h-4" />
             History
           </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowShortcuts(true)} className="text-white hover:bg-white/20 gap-2 text-xs">
+            <Keyboard className="w-4 h-4" />
+            <span className="hidden sm:inline">Shortcuts</span>
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => base44.auth.logout()} className="text-white hover:bg-white/20 gap-2 text-xs">
             <LogOut className="w-4 h-4" />
             Logout
@@ -290,7 +330,7 @@ export default function StaffPOS() {
             <div className="relative">
               <SearchInput
                 inputRef={searchInputRef}
-                placeholder="Search product or scan barcode..."
+                placeholder="Search product or scan barcode...  (F2)"
                 value={searchTerm}
                 onChange={handleSearchChange}
                 onKeyDown={handleKeyDown}
@@ -418,7 +458,7 @@ export default function StaffPOS() {
                 <span className="text-blue-600">{fmt(grandTotal)}</span>
               </div>
               <Button className="w-full h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold" onClick={() => setCheckoutOpen(true)}>
-                Complete Sale
+                Complete Sale <span className="ml-1 text-xs opacity-70 bg-white/20 px-1.5 py-0.5 rounded">F9</span>
               </Button>
             </div>
           )}
@@ -487,6 +527,33 @@ export default function StaffPOS() {
         company={company}
         user={user}
       />
+
+      {/* Keyboard shortcuts help */}
+      <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Keyboard className="w-4 h-4" /> Keyboard Shortcuts
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-2 text-sm">
+            {[
+              { keys: "F1", label: "Show/hide this help" },
+              { keys: "F2", label: "Focus search bar to add product" },
+              { keys: "Enter", label: "Add highlighted product to cart" },
+              { keys: "↑ / ↓", label: "Navigate search results" },
+              { keys: "F9", label: "Complete sale (open checkout / confirm)" },
+              { keys: "F4", label: "Clear cart" },
+              { keys: "Esc", label: "Close dialog / clear search" },
+            ].map(s => (
+              <div key={s.keys} className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+                <span className="text-slate-600">{s.label}</span>
+                <kbd className="bg-slate-100 border border-slate-300 rounded px-2 py-0.5 text-xs font-mono font-semibold text-slate-700">{s.keys}</kbd>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
