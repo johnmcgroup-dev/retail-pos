@@ -42,7 +42,7 @@ export default function TrialExpired({ company }) {
             <AlertCircle className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Trial Period Overdue</h1>
-          <p className="text-white/80 mt-2">Your 45-day free trial has ended</p>
+          <p className="text-white/80 mt-2">Your 90-day free trial has ended</p>
         </div>
         <div className="p-8 space-y-6">
           <div className="text-center space-y-2">

@@ -89,7 +89,7 @@ Return ONLY valid JSON.`,
         ...form,
         status: "trial",
         subscription_plan: "trial",
-        trial_ends_at: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        trial_ends_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       });
 
       // Persist company_id on the user so RLS can authorize Sale creation
@@ -258,12 +258,12 @@ Return ONLY valid JSON.`,
                 disabled={!form.name || loading}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 mt-2"
               >
-                Get Started — 45-Day Free Trial
+                Get Started — 90-Day Free Trial
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
 
               <p className="text-center text-xs text-slate-400 mt-2">
-                No credit card required. Full access for 45 days.
+                No credit card required. Full access for 90 days.
               </p>
             </form>
           </CardContent>
