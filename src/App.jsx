@@ -21,6 +21,7 @@ import VendorDashboard from '@/pages/VendorDashboard';
 import TenantManagement from '@/pages/TenantManagement';
 import StaffSales from '@/pages/StaffSales';
 import Returns from '@/pages/Returns';
+import Warehouses from '@/pages/Warehouses';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -148,6 +149,7 @@ const AuthenticatedApp = () => {
         <Route path="/TenantManagement" element={<LayoutWrapper currentPageName="TenantManagement"><TenantManagement /></LayoutWrapper>} />
         <Route path="/VendorDashboard" element={<LayoutWrapper currentPageName="VendorDashboard"><VendorDashboard /></LayoutWrapper>} />
         <Route path="/Returns" element={<LayoutWrapper currentPageName="Returns"><Returns /></LayoutWrapper>} />
+        <Route path="/Warehouses" element={<LayoutWrapper currentPageName="Warehouses"><Warehouses /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route

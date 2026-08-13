@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle, History, Keyboard } from "lucide-react";
 import SaleHistoryDialog from "@/components/pos/SaleHistoryDialog";
+import PinnedItems from "@/components/pos/PinnedItems";
 import { offlineCache, CACHE_KEYS } from "@/components/utils";
 import { useOnlineStatus } from "@/components/shared/useOnlineStatus";
 import { playScanBeep, playErrorBuzz } from "@/components/pos/scanSound";
@@ -17,6 +18,7 @@ export default function StaffPOS() {
   const queryClient = useQueryClient();
   const { isOnline } = useOnlineStatus();
   const searchInputRef = useRef(null);
+  const createSaleRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -65,9 +67,9 @@ export default function StaffPOS() {
       // F9: complete sale
       if (key === "F9") {
         e.preventDefault();
-        if (saleComplete || createSaleMutation.isPending) return;
+        if (saleComplete || createSaleRef.current?.isPending) return;
         if (checkoutOpen) {
-          if (company || user?.company_id) createSaleMutation.mutate();
+          if (company || user?.company_id) createSaleRef.current?.mutate();
         } else if (cart.length > 0) {
           setCheckoutOpen(true);
         }
@@ -87,7 +89,7 @@ export default function StaffPOS() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [checkoutOpen, cart.length, saleComplete, createSaleMutation, company, user, showDropdown]);
+  }, [checkoutOpen, cart.length, saleComplete, company, user, showDropdown]);
 
   // Products — online-first, cache fallback
   const { data: products = [] } = useQuery({
@@ -125,6 +127,14 @@ export default function StaffPOS() {
     if (inv.quantity > 0) acc[inv.product_id] = (acc[inv.product_id] || 0) + inv.quantity;
     return acc;
   }, {});
+
+  // Recent sales for favorites/best-sellers calculation
+  const { data: sales = [] } = useQuery({
+    queryKey: ["staff_sales", company?.id || user?.company_id],
+    queryFn: () => base44.entities.Sale.filter({ company_id: company?.id || user?.company_id }, "-sale_date", 100),
+    enabled: !!(company?.id || user?.company_id),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const activeProducts = products.filter(p => p.status === "active" || !p.status);
 
@@ -265,6 +275,9 @@ export default function StaffPOS() {
     }
   });
 
+  // Keep ref in sync so the keyboard shortcut handler can call mutate without a TDZ issue
+  createSaleRef.current = createSaleMutation;
+
   const currency = company?.currency || "NGN";
   const fmt = (n) => `${currency === "NGN" ? "₦" : currency}${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -374,6 +387,15 @@ export default function StaffPOS() {
               )}
             </div>
           </div>
+
+          {/* Favorites bar */}
+          <PinnedItems
+            products={activeProducts}
+            sales={sales}
+            onAddToCart={addToCart}
+            currency={currency}
+            stockByProduct={stockByProduct}
+          />
 
           {/* Product grid */}
           <div className="flex-1 overflow-auto p-3">

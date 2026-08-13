@@ -87,6 +87,11 @@ const navigationItems = [
     icon: Store,
   },
   {
+    title: "Branches",
+    url: createPageUrl("Warehouses"),
+    icon: Building2,
+  },
+  {
     title: "Stocking",
     url: createPageUrl("Stocking"),
     icon: PackagePlus,

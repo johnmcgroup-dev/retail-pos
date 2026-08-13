@@ -30,8 +30,8 @@ export default function PinnedItems({ products = [], sales = [], onAddToCart, cu
         if (Array.isArray(ids)) { setPinnedIds(ids); return; }
       } catch (_) {}
     }
-    // Auto-pin top best sellers on first load
-    const topIds = bestSellers.slice(0, 6).map(s => s.product_id);
+    // Auto-pin top 10 best sellers on first load
+    const topIds = bestSellers.slice(0, 10).map(s => s.product_id);
     if (topIds.length > 0) {
       setPinnedIds(topIds);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(topIds));
@@ -66,7 +66,7 @@ export default function PinnedItems({ products = [], sales = [], onAddToCart, cu
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1">
           <Pin className="w-3 h-3 text-blue-500" />
-          Quick Add
+          Favorites
         </h3>
         <button
           onClick={() => setShowManage(!showManage)}

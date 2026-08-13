@@ -51,7 +51,8 @@
       "enum": [
         "trial",
         "monthly",
-        "yearly"
+        "yearly",
+        "one_time"
       ],
       "default": "trial"
     },
@@ -66,7 +67,7 @@
     "trial_ends_at": {
       "type": "string",
       "format": "date",
-      "description": "14 days trial end date"
+      "description": "90 days trial end date"
     },
     "payment_gateway": {
       "type": "string",
@@ -83,16 +84,21 @@
     },
     "monthly_price": {
       "type": "number",
-      "default": 9.9
+      "default": 5
     },
     "yearly_price": {
       "type": "number",
-      "default": 127
+      "default": 57
     },
     "first_month_price": {
       "type": "number",
       "default": 1,
-      "description": "Introductory price for the first month of a monthly subscription"
+      "description": "Introductory price for the 90-day trial period"
+    },
+    "one_time_price": {
+      "type": "number",
+      "default": 360,
+      "description": "One-time lifetime payment"
     },
     "status": {
       "type": "string",

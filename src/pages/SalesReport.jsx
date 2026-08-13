@@ -185,6 +185,88 @@ export default function SalesReport() {
         </Card>
       </div>
 
+      {/* Revenue by Payment Method */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base md:text-lg">Revenue by Payment Method — {periodLabels[period]}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const methodMap = {};
+            filteredSales.forEach(s => {
+              const m = s.payment_method || "cash";
+              if (!methodMap[m]) methodMap[m] = { count: 0, total: 0 };
+              methodMap[m].count += 1;
+              methodMap[m].total += s.total_amount || 0;
+            });
+            const methodLabels = {
+              cash: "Cash",
+              card: "Card Terminal",
+              bank_transfer: "Bank Transfer",
+              mobile_money: "Mobile Money",
+              credit: "Store Credit",
+            };
+            const methodColors = {
+              cash: "bg-green-500",
+              card: "bg-blue-500",
+              bank_transfer: "bg-purple-500",
+              mobile_money: "bg-orange-500",
+              credit: "bg-pink-500",
+            };
+            const methodData = Object.entries(methodMap)
+              .map(([key, val]) => ({ key, label: methodLabels[key] || key, ...val }))
+              .sort((a, b) => b.total - a.total);
+
+            if (methodData.length === 0) {
+              return (
+                <div className="text-center py-8 text-slate-400">
+                  <DollarSign className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <p>No payment data for this period</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-4">
+                {/* Bar visualization */}
+                <div className="space-y-3">
+                  {methodData.map(m => {
+                    const pct = totalRevenue > 0 ? (m.total / totalRevenue) * 100 : 0;
+                    return (
+                      <div key={m.key}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-medium text-slate-700">{m.label}</span>
+                          <span className="font-bold text-slate-900">{formatCurrency(m.total, currency, showSymbol)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${methodColors[m.key] || "bg-slate-400"} rounded-full transition-all`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-slate-500 w-20 text-right">{m.count} txn{m.count !== 1 ? "s" : ""} · {pct.toFixed(0)}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Summary grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t">
+                  {methodData.map(m => (
+                    <div key={m.key} className="text-center p-2 rounded-lg bg-slate-50">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wide">{m.label}</p>
+                      <p className="text-sm font-bold text-slate-900 mt-0.5">{formatCurrency(m.total, currency, showSymbol)}</p>
+                      <p className="text-[10px] text-slate-400">{m.count} txn{m.count !== 1 ? "s" : ""}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
       {/* Revenue Chart */}
       <Card>
         <CardHeader>
