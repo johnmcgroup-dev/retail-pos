@@ -32,6 +32,9 @@ export default function StaffPOS() {
   const [companyLoading, setCompanyLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [scanWarning, setScanWarning] = useState("");
+  const lastScanRef = useRef({ productId: null, time: 0 });
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -138,7 +141,22 @@ export default function StaffPOS() {
 
   const activeProducts = products.filter(p => p.status === "active" || !p.status);
 
-  const filteredProducts = activeProducts.filter(p => {
+  // Categories for filtering
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories", company?.id || user?.company_id],
+    queryFn: () => base44.entities.Category.filter(
+      { company_id: company?.id || user?.company_id, is_active: true },
+      "sort_order"
+    ),
+    enabled: !!(company?.id || user?.company_id),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categoryFilteredProducts = selectedCategory
+    ? activeProducts.filter(p => p.category === selectedCategory)
+    : activeProducts;
+
+  const filteredProducts = categoryFilteredProducts.filter(p => {
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return (
@@ -150,7 +168,44 @@ export default function StaffPOS() {
 
   const searchResults = filteredProducts.slice(0, 10);
 
+  // Resolve a scanned barcode/SKU to a single product.
+  // If multiple products share the same barcode, pick the one with the highest
+  // stock and delete the duplicates that have zero stock (data cleanup).
+  const resolveScanMatch = (text) => {
+    const trimmed = text.trim();
+    if (trimmed.length < 4) return null;
+    const matches = activeProducts.filter(p =>
+      p.sku === trimmed || (p.barcodes || []).some(b => b === trimmed)
+    );
+    if (matches.length === 0) return null;
+    if (matches.length === 1) return matches[0];
+    // Multiple products share the same barcode — sort by stock descending
+    const sorted = matches
+      .map(p => ({ product: p, stock: stockByProduct[p.id] || 0 }))
+      .sort((a, b) => b.stock - a.stock);
+    const best = sorted[0].product;
+    const companyId = company?.id || user?.company_id;
+    // Delete zero-stock duplicates to prevent future confusion
+    const dupes = sorted.slice(1).filter(({ stock }) => stock <= 0);
+    if (companyId && dupes.length > 0) {
+      setScanWarning(`Removed ${dupes.length} duplicate product(s) with zero stock sharing barcode "${trimmed}".`);
+      setTimeout(() => setScanWarning(""), 5000);
+      dupes.forEach(({ product }) => {
+        base44.entities.Product.delete(product.id)
+          .then(() => queryClient.invalidateQueries(["products"]))
+          .catch(() => {});
+      });
+    }
+    return best;
+  };
+
   const addToCart = (product) => {
+    // Prevent double-add when a hardware scanner fires onChange + Enter rapidly
+    const now = Date.now();
+    if (lastScanRef.current.productId === product.id && (now - lastScanRef.current.time) < 800) {
+      return;
+    }
+    lastScanRef.current = { productId: product.id, time: now };
     playScanBeep();
     setCart(prev => {
       const existing = prev.find(i => i.product_id === product.id);
@@ -184,16 +239,14 @@ export default function StaffPOS() {
     setSearchTerm(val);
     setHighlightedIndex(0);
     setShowDropdown(true);
-    // Instant barcode match
-    const trimmed = val.trim();
-    if (trimmed.length >= 4) {
-      const exact = activeProducts.find(p =>
-        p.sku === trimmed || (p.barcodes || []).some(b => b === trimmed)
-      );
-      if (exact) {
-        addToCart(exact);
-        setTimeout(() => { setSearchTerm(""); setShowDropdown(false); setHighlightedIndex(0); searchInputRef.current?.focus(); }, 50);
-      }
+    // Instant barcode match (resolves duplicates by stock)
+    const exact = resolveScanMatch(val);
+    if (exact) {
+      addToCart(exact);
+      setSearchTerm("");
+      setShowDropdown(false);
+      setHighlightedIndex(0);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
     }
   };
 
@@ -208,7 +261,7 @@ export default function StaffPOS() {
       setSearchTerm(""); setShowDropdown(false); setHighlightedIndex(0);
       e.preventDefault(); return;
     }
-    const exact = activeProducts.find(p => p.sku === term || (p.barcodes || []).some(b => b === term));
+    const exact = resolveScanMatch(term);
     if (exact) { addToCart(exact); setSearchTerm(""); setShowDropdown(false); e.preventDefault(); }
     else if (term) playErrorBuzz();
   };
@@ -285,9 +338,7 @@ export default function StaffPOS() {
     setSearchTerm(text);
     setShowDropdown(true);
     setHighlightedIndex(0);
-    const exact = activeProducts.find(p =>
-      p.sku === text || (p.barcodes || []).some(b => b === text)
-    );
+    const exact = resolveScanMatch(text);
     if (exact) {
       addToCart(exact);
       setSearchTerm("");
@@ -397,10 +448,49 @@ export default function StaffPOS() {
             stockByProduct={stockByProduct}
           />
 
+          {/* Category filter bar */}
+          {categories.length > 0 && (
+            <div className="border-b border-slate-200 bg-white px-3 py-2 shrink-0">
+              <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "thin" }}>
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    selectedCategory === null
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                      selectedCategory === cat.name
+                        ? "text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                    style={selectedCategory === cat.name ? { backgroundColor: cat.color } : {}}
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCategory === cat.name ? "#fff" : cat.color }} />
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {scanWarning && (
+            <div className="bg-amber-50 border-b border-amber-200 px-3 py-1.5 text-xs text-amber-700 shrink-0">
+              {scanWarning}
+            </div>
+          )}
+
           {/* Product grid */}
           <div className="flex-1 overflow-auto p-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {(searchTerm ? filteredProducts : activeProducts.slice(0, 40)).map(product => {
+              {(searchTerm ? filteredProducts : categoryFilteredProducts.slice(0, 40)).map(product => {
                 const stock = stockByProduct[product.id] || 0;
                 return (
                   <button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,14 @@ export default function ProductDialog({ open, onClose, product, companies, inven
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [duplicateError, setDuplicateError] = useState(null);
+
+  // Managed categories for the category dropdown
+  const companyId = formData.company_id || companies[0]?.id;
+  const { data: managedCategories = [] } = useQuery({
+    queryKey: ["categories", companyId],
+    queryFn: () => base44.entities.Category.filter({ company_id: companyId, is_active: true }, "sort_order"),
+    enabled: !!companyId,
+  });
 
   useEffect(() => {
     setDuplicateError(null);
@@ -314,11 +322,25 @@ export default function ProductDialog({ open, onClose, product, companies, inven
 
             <div>
               <Label>Category</Label>
-              <Input
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="e.g., Electronics"
-              />
+              {managedCategories.length > 0 ? (
+                <DrawerSelect
+                  value={formData.category}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  options={[
+                    { value: "", label: "— No category —" },
+                    ...managedCategories.map(c => ({ value: c.name, label: c.name })),
+                  ]}
+                  placeholder="Select a category"
+                  label="Category"
+                  triggerClassName="w-full h-9 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                />
+              ) : (
+                <Input
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="e.g., Electronics"
+                />
+              )}
             </div>
 
             <div>

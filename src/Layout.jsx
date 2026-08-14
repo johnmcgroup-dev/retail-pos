@@ -82,6 +82,12 @@ const navigationItems = [
     icon: Package,
   },
   {
+    title: "Categories",
+    url: createPageUrl("Categories"),
+    icon: Package,
+    adminOnly: true
+  },
+  {
     title: "Inventory",
     url: createPageUrl("Inventory"),
     icon: Store,
