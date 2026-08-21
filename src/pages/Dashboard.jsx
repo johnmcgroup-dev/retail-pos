@@ -215,7 +215,7 @@ export default function Dashboard() {
           </Card>
         </Link>
 
-        <Link to={createPageUrl("SalesReport")} className="block">
+        <Link to={createPageUrl("Reports")} className="block">
           <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
             <CardHeader className="pb-2 md:pb-3">
               <div className="flex items-center justify-between">

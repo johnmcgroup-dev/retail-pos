@@ -414,7 +414,7 @@ export default function Layout({ children, currentPageName }) {
           <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-2 md:py-3 shadow-sm sticky top-0 z-10 select-none safe-area-top">
             <div className="flex items-center justify-between gap-2 md:gap-4">
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                <SidebarTrigger className="hidden md:flex hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
+                <SidebarTrigger className="flex hover:bg-slate-100 p-1.5 md:p-2 rounded-lg transition-colors duration-200 flex-shrink-0">
                   <Menu className="w-5 h-5 md:w-6 md:h-6" />
                 </SidebarTrigger>
                 {isSubPage && (
