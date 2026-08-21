@@ -160,6 +160,10 @@ button:focus-visible {
   }
   .overflow-auto, .overflow-y-auto, [data-pull-scroll] {
     overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .touch-pan-y {
+    touch-action: pan-y;
   }
   .safe-area-top {
     padding-top: env(safe-area-inset-top);

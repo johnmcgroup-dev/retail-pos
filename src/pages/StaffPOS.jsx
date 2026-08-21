@@ -388,7 +388,7 @@ export default function StaffPOS() {
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* Left: Product search */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Search bar */}
           <div className="p-3 bg-white border-b shrink-0">
             <div className="relative">
@@ -488,7 +488,7 @@ export default function StaffPOS() {
           )}
 
           {/* Product grid */}
-          <div className="flex-1 overflow-auto p-3">
+          <div className="flex-1 overflow-auto p-3 min-h-0 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {(searchTerm ? filteredProducts : categoryFilteredProducts.slice(0, 40)).map(product => {
                 const stock = stockByProduct[product.id] || 0;
