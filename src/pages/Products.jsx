@@ -21,9 +21,17 @@ export default function Products() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkCategory, setShowBulkCategory] = useState(false);
 
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const companyId = user?.company_id || user?.tenant_id;
+
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => base44.entities.Product.list("-created_date"),
+    queryKey: ["products", companyId],
+    queryFn: () => base44.entities.Product.filter({ company_id: companyId }, "-created_date"),
+    enabled: !!companyId,
   });
 
   const { data: companies = [] } = useQuery({
@@ -32,8 +40,9 @@ export default function Products() {
   });
 
   const { data: inventory = [] } = useQuery({
-    queryKey: ["inventory"],
-    queryFn: () => base44.entities.Inventory.list(),
+    queryKey: ["inventory", companyId],
+    queryFn: () => base44.entities.Inventory.filter({ company_id: companyId }),
+    enabled: !!companyId,
   });
 
   const deleteMutation = useMutation({
@@ -176,7 +185,7 @@ export default function Products() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className={`hover:shadow-lg transition-shadow relative ${selectedIds.has(product.id) ? "ring-2 ring-blue-400" : ""}`}>
+          <Card key={product.id} className={`cv-auto hover:shadow-lg transition-shadow relative ${selectedIds.has(product.id) ? "ring-2 ring-blue-400" : ""}`}>
             <CardContent className="p-6">
               <div className="absolute top-3 right-3 z-10">
                 <Checkbox

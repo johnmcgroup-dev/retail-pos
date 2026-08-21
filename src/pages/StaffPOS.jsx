@@ -35,6 +35,7 @@ export default function StaffPOS() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [scanWarning, setScanWarning] = useState("");
   const lastScanRef = useRef({ productId: null, time: 0 });
+  const cartRef = useRef([]);
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -96,33 +97,39 @@ export default function StaffPOS() {
 
   // Products — online-first, cache fallback
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", company?.id || user?.company_id],
     queryFn: async () => {
+      const cid = company?.id || user?.company_id;
+      if (!cid) return offlineCache.get(CACHE_KEYS.PRODUCTS) || [];
       if (isOnline) {
         try {
-          const data = await base44.entities.Product.filter({ status: "active" });
+          const data = await base44.entities.Product.filter({ company_id: cid, status: "active" });
           offlineCache.set(CACHE_KEYS.PRODUCTS, data);
           return data;
         } catch (_) {}
       }
       return offlineCache.get(CACHE_KEYS.PRODUCTS) || [];
     },
+    enabled: !!(company?.id || user?.company_id),
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
 
   const { data: inventory = [] } = useQuery({
-    queryKey: ["inventory"],
+    queryKey: ["inventory", company?.id || user?.company_id],
     queryFn: async () => {
+      const cid = company?.id || user?.company_id;
+      if (!cid) return offlineCache.get(CACHE_KEYS.INVENTORY) || [];
       if (isOnline) {
         try {
-          const data = await base44.entities.Inventory.list();
+          const data = await base44.entities.Inventory.filter({ company_id: cid });
           offlineCache.set(CACHE_KEYS.INVENTORY, data);
           return data;
         } catch (_) {}
       }
       return offlineCache.get(CACHE_KEYS.INVENTORY) || [];
     },
+    enabled: !!(company?.id || user?.company_id),
     staleTime: 2 * 60 * 1000,
   });
 
@@ -199,6 +206,8 @@ export default function StaffPOS() {
     return best;
   };
 
+  cartRef.current = cart;
+
   const addToCart = (product) => {
     // Prevent double-add when a hardware scanner fires onChange + Enter rapidly
     const now = Date.now();
@@ -206,6 +215,15 @@ export default function StaffPOS() {
       return;
     }
     lastScanRef.current = { productId: product.id, time: now };
+    // Block adding more than available stock — no negative-inventory sales
+    const currentQty = cartRef.current.find(i => i.product_id === product.id)?.quantity || 0;
+    const available = stockByProduct[product.id] || 0;
+    if (available <= 0 || currentQty >= available) {
+      playErrorBuzz();
+      setSaleError(`"${product.name}" — only ${available} in stock.`);
+      setTimeout(() => setSaleError(""), 3000);
+      return;
+    }
     playScanBeep();
     setCart(prev => {
       const existing = prev.find(i => i.product_id === product.id);
@@ -228,6 +246,16 @@ export default function StaffPOS() {
   };
 
   const updateQty = (productId, delta) => {
+    if (delta > 0) {
+      const item = cartRef.current.find(i => i.product_id === productId);
+      const available = stockByProduct[productId] || 0;
+      if (item && item.quantity + delta > available) {
+        playErrorBuzz();
+        setSaleError(`Only ${available} of this item in stock.`);
+        setTimeout(() => setSaleError(""), 3000);
+        return;
+      }
+    }
     setCart(prev => prev
       .map(i => i.product_id === productId ? { ...i, quantity: i.quantity + delta, total: i.unit_price * (i.quantity + delta) } : i)
       .filter(i => i.quantity > 0)
@@ -275,6 +303,16 @@ export default function StaffPOS() {
       const companyId = company?.id || user?.company_id;
       if (!companyId) {
         throw new Error("Company not loaded yet. Please wait a moment and try again.");
+      }
+      // Final stock guard — block the sale if any line exceeds available quantity
+      for (const item of cartRef.current) {
+        const available = stockByProduct[item.product_id] || 0;
+        if (item.quantity < 1) {
+          throw new Error(`"${item.product_name}" has an invalid quantity.`);
+        }
+        if (item.quantity > available) {
+          throw new Error(`"${item.product_name}" — only ${available} in stock (requested ${item.quantity}).`);
+        }
       }
       const invoiceNumber = `INV-${Date.now()}`;
       const saleData = {
@@ -496,7 +534,7 @@ export default function StaffPOS() {
                   <button
                     key={product.id}
                     onClick={() => addToCart(product)}
-                    className="bg-white rounded-xl p-3 text-left shadow-sm border border-slate-200 hover:border-blue-400 hover:shadow-md active:scale-95 transition-all"
+                    className="bg-white rounded-xl p-3 text-left shadow-sm border border-slate-200 hover:border-blue-400 hover:shadow-md active:scale-95 transition-[transform,box-shadow] cv-auto"
                   >
                     <div className="w-full aspect-square rounded-lg bg-slate-100 mb-2 overflow-hidden flex items-center justify-center">
                       {product.image_url

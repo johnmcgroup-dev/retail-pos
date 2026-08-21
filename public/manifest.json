@@ -1,26 +1,16 @@
 {
   "name": "My Retailer Pro",
   "short_name": "Retailer Pro",
-  "description": "Smart POS for modern businesses",
+  "description": "Smart POS for modern businesses — inventory, sales, and more.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#ffffff",
+  "background_color": "#0f172a",
   "theme_color": "#3b82f6",
   "categories": ["business", "productivity", "shopping"],
   "icons": [
-    {
-      "src": "https://base44.com/logo_v2.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "https://base44.com/logo_v2.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
   ]
 }

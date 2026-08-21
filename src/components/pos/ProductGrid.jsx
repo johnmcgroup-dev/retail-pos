@@ -21,7 +21,7 @@ export default function ProductGrid({ products, onAddToCart, currency = 'USD', s
               hover:border-blue-400 hover:shadow-md
               active:scale-95 active:border-blue-600 active:bg-blue-50 active:shadow-inner
               focus:outline-none focus:ring-2 focus:ring-blue-400
-              touch-manipulation w-full overflow-hidden"
+              touch-manipulation w-full overflow-hidden cv-auto"
             style={{ WebkitTapHighlightColor: 'rgba(59,130,246,0.15)' }}
           >
             {/* Image */}

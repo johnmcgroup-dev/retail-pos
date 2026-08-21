@@ -178,6 +178,11 @@ button:focus-visible {
 }
 
 @layer utilities {
+  /* Skip rendering offscreen list items — big scroll perf win on mobile */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 360px;
+  }
   @media (max-width: 768px) {
     /* Apple HIG: 44px minimum tap target on mobile */
     .tap-target {
