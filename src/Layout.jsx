@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./components/utils";
+import { setActiveCurrency } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -280,6 +281,7 @@ export default function Layout({ children, currentPageName }) {
         const companies = await base44.entities.Company.list();
         if (companies.length > 0) {
           setCompany(companies[0]);
+          setActiveCurrency(companies[0].currency || "NGN", companies[0].show_currency_symbol !== false);
           // Auto-fix: set company_id on user if missing so RLS allows Sale creation
           if (!currentUser.company_id) {
             await base44.auth.updateMe({ company_id: companies[0].id });

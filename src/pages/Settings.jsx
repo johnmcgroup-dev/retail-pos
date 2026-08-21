@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { CURRENCIES } from "@/utils";
 import CurrencyCalculator from "@/components/settings/CurrencyCalculator";
 import DataBackup from "@/components/settings/DataBackup";
+import { setActiveCurrency } from "@/utils";
 import DrawerSelect from "@/components/shared/DrawerSelect";
 import { useCurrency } from "@/hooks/useCurrency";
 import { Calculator, Globe, MapPin, FileSpreadsheet, Download, ExternalLink } from "lucide-react";
@@ -204,6 +205,7 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["companies"]);
+      setActiveCurrency(companyForm.currency || "NGN", companyForm.show_currency_symbol !== false);
       alert("Company information updated successfully!");
     },
     onError: (error) => {
