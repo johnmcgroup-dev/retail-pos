@@ -3,11 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, TrendingUp, Package, DollarSign, Calendar } from "lucide-react";
+import { BarChart3, TrendingUp, Package, DollarSign, Calendar, Users } from "lucide-react";
 import { startOfMonth, endOfMonth, subDays, subMonths, format, startOfWeek, endOfWeek, startOfDay } from "date-fns";
 import SalesPerformanceDashboard from "../components/reports/SalesPerformanceDashboard";
 import InventoryDashboard from "../components/reports/InventoryDashboard";
 import ProfitLossStatement from "../components/reports/ProfitLossStatement";
+import StaffSalesBreakdown from "../components/reports/StaffSalesBreakdown";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Reports() {
@@ -37,6 +38,10 @@ export default function Reports() {
     queryKey: ["purchases"],
     queryFn: () => base44.entities.Purchase.list("-purchase_date"),
   });
+
+  const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
+  const { data: companies = [] } = useQuery({ queryKey: ["companies_list"], queryFn: () => base44.entities.Company.list() });
+  const company = companies.find((c) => c.id === (user?.company_id || user?.tenant_id)) || companies[0];
 
   const isLoading = salesLoading || expensesLoading || productsLoading || inventoryLoading;
 
@@ -159,7 +164,7 @@ export default function Reports() {
 
       {/* Detailed Dashboards */}
       <Tabs defaultValue="sales" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="sales" className="gap-2">
             <TrendingUp className="w-4 h-4" />
             Sales Performance
@@ -171,6 +176,10 @@ export default function Reports() {
           <TabsTrigger value="profitloss" className="gap-2">
             <BarChart3 className="w-4 h-4" />
             Profit & Loss
+          </TabsTrigger>
+          <TabsTrigger value="staff" className="gap-2">
+            <Users className="w-4 h-4" />
+            Staff Performance
           </TabsTrigger>
         </TabsList>
 
@@ -203,6 +212,10 @@ export default function Reports() {
             dateRange={dateRange}
             isLoading={isLoading}
           />
+        </TabsContent>
+
+        <TabsContent value="staff" className="space-y-6">
+          <StaffSalesBreakdown sales={filteredData.sales} company={company} />
         </TabsContent>
       </Tabs>
     </div>

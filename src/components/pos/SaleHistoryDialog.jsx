@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Search, Printer, Receipt as ReceiptIcon, X, ShoppingBag, RotateCcw, CheckCircle2, Loader2 } from "lucide-react";
+import { Search, Printer, Receipt as ReceiptIcon, X, ShoppingBag, RotateCcw, CheckCircle2, Loader2, Mail } from "lucide-react";
 import DrawerSelect from "@/components/shared/DrawerSelect";
 import { format } from "date-fns";
 import PrintableReceipt from "@/components/pos/PrintableReceipt";
+import EmailReceiptForm from "@/components/pos/EmailReceiptForm";
 import { formatCurrency } from "@/utils";
 
 export default function SaleHistoryDialog({ open, onClose, companyId, company, user, initialSale }) {
@@ -22,6 +23,7 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
   const [refundMethod, setRefundMethod] = useState("cash");
   const [returnReason, setReturnReason] = useState("");
   const [returnSuccess, setReturnSuccess] = useState(null);
+  const [showEmail, setShowEmail] = useState(false);
   const receiptRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -32,6 +34,7 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
       setReturnSelections({});
       setReturnSuccess(null);
       setReturnReason("");
+      setShowEmail(false);
     }
   }, [open, initialSale]);
 
@@ -290,14 +293,18 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
               <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
                 <PrintableReceipt ref={receiptRef} sale={selectedSale} company={company} user={user} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button variant="outline" onClick={handlePrint} className="gap-2">
-                  <Printer className="w-4 h-4" /> Reprint
+                  <Printer className="w-4 h-4" /> Print
+                </Button>
+                <Button variant="outline" onClick={() => setShowEmail(v => !v)} className="gap-2">
+                  <Mail className="w-4 h-4" /> Email
                 </Button>
                 <Button onClick={startReturnMode} className="gap-2 bg-blue-600 hover:bg-blue-700">
-                  <RotateCcw className="w-4 h-4" /> Return Items
+                  <RotateCcw className="w-4 h-4" /> Return
                 </Button>
               </div>
+              {showEmail && <EmailReceiptForm sale={selectedSale} company={company} onClose={() => setShowEmail(false)} />}
             </div>
           )}
 

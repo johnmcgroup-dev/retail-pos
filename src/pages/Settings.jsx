@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { CURRENCIES } from "@/utils";
 import CurrencyCalculator from "@/components/settings/CurrencyCalculator";
+import DataBackup from "@/components/settings/DataBackup";
 import DrawerSelect from "@/components/shared/DrawerSelect";
 import { useCurrency } from "@/hooks/useCurrency";
 import { Calculator, Globe, MapPin, FileSpreadsheet, Download, ExternalLink } from "lucide-react";
@@ -115,12 +116,15 @@ function GoogleSheetsExportButton() {
 
   return (
     <div className="space-y-3">
+      <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 mb-2">
+          Google Sheets export uses a backend function, which requires a Builder+ plan. It may not run on your current plan.
+        </div>
       <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={() => handleExport(0)}
-          disabled={isExporting}
-          className="bg-green-600 hover:bg-green-700 gap-2"
-        >
+          <Button
+            onClick={() => handleExport(0)}
+            disabled={isExporting}
+            className="bg-green-600 hover:bg-green-700 gap-2"
+          >
           <Download className="w-4 h-4" />
           {isExporting ? "Exporting..." : `Export ${lastMonth.toLocaleString('default', { month: 'long' })} ${lastMonth.getFullYear()}`}
         </Button>
@@ -293,6 +297,11 @@ export default function Settings() {
             <Bell className="w-4 h-4" />
             <span className="hidden sm:inline">Alerts</span>
             <span className="sm:hidden">Bell</span>
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            <span className="hidden sm:inline">Backup</span>
+            <span className="sm:hidden">Backup</span>
           </TabsTrigger>
         </TabsList>
 
@@ -886,6 +895,10 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="backup">
+          <DataBackup companyId={user?.company_id || user?.tenant_id || company?.id} company={company} />
         </TabsContent>
       </Tabs>
 

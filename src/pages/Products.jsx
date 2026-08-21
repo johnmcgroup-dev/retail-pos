@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
 import BulkCategoryAssignDialog from "../components/products/BulkCategoryAssignDialog";
+import ProductsExportButtons from "../components/products/ProductsExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import PullToRefresh from "@/components/shared/PullToRefresh";
 import SearchInput from "../components/shared/SearchInput";
@@ -133,7 +134,8 @@ export default function Products() {
           <h1 className="text-3xl font-bold text-slate-900">Products</h1>
           <p className="text-slate-500 mt-1">Manage your product catalog</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ProductsExportButtons products={products} inventory={inventory} company={companies.find((c) => c.id === companyId)} />
           <Link to="/Stocking">
             <Button variant="outline" className="gap-2">
               <Package className="w-4 h-4" />
