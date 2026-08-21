@@ -52,8 +52,14 @@ export default function ProductDialog({ open, onClose, product, companies, inven
   const [uploadError, setUploadError] = useState("");
   const [duplicateError, setDuplicateError] = useState(null);
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Managed categories for the category dropdown
-  const companyId = formData.company_id || companies[0]?.id;
+  const companyId = formData.company_id || currentUser?.company_id || currentUser?.tenant_id || companies[0]?.id;
   const { data: managedCategories = [] } = useQuery({
     queryKey: ["categories", companyId],
     queryFn: () => base44.entities.Category.filter({ company_id: companyId, is_active: true }, "sort_order"),
@@ -68,13 +74,15 @@ export default function ProductDialog({ open, onClose, product, companies, inven
         stock_quantity: inventoryItem?.quantity ?? 0
       });
     } else if (companies.length > 0) {
+      const myId = currentUser?.company_id || currentUser?.tenant_id;
+      const defaultCompanyId = (myId && companies.find(c => c.id === myId)?.id) || companies[0].id;
       setFormData(prev => ({
         ...prev,
-        company_id: companies[0].id,
+        company_id: defaultCompanyId,
         stock_quantity: inventoryItem?.quantity ?? 0
       }));
     }
-  }, [product, companies, inventoryItem]);
+  }, [product, companies, inventoryItem, currentUser]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {

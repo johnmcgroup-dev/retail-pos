@@ -45,6 +45,7 @@ export default function POS() {
   const [orderDiscount, setOrderDiscount] = useState({ type: "percentage", value: 0 });
   const [loyaltyRedeem, setLoyaltyRedeem] = useState({ enabled: false, points: 0 });
   const [saleCompleted, setSaleCompleted] = useState(null);
+  const [stockWarning, setStockWarning] = useState("");
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
 
   const { data: companies = [] } = useQuery({
@@ -54,14 +55,15 @@ export default function POS() {
   });
 
   const currency = selectedCompany?.currency || companies[0]?.currency || 'NGN';
+  const posCompanyId = selectedCompany?.id || companies[0]?.id;
 
   // Products query: always try online first, fall back to cache
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", posCompanyId],
     queryFn: async () => {
-      if (isOnline) {
+      if (isOnline && posCompanyId) {
         try {
-          const data = await base44.entities.Product.list();
+          const data = await base44.entities.Product.filter({ company_id: posCompanyId });
           offlineCache.set(CACHE_KEYS.PRODUCTS, data);
           offlineCache.updateLastSync();
           setUsingCachedData(false);
@@ -85,12 +87,12 @@ export default function POS() {
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     queryFn: async () => {
-      if (!isOnline) {
+      if (!isOnline || !posCompanyId) {
         const cached = offlineCache.get(CACHE_KEYS.CUSTOMERS);
         return cached || [];
       }
 
-      const data = await base44.entities.Customer.list();
+      const data = await base44.entities.Customer.filter({ company_id: posCompanyId });
       offlineCache.set(CACHE_KEYS.CUSTOMERS, data);
       return data;
     },
@@ -106,7 +108,7 @@ export default function POS() {
         return cached || [];
       }
 
-      const data = await base44.entities.Inventory.list();
+      const data = await base44.entities.Inventory.filter({ company_id: posCompanyId });
       offlineCache.set(CACHE_KEYS.INVENTORY, data);
       return data;
     },
@@ -130,9 +132,9 @@ export default function POS() {
   const loyaltyProgram = loyaltyPrograms[0];
 
   const { data: sales = [] } = useQuery({
-    queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date", 200),
-    enabled: isOnline,
+    queryKey: ["sales", posCompanyId],
+    queryFn: () => base44.entities.Sale.filter({ company_id: posCompanyId }, "-sale_date", 200),
+    enabled: isOnline && !!posCompanyId,
   });
 
   useEffect(() => {
@@ -362,9 +364,11 @@ export default function POS() {
     const existingItem = cart.find(item => item.product_id === product.id);
     const currentQtyInCart = existingItem?.quantity || 0;
 
-    // Disallow adding more than available stock
-    if (currentQtyInCart + 1 > availableStock) {
+    // Disallow adding more than available stock — alert staff
+    if (availableStock <= 0 || currentQtyInCart + 1 > availableStock) {
       playErrorBuzz();
+      setStockWarning(`"${product.name}" is out of stock.`);
+      setTimeout(() => setStockWarning(""), 3000);
       return;
     }
 
@@ -392,9 +396,11 @@ export default function POS() {
 
   const updateQuantity = (productId, newQuantity) => {
     const availableStock = getAvailableStock(productId);
-    // Disallow setting quantity above available stock
-    if (newQuantity > availableStock) {
+    // Disallow setting quantity above available stock — alert staff
+    if (availableStock <= 0 || newQuantity > availableStock) {
       playErrorBuzz();
+      setStockWarning(`Only ${availableStock} in stock.`);
+      setTimeout(() => setStockWarning(""), 3000);
       return;
     }
     if (newQuantity <= 0) {
@@ -619,6 +625,17 @@ export default function POS() {
 
   const handleCheckout = async (paymentData) => {
     const totals = calculateTotals();
+    // Block the sale if any cart line is out of stock or below requested qty
+    for (const item of cart) {
+      const available = getAvailableStock(item.product_id);
+      if (item.quantity < 1 || available <= 0 || item.quantity > available) {
+        setShowCheckout(false);
+        playErrorBuzz();
+        setStockWarning(`"${item.product_name}" is out of stock (only ${available} available). Sale blocked.`);
+        setTimeout(() => setStockWarning(""), 5000);
+        throw new Error(`Out of stock: ${item.product_name}`);
+      }
+    }
     const invoiceNumber = `INV-${Date.now()}`;
     
     let cashierEmail = "offline_user";
@@ -701,6 +718,12 @@ export default function POS() {
               onDismiss={(id) => dismissAlertMutation.mutate(id)}
               onViewAll={() => {}}
             />
+            {stockWarning && (
+              <div className="mt-2 flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium">{stockWarning}</span>
+              </div>
+            )}
             {pendingSyncCount > 0 && (
               <Alert className="mb-2 bg-yellow-50 border-yellow-300">
                 <AlertCircle className="h-4 w-4 text-yellow-600" />

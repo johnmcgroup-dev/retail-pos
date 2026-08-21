@@ -11,22 +11,31 @@ export default function LowStockAlerts({ currency = "NGN", showSymbol = true }) 
   const queryClient = useQueryClient();
   const [stockProduct, setStockProduct] = useState(null);
 
-  const { data: products = [] } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => base44.entities.Product.list(),
-    staleTime: 2 * 60 * 1000,
-  });
-
-  const { data: inventory = [] } = useQuery({
-    queryKey: ["inventory"],
-    queryFn: () => base44.entities.Inventory.list(),
-    staleTime: 2 * 60 * 1000,
-  });
-
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const companyId = user?.company_id || user?.tenant_id || companies[0]?.id;
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["products", companyId],
+    queryFn: () => base44.entities.Product.filter({ company_id: companyId }),
+    enabled: !!companyId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["inventory", companyId],
+    queryFn: () => base44.entities.Inventory.filter({ company_id: companyId }),
+    enabled: !!companyId,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Build stock map: product_id -> total quantity

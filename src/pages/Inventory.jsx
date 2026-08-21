@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck, Layers, Filter } from "lucide-react";
+import { AlertTriangle, Package, Search, Calendar, MapPin, RefreshCw, SlidersHorizontal, History, Truck, Layers, Filter, Check, ChevronsUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import AlertBanner from "../components/notifications/AlertBanner";
@@ -19,6 +19,9 @@ import InventoryReportDownload from "@/components/inventory/InventoryReportDownl
 import SearchInput from "../components/shared/SearchInput";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export default function Inventory() {
   const queryClient = useQueryClient();
@@ -30,40 +33,55 @@ export default function Inventory() {
   const [showBulkAdjust, setShowBulkAdjust] = useState(false);
   const [showReorderSuggestions, setShowReorderSuggestions] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [catOpen, setCatOpen] = useState(false);
   
-  const { data: inventory = [] } = useQuery({
-    queryKey: ["inventory"],
-    queryFn: () => base44.entities.Inventory.list(),
-  });
-
-  const { data: products = [] } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => base44.entities.Product.list(),
-  });
-
-  const { data: sales = [] } = useQuery({
-    queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list(),
-  });
-
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
   });
 
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const companyId = user?.company_id || user?.tenant_id || companies[0]?.id;
+  const activeCompany = companies.find(c => c.id === companyId) || companies[0];
+
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["inventory", companyId],
+    queryFn: () => base44.entities.Inventory.filter({ company_id: companyId }),
+    enabled: !!companyId,
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["products", companyId],
+    queryFn: () => base44.entities.Product.filter({ company_id: companyId }),
+    enabled: !!companyId,
+  });
+
+  const { data: sales = [] } = useQuery({
+    queryKey: ["sales", companyId],
+    queryFn: () => base44.entities.Sale.filter({ company_id: companyId }),
+    enabled: !!companyId,
+  });
+
   const { data: alerts = [] } = useQuery({
-    queryKey: ["alerts"],
-    queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
+    queryKey: ["alerts", companyId],
+    queryFn: () => base44.entities.Alert.filter({ company_id: companyId, is_dismissed: false }),
+    enabled: !!companyId,
   });
 
   const { data: vendors = [] } = useQuery({
-    queryKey: ["vendors"],
-    queryFn: () => base44.entities.Vendor.list(),
+    queryKey: ["vendors", companyId],
+    queryFn: () => base44.entities.Vendor.filter({ company_id: companyId }),
+    enabled: !!companyId,
   });
 
   const { data: purchases = [] } = useQuery({
-    queryKey: ["purchases"],
-    queryFn: () => base44.entities.Purchase.list("-purchase_date"),
+    queryKey: ["purchases", companyId],
+    queryFn: () => base44.entities.Purchase.filter({ company_id: companyId }, "-purchase_date"),
+    enabled: !!companyId,
   });
 
   const dismissAlertMutation = useMutation({
@@ -76,11 +94,11 @@ export default function Inventory() {
   // Auto-generate alerts on component mount
   useEffect(() => {
     const checkAndGenerateAlerts = async () => {
-      if (companies.length > 0 && inventory.length > 0 && products.length > 0) {
+      if (companyId && inventory.length > 0 && products.length > 0) {
         setIsGeneratingAlerts(true);
         try {
           const newAlerts = await generateInventoryAlerts(
-            companies[0].id,
+            companyId,
             inventory,
             products,
             sales
@@ -99,12 +117,12 @@ export default function Inventory() {
   }, [inventory.length, products.length, sales.length]);
 
   const handleRefreshAlerts = async () => {
-    if (companies.length === 0) return;
+    if (!companyId) return;
     
     setIsGeneratingAlerts(true);
     try {
       const newAlerts = await generateInventoryAlerts(
-        companies[0].id,
+        companyId,
         inventory,
         products,
         sales
@@ -133,6 +151,7 @@ export default function Inventory() {
   const filteredInventory = enrichedInventory.filter(inv => {
     const matchesSearch =
       inv.product?.name?.toLowerCase().includes(term) ||
+      inv.product?.description?.toLowerCase().includes(term) ||
       inv.product?.sku?.toLowerCase().includes(term) ||
       (inv.product?.barcodes || []).some(b => b.toLowerCase().includes(term));
     const matchesCategory = categoryFilter === "all" || inv.product?.category === categoryFilter;
@@ -186,7 +205,6 @@ export default function Inventory() {
 
   const bulkReorderMutation = useMutation({
     mutationFn: async () => {
-      const companyId = companies[0]?.id;
       const now = new Date().toISOString();
       const selected = enrichedInventory.filter(inv => selectedIds.has(inv.id));
 
@@ -304,7 +322,7 @@ export default function Inventory() {
             inventory={enrichedInventory}
             companies={companies}
             totalStockValue={totalStockValue}
-            currency={companies[0]?.currency || "NGN"}
+            currency={activeCompany?.currency || "NGN"}
           />
         </div>
       </div>
@@ -380,20 +398,50 @@ export default function Inventory() {
               />
             </div>
             {categories.length > 0 && (
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-56 h-10">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-slate-400" />
-                    <SelectValue placeholder="All Categories" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={catOpen} onOpenChange={setCatOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={catOpen}
+                    className="w-full md:w-56 h-10 justify-between font-normal"
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      <Filter className="w-4 h-4 text-slate-400" />
+                      {categoryFilter === "all" ? "All Categories" : categoryFilter}
+                    </span>
+                    <ChevronsUpDown className="w-4 h-4 opacity-50 flex-shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search category..." />
+                    <CommandList>
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => { setCategoryFilter("all"); setCatOpen(false); }}
+                          className="gap-2"
+                        >
+                          <Check className={cn("h-4 w-4", categoryFilter === "all" ? "opacity-100" : "opacity-0")} />
+                          All Categories
+                        </CommandItem>
+                        {categories.map(cat => (
+                          <CommandItem
+                            key={cat}
+                            value={cat}
+                            onSelect={() => { setCategoryFilter(cat); setCatOpen(false); }}
+                            className="gap-2"
+                          >
+                            <Check className={cn("h-4 w-4", categoryFilter === cat ? "opacity-100" : "opacity-0")} />
+                            {cat}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
         </CardContent>
@@ -573,7 +621,7 @@ export default function Inventory() {
           onClose={() => setAdjustItem(null)}
           inventoryItem={adjustItem.inv}
           product={adjustItem.product}
-          companyId={companies[0]?.id}
+          companyId={companyId}
           onSuccess={() => {
             queryClient.invalidateQueries(["inventory"]);
             queryClient.invalidateQueries(["adjustmentLogs"]);
@@ -585,7 +633,7 @@ export default function Inventory() {
         open={showBulkAdjust}
         onClose={() => setShowBulkAdjust(false)}
         selectedItems={enrichedInventory.filter(inv => selectedIds.has(inv.id))}
-        companyId={companies[0]?.id}
+        companyId={companyId}
         onSuccess={() => {
           queryClient.invalidateQueries(["inventory"]);
           queryClient.invalidateQueries(["adjustmentLogs"]);
@@ -596,7 +644,7 @@ export default function Inventory() {
       <AdjustmentLogDrawer
         open={showLog}
         onClose={() => setShowLog(false)}
-        companyId={companies[0]?.id}
+        companyId={companyId}
       />
 
       <ReorderSuggestionsDialog
@@ -606,7 +654,7 @@ export default function Inventory() {
         products={products}
         vendors={vendors}
         purchases={purchases}
-        company={companies[0]}
+        company={activeCompany}
         onSuccess={() => {
           queryClient.invalidateQueries(["purchases"]);
         }}

@@ -43,7 +43,7 @@ export default function Dashboard() {
     queryKey: ["sales", selectedCompany?.id],
     queryFn: async () => {
       try {
-        const data = await base44.entities.Sale.list("-sale_date");
+        const data = await base44.entities.Sale.filter({ company_id: selectedCompany.id }, "-sale_date");
         offlineCache.set(CACHE_KEYS.SALES, data);
         return data;
       } catch (error) {
@@ -59,7 +59,7 @@ export default function Dashboard() {
     queryKey: ["products", selectedCompany?.id],
     queryFn: async () => {
       try {
-        const data = await base44.entities.Product.list();
+        const data = await base44.entities.Product.filter({ company_id: selectedCompany.id });
         offlineCache.set(CACHE_KEYS.PRODUCTS, data);
         return data;
       } catch (error) {
@@ -75,7 +75,7 @@ export default function Dashboard() {
     queryKey: ["inventory", selectedCompany?.id],
     queryFn: async () => {
       try {
-        const data = await base44.entities.Inventory.list();
+        const data = await base44.entities.Inventory.filter({ company_id: selectedCompany.id });
         offlineCache.set(CACHE_KEYS.INVENTORY, data);
         return data;
       } catch (error) {
@@ -91,7 +91,7 @@ export default function Dashboard() {
     queryKey: ["customers", selectedCompany?.id],
     queryFn: async () => {
       try {
-        const data = await base44.entities.Customer.list();
+        const data = await base44.entities.Customer.filter({ company_id: selectedCompany.id });
         offlineCache.set(CACHE_KEYS.CUSTOMERS, data);
         return data;
       } catch (error) {
@@ -108,11 +108,18 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
   });
 
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     if (companies.length > 0 && !selectedCompany) {
-      setSelectedCompany(companies[0]);
+      const myId = user?.company_id || user?.tenant_id;
+      setSelectedCompany(companies.find(c => c.id === myId) || companies[0]);
     }
-  }, [companies, selectedCompany]);
+  }, [companies, selectedCompany, user]);
 
   // Calculate metrics
   const todaySales = sales.filter(s => {
@@ -170,6 +177,24 @@ export default function Dashboard() {
           </Button>
         </Link>
       </div>
+
+      {/* Auto low-stock alert banner */}
+      {lowStockProducts.length > 0 && (
+        <Link to={createPageUrl("Inventory")} className="block">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl p-3 md:p-4 shadow-lg hover:shadow-xl transition-shadow touch-manipulation">
+            <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm md:text-base">
+                {lowStockProducts.filter(i => i.quantity <= 0).length > 0
+                  ? `${lowStockProducts.filter(i => i.quantity <= 0).length} item(s) out of stock`
+                  : `${lowStockProducts.length} item(s) below reorder point`}
+              </p>
+              <p className="text-xs opacity-90 truncate">Tap to review and restock before you run out.</p>
+            </div>
+            <ChevronRight className="w-5 h-5 flex-shrink-0" />
+          </div>
+        </Link>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
