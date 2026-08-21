@@ -3,11 +3,13 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle, Sparkles, Loader2, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
+import BulkCategoryAssignDialog from "../components/products/BulkCategoryAssignDialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import PullToRefresh from "@/components/shared/PullToRefresh";
 import SearchInput from "../components/shared/SearchInput";
 
@@ -16,6 +18,8 @@ export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkCategory, setShowBulkCategory] = useState(false);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -88,6 +92,28 @@ export default function Products() {
     setEditingProduct(existingProduct);
   };
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const allFilteredSelected = filteredProducts.length > 0 && filteredProducts.every(p => selectedIds.has(p.id));
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filteredProducts.forEach(p => next.delete(p.id));
+      } else {
+        filteredProducts.forEach(p => next.add(p.id));
+      }
+      return next;
+    });
+  };
+  const selectedProducts = products.filter(p => selectedIds.has(p.id));
+
   const getInventoryForProduct = (productId) => inventory.find(inv => inv.product_id === productId);
   const getStockLevel = (productId) => getInventoryForProduct(productId)?.quantity ?? 0;
 
@@ -131,10 +157,34 @@ export default function Products() {
         </CardContent>
       </Card>
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50 border border-blue-200 rounded-xl p-3 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label="Select all filtered products" />
+            <span className="text-sm font-medium text-blue-900">
+              {selectedIds.size} selected
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>Clear</Button>
+            <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => setShowBulkCategory(true)}>
+              <Tag className="w-4 h-4" /> Assign Category
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className="hover:shadow-lg transition-shadow">
+          <Card key={product.id} className={`hover:shadow-lg transition-shadow relative ${selectedIds.has(product.id) ? "ring-2 ring-blue-400" : ""}`}>
             <CardContent className="p-6">
+              <div className="absolute top-3 right-3 z-10">
+                <Checkbox
+                  checked={selectedIds.has(product.id)}
+                  onCheckedChange={() => toggleSelect(product.id)}
+                  aria-label={`Select ${product.name}`}
+                />
+              </div>
               <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-4 flex items-center justify-center">
                 {product.image_url ? (
                   <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg" />
@@ -232,6 +282,13 @@ export default function Products() {
         products={products}
         onSwitchToExisting={handleSwitchToExisting}
         inventoryItem={editingProduct ? getInventoryForProduct(editingProduct.id) : null}
+      />
+
+      <BulkCategoryAssignDialog
+        open={showBulkCategory}
+        onClose={() => setShowBulkCategory(false)}
+        selectedProducts={selectedProducts}
+        companies={companies}
       />
     </PullToRefresh>
   );

@@ -490,7 +490,7 @@ export default function StaffPOS() {
           {/* Product grid */}
           <div className="flex-1 overflow-auto p-3 min-h-0 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {(searchTerm ? filteredProducts : categoryFilteredProducts.slice(0, 40)).map(product => {
+              {(searchTerm ? filteredProducts : categoryFilteredProducts).map(product => {
                 const stock = stockByProduct[product.id] || 0;
                 return (
                   <button

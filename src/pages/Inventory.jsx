@@ -129,10 +129,12 @@ export default function Inventory() {
 
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
 
+  const term = searchTerm.toLowerCase();
   const filteredInventory = enrichedInventory.filter(inv => {
     const matchesSearch =
-      inv.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inv.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+      inv.product?.name?.toLowerCase().includes(term) ||
+      inv.product?.sku?.toLowerCase().includes(term) ||
+      (inv.product?.barcodes || []).some(b => b.toLowerCase().includes(term));
     const matchesCategory = categoryFilter === "all" || inv.product?.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
