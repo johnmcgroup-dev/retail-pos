@@ -36,7 +36,7 @@ export default function TrialExpired({ company }) {
     {
       id: "monthly",
       name: "Monthly",
-      price: company?.monthly_price ?? 5,
+      price: company?.monthly_price ?? 6,
       period: "/month",
       subtitle: "Billed monthly",
       highlight: false,
@@ -44,7 +44,7 @@ export default function TrialExpired({ company }) {
     {
       id: "yearly",
       name: "Yearly",
-      price: company?.yearly_price ?? 57,
+      price: company?.yearly_price ?? 56,
       period: "/year",
       subtitle: "Best recurring value",
       highlight: true,
@@ -67,7 +67,7 @@ export default function TrialExpired({ company }) {
             <AlertCircle className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Trial Period Over</h1>
-          <p className="text-white/80 mt-2">Your 90-day free trial has ended</p>
+          <p className="text-white/80 mt-2">Your 14-day free trial has ended</p>
         </div>
         <div className="p-8 space-y-6">
           <div className="text-center space-y-2">
@@ -105,7 +105,7 @@ export default function TrialExpired({ company }) {
 
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
             <p className="text-xs text-amber-700">
-              <span className="font-semibold">Trial offer:</span> Get started for just ${company?.first_month_price ?? 1} for your first 90 days on the monthly plan.
+              <span className="font-semibold">Plan details:</span> Free 14-day trial ended. Choose ${company?.monthly_price ?? 6}/mo, ${company?.yearly_price ?? 56}/yr, or ${company?.one_time_price ?? 360} one-time to continue.
             </p>
           </div>
 

@@ -111,14 +111,14 @@ const AuthenticatedApp = () => {
   const hasTenantId = !!user?.tenant_id;
   const tidInUrl = new URLSearchParams(window.location.search).has('tid');
 
-  // Trial period check — 90 days from company creation
+  // Trial period check — 14 days from company creation
   if (isAuthenticated && companies.length > 0 && !tidInUrl) {
     const company = companies[0];
     const isTrial = company.status === 'trial' || !company.status;
     if (isTrial) {
       const createdDate = new Date(company.created_date);
-      const ninetyDays = 90 * 24 * 60 * 60 * 1000;
-      const fallbackEnd = new Date(createdDate.getTime() + ninetyDays);
+      const trialDuration = 14 * 24 * 60 * 60 * 1000;
+      const fallbackEnd = new Date(createdDate.getTime() + trialDuration);
       const trialEnd = company.trial_ends_at
         ? new Date(Math.max(new Date(company.trial_ends_at).getTime(), fallbackEnd.getTime()))
         : fallbackEnd;

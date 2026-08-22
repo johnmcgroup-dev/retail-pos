@@ -67,7 +67,7 @@
     "trial_ends_at": {
       "type": "string",
       "format": "date",
-      "description": "90 days trial end date"
+      "description": "14 days trial end date"
     },
     "payment_gateway": {
       "type": "string",
@@ -84,16 +84,18 @@
     },
     "monthly_price": {
       "type": "number",
-      "default": 5
+      "default": 6,
+      "description": "Monthly recurring subscription price"
     },
     "yearly_price": {
       "type": "number",
-      "default": 57
+      "default": 56,
+      "description": "Yearly recurring subscription price"
     },
     "first_month_price": {
       "type": "number",
-      "default": 1,
-      "description": "Introductory price for the 90-day trial period"
+      "default": 0,
+      "description": "Free 14-day trial price (no charge)"
     },
     "one_time_price": {
       "type": "number",
