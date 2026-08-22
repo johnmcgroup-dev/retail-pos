@@ -23,6 +23,7 @@ import StaffSales from '@/pages/StaffSales';
 import Returns from '@/pages/Returns';
 import Warehouses from '@/pages/Warehouses';
 import Categories from '@/pages/Categories';
+import ActivityLog from '@/pages/ActivityLog';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -111,9 +112,12 @@ const AuthenticatedApp = () => {
   const hasTenantId = !!user?.tenant_id;
   const tidInUrl = new URLSearchParams(window.location.search).has('tid');
 
-  // Trial period check — 14 days from company creation
+  // Subscription / trial gate — restricts the app (incl. checkout) once trial or subscription expires
   if (isAuthenticated && companies.length > 0 && !tidInUrl) {
     const company = companies[0];
+    const now = new Date();
+    const bypassPayment = user?.email === 'onyironkeoma@gmail.com';
+    let expired = false;
     const isTrial = company.status === 'trial' || !company.status;
     if (isTrial) {
       const createdDate = new Date(company.created_date);
@@ -122,10 +126,14 @@ const AuthenticatedApp = () => {
       const trialEnd = company.trial_ends_at
         ? new Date(Math.max(new Date(company.trial_ends_at).getTime(), fallbackEnd.getTime()))
         : fallbackEnd;
-      const bypassPayment = user?.email === 'onyironkeoma@gmail.com';
-      if (!bypassPayment && new Date() > trialEnd) {
-        return <TrialExpired company={company} />;
-      }
+      if (now > trialEnd) expired = true;
+    } else if (company.status === 'active' && company.subscription_end_date) {
+      if (now > new Date(company.subscription_end_date)) expired = true;
+    } else if (company.status === 'expired' || company.status === 'suspended') {
+      expired = true;
+    }
+    if (!bypassPayment && expired) {
+      return <TrialExpired company={company} />;
     }
   }
 
@@ -152,6 +160,7 @@ const AuthenticatedApp = () => {
         <Route path="/Returns" element={<LayoutWrapper currentPageName="Returns"><Returns /></LayoutWrapper>} />
         <Route path="/Warehouses" element={<LayoutWrapper currentPageName="Warehouses"><Warehouses /></LayoutWrapper>} />
         <Route path="/Categories" element={<LayoutWrapper currentPageName="Categories"><Categories /></LayoutWrapper>} />
+        <Route path="/ActivityLog" element={<LayoutWrapper currentPageName="ActivityLog"><ActivityLog /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route

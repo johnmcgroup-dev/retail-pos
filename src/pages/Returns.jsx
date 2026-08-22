@@ -11,6 +11,7 @@ import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Search, RotateCcw, ArrowLeft, Package, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/utils";
 import { format } from "date-fns";
+import { logActivity } from "@/lib/logActivity";
 
 export default function Returns() {
   const queryClient = useQueryClient();
@@ -161,6 +162,17 @@ export default function Returns() {
       queryClient.invalidateQueries(["returns"]);
       queryClient.invalidateQueries(["inventory"]);
       queryClient.invalidateQueries(["customers"]);
+      logActivity({
+        companyId: returnRecord.company_id,
+        entityType: "return",
+        action: "create",
+        entityId: returnRecord.id,
+        referenceNumber: returnRecord.return_number,
+        amount: returnRecord.refund_amount,
+        performedBy: returnRecord.processed_by,
+        description: `Return ${returnRecord.return_number} for invoice ${returnRecord.invoice_number} — ${returnRecord.items?.length || 0} item(s) restocked`,
+        details: { invoice_number: returnRecord.invoice_number, refund_method: returnRecord.refund_method, items: returnRecord.items?.length || 0 },
+      });
       setSuccessMsg(returnRecord);
       setFoundSale(null);
       setSearchQuery("");
@@ -264,6 +276,17 @@ export default function Returns() {
     onSuccess: (returnRecord) => {
       queryClient.invalidateQueries(["returns"]);
       queryClient.invalidateQueries(["inventory"]);
+      logActivity({
+        companyId: returnRecord.company_id,
+        entityType: "return",
+        action: "create",
+        entityId: returnRecord.id,
+        referenceNumber: returnRecord.return_number,
+        amount: returnRecord.refund_amount,
+        performedBy: returnRecord.processed_by,
+        description: `Bulk return ${returnRecord.return_number} — ${returnRecord.items?.length || 0} item(s) restocked`,
+        details: { refund_method: returnRecord.refund_method, items: returnRecord.items?.length || 0 },
+      });
       setSuccessMsg(returnRecord);
       setBulkItems([]);
       setReturnReason("");

@@ -29,6 +29,7 @@ import SearchInput from "../components/shared/SearchInput";
 import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
 import PinnedItems from "../components/pos/PinnedItems";
 import QuickCalculator from "../components/pos/QuickCalculator";
+import { logActivity } from "@/lib/logActivity";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -611,6 +612,17 @@ export default function POS() {
       queryClient.invalidateQueries(["customers"]);
       queryClient.invalidateQueries(["loyaltyTransactions"]);
       queryClient.invalidateQueries(["payments"]);
+      logActivity({
+        companyId: saleData.company_id,
+        entityType: "sale",
+        action: "create",
+        entityId: result?.id,
+        referenceNumber: saleData.invoice_number,
+        amount: saleData.total_amount,
+        performedBy: saleData.cashier,
+        description: `Sale ${saleData.invoice_number} — ${saleData.items?.length || 0} item(s), ${saleData.payment_method}`,
+        details: { customer: saleData.customer_name, items: saleData.items?.length || 0, payment_method: saleData.payment_method },
+      });
       // Refresh and re-cache inventory so offline view stays accurate
       if (isOnline) {
         try {

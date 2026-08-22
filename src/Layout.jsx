@@ -216,6 +216,12 @@ const navigationItems = [
     adminOnly: true
   },
   {
+    title: "Activity Log",
+    url: createPageUrl("ActivityLog"),
+    icon: ClipboardList,
+    adminOnly: true
+  },
+  {
     title: "Company Setup",
     url: createPageUrl("Settings"),
     icon: Settings,

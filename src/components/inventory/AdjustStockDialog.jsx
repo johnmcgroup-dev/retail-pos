@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { logActivity } from "@/lib/logActivity";
 
 const REASONS = [
   { value: "stock_count", label: "Stock Count / Audit" },
@@ -51,6 +52,18 @@ export default function AdjustStockDialog({ open, onClose, inventoryItem, produc
         reason,
         notes,
         adjustment_date: new Date().toISOString(),
+      });
+
+      await logActivity({
+        companyId,
+        entityType: "inventory",
+        action: "adjust",
+        entityId: inventoryItem.id,
+        referenceNumber: product?.name,
+        performedBy: user.email,
+        performedByName: user.full_name,
+        description: `Stock adjusted for ${product?.name}: ${prevQty} → ${newQty} (${change > 0 ? "+" : ""}${change}, ${reason})`,
+        details: { product_id: product?.id, previous_quantity: prevQty, new_quantity: newQty, change, reason, notes },
       });
 
       onSuccess?.();
