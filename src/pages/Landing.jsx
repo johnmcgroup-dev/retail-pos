@@ -14,13 +14,12 @@ export default function Landing() {
   const [mode, setMode] = useState(null); // "invited" | "new" | "returning" | null
 
   const urlParams = new URLSearchParams(window.location.search);
-  const isInvited = urlParams.has("invite") || urlParams.has("ref") || urlParams.has("token") || urlParams.has("tid");
+  const isInvited = urlParams.has("invite") || urlParams.has("ref") || urlParams.has("token") || urlParams.has("tid") || urlParams.has("inv");
   const tid = urlParams.get("tid");
+  const hasClaim = urlParams.has("tid") || urlParams.has("inv");
 
-  // Build the post-login redirect preserving ?tid= so the claim hook fires
-  const dashboardUrl = tid
-    ? `${window.location.origin}/Dashboard?tid=${tid}`
-    : `${window.location.origin}/Dashboard`;
+  // Build the post-login redirect preserving the invite token (?inv= encrypted or ?tid=) so the claim hook fires after login
+  const dashboardUrl = `${window.location.origin}/Dashboard${window.location.search}`;
 
   useEffect(() => {
     const check = async () => {
@@ -66,7 +65,7 @@ export default function Landing() {
               <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
               <span className="text-sm text-slate-700">You'll automatically join your team's workspace — no setup needed</span>
             </div>
-            {tid && (
+            {hasClaim && (
               <div className="flex items-center gap-3 text-left p-3 bg-blue-50 rounded-lg border border-blue-100">
                 <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
                 <span className="text-sm text-slate-700">Your tenant access is pre-configured and ready</span>

@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Users, UserPlus, Mail, Shield, Building2, Crown, Star, Trash2 } from "lucide-react";
+import { Users, UserPlus, Mail, Shield, Building2, Crown, Star, Trash2, CheckCircle2, Copy } from "lucide-react";
+import { encryptTenantId } from "@/lib/tenantToken";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -43,6 +44,7 @@ export default function UserManagement() {
   const [inviteForm, setInviteForm] = useState({ email: "", role: "user" });
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -125,11 +127,18 @@ export default function UserManagement() {
         } catch (_) {}
       }, 3000);
 
+      // Generate an encrypted invite link so the invitee auto-joins this tenant on first login
+      const link = `${window.location.origin}/?inv=${encryptTenantId(company.id)}`;
+      base44.integrations.Core.SendEmail({
+        to: inviteForm.email,
+        subject: `You're invited to join ${company.name} on My Retailer Pro`,
+        body: `Hi,\n\nYou've been invited to join ${company.name} on My Retailer Pro.\n\nClick the link below to sign in and automatically join the workspace — no setup required:\n\n${link}\n\nSee you there!`,
+      }).catch(() => { /* platform invite email already sent; link is also copyable from the dialog */ });
+      setInviteResult({ email: inviteForm.email, companyName: company.name, link });
       toast({
         title: "Invitation sent!",
-        description: `${inviteForm.email} invited as ${ROLE_CONFIG[inviteForm.role]?.label}. They will auto-join ${company.name} on first login.`,
+        description: `${inviteForm.email} will auto-join ${company.name} on first login.`,
       });
-      setShowInviteDialog(false);
       setInviteForm({ email: "", role: "user" });
       queryClient.invalidateQueries(["users"]);
     } catch (error) {
@@ -290,7 +299,7 @@ export default function UserManagement() {
       </Card>
 
       {/* Invite Dialog */}
-      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+      <Dialog open={showInviteDialog} onOpenChange={(open) => { setShowInviteDialog(open); if (!open) setInviteResult(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -298,45 +307,78 @@ export default function UserManagement() {
               Invite New User
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            {company && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-800">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 flex-shrink-0" />
-                  <span>Tenant: <strong>{company.name}</strong></span>
+          {inviteResult ? (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-slate-800">Invitation sent to {inviteResult.email}</p>
+                  <p className="text-xs text-slate-500">They will auto-join {inviteResult.companyName} on first login — no onboarding needed.</p>
                 </div>
-                <p className="text-xs text-blue-600 mt-1 ml-6">
-                  The invited user will automatically inherit this tenant on first login — no new onboarding needed.
+              </div>
+              <div>
+                <Label>Encrypted invite link</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input readOnly value={inviteResult.link} className="text-xs bg-slate-50" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { navigator.clipboard?.writeText(inviteResult.link); toast({ title: "Link copied to clipboard" }); }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  The tenant ID is encrypted inside this link. Share it with the invitee (e.g. via WhatsApp) as a fallback if the invite email doesn't arrive.
                 </p>
               </div>
-            )}
-            <div>
-              <Label>Email Address *</Label>
-              <Input
-                type="email"
-                placeholder="colleague@example.com"
-                value={inviteForm.email}
-                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-              />
+              <DialogFooter>
+                <Button onClick={() => { setInviteResult(null); setShowInviteDialog(false); }} className="bg-blue-600 hover:bg-blue-700">Done</Button>
+              </DialogFooter>
             </div>
-            <div>
-              <Label>Assign Role</Label>
-              <DrawerSelect
-                value={inviteForm.role}
-                onValueChange={(role) => setInviteForm({ ...inviteForm, role })}
-                options={assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }))}
-                triggerClassName="w-full h-9 text-sm rounded-md border px-3"
-                label="Assign Role"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
-            <Button onClick={handleInvite} disabled={!inviteForm.email} className="bg-blue-600 hover:bg-blue-700">
-              <Mail className="w-4 h-4 mr-2" />
-              Send Invitation
-            </Button>
-          </DialogFooter>
+          ) : (
+            <>
+              <div className="space-y-4 py-2">
+                {company && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-800">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 flex-shrink-0" />
+                      <span>Tenant: <strong>{company.name}</strong></span>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1 ml-6">
+                      The invited user will automatically inherit this tenant (encrypted in the invite link) on first login — no new onboarding needed.
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <Label>Email Address *</Label>
+                  <Input
+                    type="email"
+                    placeholder="colleague@example.com"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Assign Role</Label>
+                  <DrawerSelect
+                    value={inviteForm.role}
+                    onValueChange={(role) => setInviteForm({ ...inviteForm, role })}
+                    options={assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }))}
+                    triggerClassName="w-full h-9 text-sm rounded-md border px-3"
+                    label="Assign Role"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
+                <Button onClick={handleInvite} disabled={!inviteForm.email} className="bg-blue-600 hover:bg-blue-700">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Send Invitation
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

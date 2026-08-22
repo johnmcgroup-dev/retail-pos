@@ -27,6 +27,7 @@ import ActivityLog from '@/pages/ActivityLog';
 import InventoryDashboard from '@/pages/InventoryDashboard';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { decryptTenantId } from '@/lib/tenantToken';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -48,21 +49,26 @@ const AuthenticatedApp = () => {
     if (!isAuthenticated || !user) return;
     const params = new URLSearchParams(window.location.search);
     const tid = params.get('tid');
-    if (!tid) return;
+    const inv = params.get('inv');
+    // The tenant ID can arrive encrypted as ?inv= (preferred) or plain as ?tid= (legacy)
+    const claimedTenantId = tid || (inv ? decryptTenantId(inv) : null);
+    if (!claimedTenantId) return;
     if (user.tenant_id) {
       // Already has a tenant — just clean the URL
       const url = new URL(window.location.href);
       url.searchParams.delete('tid');
+      url.searchParams.delete('inv');
       window.history.replaceState({}, '', url.toString());
       return;
     }
     // Claim the tenant via backend
-    base44.functions.invoke('claimTenant', { tenantId: tid })
+    base44.functions.invoke('claimTenant', { tenantId: claimedTenantId })
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['companies_check'] });
         // Clean the URL
         const url = new URL(window.location.href);
         url.searchParams.delete('tid');
+        url.searchParams.delete('inv');
         window.history.replaceState({}, '', url.toString());
       })
       .catch(console.error);
@@ -111,7 +117,8 @@ const AuthenticatedApp = () => {
   // Invited users carry a tenant_id on their profile — skip onboarding if set
   // Also skip if ?tid= is in the URL (claim hook will handle it after redirect)
   const hasTenantId = !!user?.tenant_id;
-  const tidInUrl = new URLSearchParams(window.location.search).has('tid');
+  const tidInUrl = new URLSearchParams(window.location.search).has('tid')
+    || new URLSearchParams(window.location.search).has('inv');
 
   // Subscription / trial gate — restricts the app (incl. checkout) once trial or subscription expires
   if (isAuthenticated && companies.length > 0 && !tidInUrl) {
