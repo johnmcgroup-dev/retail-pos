@@ -227,6 +227,14 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
 
   const change = paymentMethod === "cash" && amountReceived > total ? amountReceived - total : 0;
 
+  // Resolve the receipt's company from the completed sale's own company_id (not companies[0],
+  // which for a multi-tenant admin can be a different tenant). Falls back to the signed-in user's company.
+  const receiptCompany =
+    (completedSale?.company_id && companies.find(c => c.id === completedSale.company_id)) ||
+    (user?.company_id && companies.find(c => c.id === user.company_id)) ||
+    (user?.tenant_id && companies.find(c => c.id === user.tenant_id)) ||
+    companies[0];
+
   return (
     <>
       <Dialog open={open && !showInvoice} onOpenChange={onClose}>
@@ -421,14 +429,14 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
             {receiptView === "thermal" ? (
               <PrintableReceipt
                 sale={completedSale}
-                company={companies[0]}
+                company={receiptCompany}
                 customer={customers.find(c => c.id === completedSale?.customer_id)}
                 user={user}
               />
             ) : (
               <InvoiceReceipt
                 sale={completedSale}
-                company={companies[0]}
+                company={receiptCompany}
                 customer={customers.find(c => c.id === completedSale?.customer_id)}
                 user={user}
               />
