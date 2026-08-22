@@ -186,6 +186,7 @@ export default function Settings() {
     show_currency_symbol: false,
     goodwill_message: "Thank you for your business!"
   });
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
 
   const { detectedCountry, detectedCurrency, loading: currencyLoading } = useCurrency();
 
@@ -194,12 +195,23 @@ export default function Settings() {
     queryFn: () => base44.entities.Company.list(),
   });
 
+  // Admins / super-admins can see multiple tenants — let them pick which one to manage.
+  // Default to the user's own assigned company, never companies[0] (which may be another tenant).
+  useEffect(() => {
+    if (selectedCompanyId || companies.length === 0) return;
+    const myId = user?.company_id || user?.tenant_id;
+    const defaultCompany = (myId && companies.find(c => c.id === myId)) || companies[0];
+    setSelectedCompanyId(defaultCompany.id);
+  }, [companies, user, selectedCompanyId]);
+
+  const company = companies.find(c => c.id === selectedCompanyId) || companies[0];
+
   const queryClient = useQueryClient();
 
   const updateCompanyMutation = useMutation({
     mutationFn: (data) => {
-      if (companies[0]?.id) {
-        return base44.entities.Company.update(companies[0].id, data);
+      if (company?.id) {
+        return base44.entities.Company.update(company.id, data);
       }
       return Promise.reject("No company found");
     },
@@ -226,20 +238,20 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    if (companies[0]) {
+    if (company) {
       setCompanyForm({
-        name: companies[0].name || "",
-        type: companies[0].type || "retail_store",
-        address: companies[0].address || "",
-        phone: companies[0].phone || "",
-        email: companies[0].email || "",
-        tax_id: companies[0].tax_id || "",
-        currency: companies[0].currency || "USD",
-        show_currency_symbol: companies[0].show_currency_symbol || false,
-        goodwill_message: companies[0].goodwill_message || "Thank you for your business!"
+        name: company.name || "",
+        type: company.type || "retail_store",
+        address: company.address || "",
+        phone: company.phone || "",
+        email: company.email || "",
+        tax_id: company.tax_id || "",
+        currency: company.currency || "USD",
+        show_currency_symbol: company.show_currency_symbol || false,
+        goodwill_message: company.goodwill_message || "Thank you for your business!"
       });
     }
-  }, [companies]);
+  }, [company]);
 
   const handleClearCache = () => {
     if (confirm("Are you sure you want to clear all offline cache? This will remove locally stored product data.")) {
@@ -249,7 +261,6 @@ export default function Settings() {
     }
   };
 
-  const company = companies[0];
   const isSuperAdmin = user?.email === 'johnmcgroup@gmail.com';
   const isTrialExpired = company?.trial_ends_at && new Date(company.trial_ends_at) < new Date();
   const daysLeftInTrial = company?.trial_ends_at 
@@ -262,6 +273,32 @@ export default function Settings() {
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Company Setup</h1>
         <p className="text-slate-500 mt-1">Manage your company and system preferences</p>
       </div>
+
+      {companies.length > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                Managing tenant:
+              </div>
+              <div className="flex-1 max-w-sm">
+                <DrawerSelect
+                  value={selectedCompanyId || ""}
+                  onValueChange={setSelectedCompanyId}
+                  options={companies.map(c => ({ value: c.id, label: c.name }))}
+                  placeholder="Select a company"
+                  label="Active tenant"
+                  triggerClassName="w-full h-9 border border-input bg-background rounded-md px-3 text-sm font-medium"
+                />
+              </div>
+              <p className="text-xs text-slate-500">
+                You have access to {companies.length} tenants — pick one to view or edit its details.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="company" className="space-y-4">
         <TabsList className="flex flex-wrap justify-start gap-2">
@@ -550,7 +587,7 @@ export default function Settings() {
                         {isTrialExpired ? (
                           <span><strong>Trial Expired!</strong> Please subscribe to continue using RetailPro.</span>
                         ) : (
-                          <span><strong>{daysLeftInTrial} days</strong> left in your 45-day free trial.</span>
+                          <span><strong>{daysLeftInTrial} days</strong> left in your 14-day free trial.</span>
                         )}
                       </AlertDescription>
                     </Alert>
