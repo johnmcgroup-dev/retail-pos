@@ -198,6 +198,11 @@ const navigationItems = [
     adminOnly: true
   },
   {
+    title: "Inventory Dashboard",
+    url: createPageUrl("InventoryDashboard"),
+    icon: BarChart3
+  },
+  {
     title: "Tenant Management",
     url: createPageUrl("TenantManagement"),
     icon: Building2,
