@@ -11,7 +11,8 @@ import {
   DollarSign,
   AlertCircle,
   Package,
-  Award
+  Award,
+  Calculator
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
@@ -27,6 +28,7 @@ import { playScanBeep, playErrorBuzz } from "../components/pos/scanSound";
 import SearchInput from "../components/shared/SearchInput";
 import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
 import PinnedItems from "../components/pos/PinnedItems";
+import QuickCalculator from "../components/pos/QuickCalculator";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -46,8 +48,10 @@ export default function POS() {
   const [loyaltyRedeem, setLoyaltyRedeem] = useState({ enabled: false, points: 0 });
   const [saleCompleted, setSaleCompleted] = useState(null);
   const [stockWarning, setStockWarning] = useState("");
+  const [showCalculator, setShowCalculator] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
 
+  const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
@@ -186,10 +190,11 @@ export default function POS() {
   }, [showCheckout]);
 
   useEffect(() => {
-    if (companies.length > 0 && !selectedCompany) {
-      setSelectedCompany(companies[0]);
+    if (companies.length > 0 && user && !selectedCompany) {
+      const myId = user.company_id || user.tenant_id;
+      setSelectedCompany(companies.find(c => c.id === myId) || companies[0]);
     }
-  }, [companies, selectedCompany]);
+  }, [companies, selectedCompany, user]);
 
   useEffect(() => {
     if (wasOffline && isOnline) {
@@ -846,11 +851,16 @@ export default function POS() {
                   Cart <span className="text-sm opacity-80">({cart.length} items)</span>
                 </h2>
               </div>
-              {cart.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearCart} className="text-white hover:bg-white/20 text-xs">
-                  Clear All
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={() => setShowCalculator(true)} className="text-white hover:bg-white/20 text-xs gap-1">
+                  <Calculator className="w-4 h-4" /> Calc
                 </Button>
-              )}
+                {cart.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={clearCart} className="text-white hover:bg-white/20 text-xs">
+                    Clear All
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -934,6 +944,8 @@ export default function POS() {
           </div>
         </div>
       </div>
+
+      <QuickCalculator open={showCalculator} onClose={() => setShowCalculator(false)} />
 
       <PaymentGatewayDialog
         open={showCheckout}

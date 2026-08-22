@@ -21,10 +21,12 @@ export default function Customers() {
     queryFn: () => base44.entities.Customer.list("-created_date"),
   });
 
+  const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
   });
+  const activeCompany = (user && companies.find(c => c.id === (user.company_id || user.tenant_id))) || companies[0];
 
   const filteredCustomers = customers.filter(c =>
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -224,7 +226,7 @@ export default function Customers() {
       <GoogleContactsImport
         open={showImport}
         onClose={() => setShowImport(false)}
-        company={companies[0]}
+        company={activeCompany}
       />
     </div>
   );

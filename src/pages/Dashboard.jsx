@@ -115,8 +115,8 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    if (companies.length > 0 && !selectedCompany) {
-      const myId = user?.company_id || user?.tenant_id;
+    if (companies.length > 0 && user && !selectedCompany) {
+      const myId = user.company_id || user.tenant_id;
       setSelectedCompany(companies.find(c => c.id === myId) || companies[0]);
     }
   }, [companies, selectedCompany, user]);

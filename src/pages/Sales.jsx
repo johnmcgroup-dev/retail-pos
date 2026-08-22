@@ -21,12 +21,13 @@ export default function Sales() {
     queryFn: () => base44.entities.Sale.list("-sale_date"),
   });
 
+  const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
   });
 
-  const company = companies[0];
+  const company = (user && companies.find(c => c.id === (user.company_id || user.tenant_id))) || companies[0];
   const currency = company?.currency || 'USD';
 
   const filteredSales = sales.filter(sale =>

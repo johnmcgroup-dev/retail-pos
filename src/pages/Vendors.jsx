@@ -223,6 +223,7 @@ export default function Vendors() {
     queryFn: () => base44.entities.Vendor.list("-created_date"),
   });
 
+  const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
@@ -233,8 +234,10 @@ export default function Vendors() {
     queryFn: () => base44.entities.Purchase.list("-purchase_date"),
   });
 
-  const companyId = companies[0]?.id;
-  const currency = companies[0]?.currency || "NGN";
+  const myCompanyId = user?.company_id || user?.tenant_id;
+  const activeCompany = (myCompanyId && companies.find(c => c.id === myCompanyId)) || companies[0];
+  const companyId = activeCompany?.id;
+  const currency = activeCompany?.currency || "NGN";
 
   const filteredVendors = vendors.filter(v =>
     v.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
