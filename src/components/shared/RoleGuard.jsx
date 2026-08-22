@@ -12,8 +12,9 @@ import { Navigate, useLocation } from "react-router-dom";
 export default function RoleGuard({ user, children }) {
   const location = useLocation();
 
-  if (user?.role === "user" && location.pathname !== "/StaffPOS") {
-    return <Navigate to="/StaffPOS" replace />;
+  const allowedStaffPaths = ["/StaffPOS", "/StaffDashboard"];
+  if (user?.role === "user" && !allowedStaffPaths.includes(location.pathname)) {
+    return <Navigate to="/StaffDashboard" replace />;
   }
 
   return <>{children}</>;

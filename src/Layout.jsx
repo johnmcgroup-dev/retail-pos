@@ -344,6 +344,15 @@ export default function Layout({ children, currentPageName }) {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
+          {/* Staff nav: only Dashboard + POS */}
+          <div className="flex gap-2 py-2 border-t border-slate-100">
+            <Link to="/StaffDashboard" className={`flex-1 text-center text-xs font-medium py-1.5 rounded-lg transition-colors ${location.pathname === '/StaffDashboard' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              My Dashboard
+            </Link>
+            <Link to="/StaffPOS" className={`flex-1 text-center text-xs font-medium py-1.5 rounded-lg transition-colors ${location.pathname === '/StaffPOS' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              POS Checkout
+            </Link>
+          </div>
         </header>
         <div className="flex-1 overflow-auto">
           {children}

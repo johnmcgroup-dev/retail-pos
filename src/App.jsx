@@ -20,6 +20,7 @@ import Storefront from '@/pages/Storefront';
 import VendorDashboard from '@/pages/VendorDashboard';
 import TenantManagement from '@/pages/TenantManagement';
 import StaffSales from '@/pages/StaffSales';
+import StaffDashboard from '@/pages/StaffDashboard';
 import Returns from '@/pages/Returns';
 import Warehouses from '@/pages/Warehouses';
 import Categories from '@/pages/Categories';
@@ -163,6 +164,7 @@ const AuthenticatedApp = () => {
         {/* Landing page — unauthenticated entry point, no layout */}
         <Route path="/" element={<Landing />} />
         <Route path="/StaffSales" element={<LayoutWrapper currentPageName="StaffSales"><StaffSales /></LayoutWrapper>} />
+        <Route path="/StaffDashboard" element={<LayoutWrapper currentPageName="StaffDashboard"><StaffDashboard /></LayoutWrapper>} />
         <Route path="/TenantManagement" element={<LayoutWrapper currentPageName="TenantManagement"><TenantManagement /></LayoutWrapper>} />
         <Route path="/VendorDashboard" element={<LayoutWrapper currentPageName="VendorDashboard"><VendorDashboard /></LayoutWrapper>} />
         <Route path="/Returns" element={<LayoutWrapper currentPageName="Returns"><Returns /></LayoutWrapper>} />
