@@ -59,10 +59,14 @@ export default function UserManagement() {
   });
 
   useEffect(() => {
-    if (companies.length > 0 && !selectedCompanyId) {
-      setSelectedCompanyId(companies[0].id);
+    if (companies.length > 0 && !selectedCompanyId && currentUser) {
+      // Default to the signed-in user's own company, not companies[0] —
+      // admins can list multiple companies and [0] may be another tenant.
+      const myCompanyId = currentUser.company_id || currentUser.tenant_id;
+      const myCompany = myCompanyId && companies.find(c => c.id === myCompanyId);
+      setSelectedCompanyId((myCompany || companies[0]).id);
     }
-  }, [companies, selectedCompanyId]);
+  }, [companies, selectedCompanyId, currentUser]);
 
   const company = companies.find(c => c.id === selectedCompanyId) || companies[0];
 

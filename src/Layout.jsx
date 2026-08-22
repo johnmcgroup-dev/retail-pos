@@ -280,11 +280,15 @@ export default function Layout({ children, currentPageName }) {
         
         const companies = await base44.entities.Company.list();
         if (companies.length > 0) {
-          setCompany(companies[0]);
-          setActiveCurrency(companies[0].currency || "NGN", companies[0].show_currency_symbol !== false);
+          // Resolve the active company by the user's own company_id/tenant_id,
+          // not companies[0] — admins can list multiple companies and [0] may be another tenant.
+          const myCompanyId = currentUser.company_id || currentUser.tenant_id;
+          const activeCompany = (myCompanyId && companies.find(c => c.id === myCompanyId)) || companies[0];
+          setCompany(activeCompany);
+          setActiveCurrency(activeCompany.currency || "NGN", activeCompany.show_currency_symbol !== false);
           // Auto-fix: set company_id on user if missing so RLS allows Sale creation
           if (!currentUser.company_id) {
-            await base44.auth.updateMe({ company_id: companies[0].id });
+            await base44.auth.updateMe({ company_id: activeCompany.id });
           }
         }
       } catch (error) {
