@@ -60,6 +60,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
 import OfflineIndicator from "@/components/shared/OfflineIndicator";
 import InstallPrompt from "@/components/shared/InstallPrompt";
@@ -347,6 +348,7 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex-1 overflow-auto">
           {children}
         </div>
+        <ChatbotWidget />
       </div>
     );
   }
@@ -480,6 +482,7 @@ export default function Layout({ children, currentPageName }) {
         open={showNotifications} 
         onClose={() => setShowNotifications(false)} 
       />
+      <ChatbotWidget />
     </SidebarProvider>
   );
 }
