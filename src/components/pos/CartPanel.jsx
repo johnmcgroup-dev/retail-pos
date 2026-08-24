@@ -1,12 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, ShoppingCart, Package } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Package, Save } from "lucide-react";
 import { formatCurrency } from "@/utils";
 
 const VARIETIES = ["Pieces", "Roll", "Bundle", "Dozen", "Carton"];
 
-export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, currency = 'USD' }) {
+export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
+  const [savedId, setSavedId] = useState(null);
+
+  const handleSave = (item) => {
+    if (!onSaveVarietyPrice) return;
+    Promise.resolve(onSaveVarietyPrice(item.product_id, item.variety || "Pieces", item.unit_price))
+      .then(() => {
+        setSavedId(item.product_id);
+        setTimeout(() => setSavedId(null), 1500);
+      });
+  };
+
   return (
     <div className="p-4">
       {cart.length === 0 ? (
@@ -42,9 +53,9 @@ export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpda
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-medium text-slate-500 shrink-0">Variety</span>
+
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-medium text-slate-500 shrink-0 w-14">Variety</span>
                 <select
                   value={item.variety || "Pieces"}
                   onChange={(e) => onUpdateVariety && onUpdateVariety(item.product_id, e.target.value)}
@@ -52,16 +63,31 @@ export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpda
                 >
                   {VARIETIES.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
-                <span className="text-xs font-medium text-slate-500 shrink-0">Price</span>
+              </div>
+
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-slate-500 shrink-0 w-14">Price</span>
                 <Input
                   type="number"
                   value={item.unit_price}
                   onChange={(e) => onUpdateUnitPrice && onUpdateUnitPrice(item.product_id, e.target.value)}
-                  className="w-20 h-8 text-right"
+                  className="flex-1 h-8 text-right min-w-0"
                   min="0"
                   step="0.01"
                 />
+                {onSaveVarietyPrice && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-xs gap-1 shrink-0"
+                    onClick={() => handleSave(item)}
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savedId === item.product_id ? "Saved!" : "Save"}
+                  </Button>
+                )}
               </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Button

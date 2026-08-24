@@ -33,6 +33,13 @@
     "selling_price": {
       "type": "number"
     },
+    "varieties": {
+      "type": "object",
+      "description": "Per-variety selling prices keyed by variety name (Roll, Bundle, Dozen, Carton). Pieces always falls back to selling_price.",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
     "wholesale_price": {
       "type": "number"
     },

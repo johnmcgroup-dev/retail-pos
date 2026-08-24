@@ -425,9 +425,39 @@ export default function POS() {
     setCart(cart.filter(item => item.product_id !== productId));
   };
 
-  // Change the selling variety (Pieces / Roll / Bundle / Dozen / Carton) for a cart line
+  // Change the selling variety (Pieces / Roll / Bundle / Dozen / Carton) for a cart line.
+  // Pulls the saved per-variety price from the product so it auto-fills when switched.
   const updateVariety = (productId, variety) => {
-    setCart(cart.map(item => (item.product_id === productId ? { ...item, variety } : item)));
+    const product = products.find(p => p.id === productId);
+    setCart(cart.map(item => {
+      if (item.product_id !== productId) return item;
+      let price = item.unit_price;
+      if (variety === "Pieces") {
+        price = product?.selling_price ?? item.unit_price;
+      } else {
+        price = product?.varieties?.[variety] ?? item.unit_price;
+      }
+      const tax = item.unit_price ? item.tax * (price / item.unit_price) : item.tax;
+      return { ...item, variety, unit_price: price, tax, total: price * item.quantity };
+    }));
+  };
+
+  // Save the current variety price back onto the product so it auto-fills next time.
+  // "Pieces" maps to selling_price; other varieties are stored in the product's varieties map.
+  const saveVarietyPrice = async (productId, variety, price) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    try {
+      if (variety === "Pieces") {
+        await base44.entities.Product.update(productId, { selling_price: price });
+      } else {
+        const varieties = { ...(product.varieties || {}), [variety]: price };
+        await base44.entities.Product.update(productId, { varieties });
+      }
+      queryClient.invalidateQueries(["products"]);
+    } catch (error) {
+      console.error("Error saving variety price:", error);
+    }
   };
 
   // Edit the per-variety unit price; recalculates proportional tax and line total
@@ -925,6 +955,7 @@ export default function POS() {
               onRemoveItem={removeFromCart}
               onUpdateVariety={updateVariety}
               onUpdateUnitPrice={updateUnitPrice}
+              onSaveVarietyPrice={saveVarietyPrice}
               currency={currency}
             />
           </div>
