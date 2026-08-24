@@ -1,4 +1,3 @@
-
 import React, { forwardRef } from "react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/utils";
@@ -14,10 +13,10 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
           <img src={company.logo_url} alt={company.name} className="h-16 mx-auto mb-4" />
         )}
         <h1 className="text-3xl font-bold text-slate-900 mb-2">{company?.name || "My Retailer PoS"}</h1>
-        <p className="text-slate-600">{company?.address || ""}</p>
-        <p className="text-slate-600">Phone: {company?.phone || "N/A"}</p>
-        <p className="text-slate-600">Email: {company?.email || "N/A"}</p>
-        {company?.tax_id && <p className="text-slate-600">Tax ID: {company.tax_id}</p>}
+        <p className="text-slate-900 font-semibold">{company?.address || ""}</p>
+        <p className="text-slate-900 font-semibold">Phone: {company?.phone || "N/A"}</p>
+        <p className="text-slate-900 font-semibold">Email: {company?.email || "N/A"}</p>
+        {company?.tax_id && <p className="text-slate-900 font-semibold">Tax ID: {company.tax_id}</p>}
       </div>
 
       {/* Invoice Details */}
@@ -25,24 +24,24 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
         <div>
           <h3 className="font-bold text-slate-900 mb-2">INVOICE TO:</h3>
           <p className="font-semibold text-slate-900">{customer?.name || sale?.customer_name || "Walk-in Customer"}</p>
-          {customer?.email && <p className="text-slate-600">{customer.email}</p>}
-          {customer?.phone && <p className="text-slate-600">{customer.phone}</p>}
-          {customer?.address && <p className="text-slate-600">{customer.address}</p>}
+          {customer?.email && <p className="text-slate-900 font-semibold">{customer.email}</p>}
+          {customer?.phone && <p className="text-slate-900 font-semibold">{customer.phone}</p>}
+          {customer?.address && <p className="text-slate-900 font-semibold">{customer.address}</p>}
         </div>
         <div className="text-right">
-          <p className="text-slate-600">
+          <p className="text-slate-900 font-semibold">
             <span className="font-bold">Invoice #:</span> {sale?.invoice_number}
           </p>
-          <p className="text-slate-600">
+          <p className="text-slate-900 font-semibold">
             <span className="font-bold">Date:</span> {format(new Date(sale?.sale_date || new Date()), "MMM d, yyyy")}
           </p>
-          <p className="text-slate-600">
+          <p className="text-slate-900 font-semibold">
             <span className="font-bold">Time:</span> {format(new Date(sale?.sale_date || new Date()), "h:mm a")}
           </p>
-          <p className="text-slate-600">
+          <p className="text-slate-900 font-semibold">
             <span className="font-bold">Cashier:</span> {user?.full_name || sale?.cashier?.split('@')[0] || "Staff"}
           </p>
-          <p className="text-slate-600">
+          <p className="text-slate-900 font-semibold">
             <span className="font-bold">Payment:</span> <span className="capitalize">{sale?.payment_method?.replace(/_/g, ' ')}</span>
           </p>
         </div>
@@ -62,10 +61,10 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
         <tbody>
           {sale?.items?.map((item, index) => (
             <tr key={index} className="border-b border-slate-200">
-              <td className="py-3 px-4 text-slate-700">{index + 1}</td>
+              <td className="py-3 px-4 text-slate-900 font-medium">{index + 1}</td>
               <td className="py-3 px-4 text-slate-900">{item.product_name}</td>
-              <td className="py-3 px-4 text-center text-slate-700">{item.quantity}</td>
-              <td className="py-3 px-4 text-right text-slate-700">{formatCurrency(item.unit_price, currency)}</td>
+              <td className="py-3 px-4 text-center text-slate-900 font-medium">{item.quantity}</td>
+              <td className="py-3 px-4 text-right text-slate-900 font-medium">{formatCurrency(item.unit_price, currency)}</td>
               <td className="py-3 px-4 text-right font-semibold text-slate-900">{formatCurrency(item.total, currency)}</td>
             </tr>
           ))}
@@ -76,18 +75,18 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
       <div className="flex justify-end mb-6">
         <div className="w-64">
           <div className="flex justify-between py-2 border-b border-slate-200">
-            <span className="text-slate-600">Subtotal:</span>
+            <span className="text-slate-900 font-semibold">Subtotal:</span>
             <span className="font-semibold text-slate-900">{formatCurrency(sale?.subtotal || 0, currency)}</span>
           </div>
           {sale?.tax_amount > 0 && (
             <div className="flex justify-between py-2 border-b border-slate-200">
-              <span className="text-slate-600">Tax:</span>
+              <span className="text-slate-900 font-semibold">Tax:</span>
               <span className="font-semibold text-slate-900">{formatCurrency(sale?.tax_amount, currency)}</span>
             </div>
           )}
           {sale?.discount_amount > 0 && (
             <div className="flex justify-between py-2 border-b border-slate-200">
-              <span className="text-slate-600">Discount:</span>
+              <span className="text-slate-900 font-semibold">Discount:</span>
               <span className="font-semibold text-green-600">-{formatCurrency(sale?.discount_amount, currency)}</span>
             </div>
           )}
@@ -98,18 +97,18 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
           {sale?.amount_paid > 0 && (
             <>
               <div className="flex justify-between py-2">
-                <span className="text-slate-600">Amount Paid:</span>
+                <span className="text-slate-900 font-semibold">Amount Paid:</span>
                 <span className="font-semibold text-slate-900">{formatCurrency(sale?.amount_paid, currency)}</span>
               </div>
               {sale?.amount_due > 0 && (
                 <div className="flex justify-between py-2">
-                  <span className="text-slate-600">Balance Due:</span>
+                  <span className="text-slate-900 font-semibold">Balance Due:</span>
                   <span className="font-semibold text-red-600">{formatCurrency(sale?.amount_due, currency)}</span>
                 </div>
               )}
               {(sale?.amount_paid - sale?.total_amount) > 0 && (
                 <div className="flex justify-between py-2">
-                  <span className="text-slate-600">Change:</span>
+                  <span className="text-slate-900 font-semibold">Change:</span>
                   <span className="font-semibold text-green-600">{formatCurrency(sale?.amount_paid - sale?.total_amount, currency)}</span>
                 </div>
               )}
@@ -137,10 +136,10 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
         <p className="text-lg font-semibold text-slate-900 mb-2">
           {company?.goodwill_message || "Thank you for your business!"}
         </p>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-900 font-semibold">
           We appreciate your patronage and look forward to serving you again.
         </p>
-        <div className="mt-4 text-xs text-slate-500">
+        <div className="mt-4 text-xs text-slate-700 font-medium">
           <p>This is a computer-generated invoice and does not require a signature.</p>
           <p>For inquiries, please contact us at {company?.email || company?.phone}</p>
         </div>
@@ -155,7 +154,7 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
             <rect key={i} x={i * 10} y="0" width={Math.random() > 0.5 ? 5 : 3} height="40" fill="black" />
           ))}
         </svg>
-        <p className="text-xs text-slate-500 mt-2">{sale?.invoice_number}</p>
+        <p className="text-xs text-slate-700 font-medium mt-2">{sale?.invoice_number}</p>
       </div>
     </div>
   );

@@ -315,6 +315,8 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const filteredNavItems = navigationItems.filter(item => {
+    // "Tenant Management" is restricted to the developer account only
+    if (item.title === "Tenant Management" && user?.email !== "johnmcgroup@gmail.com") return false;
     if (item.adminOnly) {
       const role = user?.role;
       return role === 'admin' || role === 'owner' || role === 'super_admin';

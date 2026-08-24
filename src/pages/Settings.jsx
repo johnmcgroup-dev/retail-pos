@@ -274,7 +274,7 @@ export default function Settings() {
         <p className="text-slate-500 mt-1">Manage your company and system preferences</p>
       </div>
 
-      {companies.length > 1 && (
+      {companies.length > 1 && isSuperAdmin && (
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">

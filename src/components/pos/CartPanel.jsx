@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Minus, Plus, Trash2, ShoppingCart, Package } from "lucide-react";
 import { formatCurrency } from "@/utils";
 
-export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, currency = 'USD' }) {
+const VARIETIES = ["Pieces", "Roll", "Bundle", "Dozen", "Carton"];
+
+export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, currency = 'USD' }) {
   return (
     <div className="p-4">
       {cart.length === 0 ? (
@@ -28,7 +30,7 @@ export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, curren
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-slate-900 truncate">{item.product_name}</h4>
-                    <p className="text-sm text-slate-600">{formatCurrency(item.unit_price, currency)} each</p>
+                    <p className="text-sm text-slate-600">{formatCurrency(item.unit_price, currency)} <span className="text-xs text-slate-500">per {item.variety || "Pieces"}</span></p>
                   </div>
                 </div>
                 <Button
@@ -41,6 +43,25 @@ export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, curren
                 </Button>
               </div>
               
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-slate-500 shrink-0">Variety</span>
+                <select
+                  value={item.variety || "Pieces"}
+                  onChange={(e) => onUpdateVariety && onUpdateVariety(item.product_id, e.target.value)}
+                  className="h-8 text-xs border border-slate-300 rounded-md px-2 bg-white flex-1 min-w-0"
+                >
+                  {VARIETIES.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <span className="text-xs font-medium text-slate-500 shrink-0">Price</span>
+                <Input
+                  type="number"
+                  value={item.unit_price}
+                  onChange={(e) => onUpdateUnitPrice && onUpdateUnitPrice(item.product_id, e.target.value)}
+                  className="w-20 h-8 text-right"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Button

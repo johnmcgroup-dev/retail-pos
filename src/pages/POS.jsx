@@ -391,6 +391,7 @@ export default function POS() {
         product_id: product.id,
         product_name: product.name,
         image_url: product.image_url,
+        variety: "Pieces",
         unit_price: product.selling_price,
         quantity: 1,
         tax: (product.selling_price * (product.tax_rate || 0)) / 100,
@@ -424,6 +425,21 @@ export default function POS() {
     setCart(cart.filter(item => item.product_id !== productId));
   };
 
+  // Change the selling variety (Pieces / Roll / Bundle / Dozen / Carton) for a cart line
+  const updateVariety = (productId, variety) => {
+    setCart(cart.map(item => (item.product_id === productId ? { ...item, variety } : item)));
+  };
+
+  // Edit the per-variety unit price; recalculates proportional tax and line total
+  const updateUnitPrice = (productId, newPrice) => {
+    setCart(cart.map(item => {
+      if (item.product_id !== productId) return item;
+      const price = Math.max(0, Number(newPrice) || 0);
+      const tax = item.unit_price ? item.tax * (price / item.unit_price) : item.tax;
+      return { ...item, unit_price: price, tax, total: price * item.quantity };
+    }));
+  };
+
   // Voice-ordered add: supports adding a specific quantity in one call
   const handleVoiceAddToCart = (product, quantity = 1) => {
     const availableStock = getAvailableStock(product.id);
@@ -449,6 +465,7 @@ export default function POS() {
         product_id: product.id,
         product_name: product.name,
         image_url: product.image_url,
+        variety: "Pieces",
         unit_price: product.selling_price,
         quantity: quantity,
         tax: (product.selling_price * (product.tax_rate || 0)) / 100,
@@ -675,7 +692,10 @@ export default function POS() {
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || "Walk-in Customer",
       sale_date: new Date().toISOString(),
-      items: cart,
+      items: cart.map(i => ({
+        ...i,
+        product_name: i.variety && i.variety !== "Pieces" ? `${i.product_name} (${i.variety})` : i.product_name,
+      })),
       subtotal: totals.subtotal,
       tax_amount: totals.taxAmount,
       discount_amount: totals.discountAmount,
@@ -903,6 +923,8 @@ export default function POS() {
               cart={cart}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
+              onUpdateVariety={updateVariety}
+              onUpdateUnitPrice={updateUnitPrice}
               currency={currency}
             />
           </div>

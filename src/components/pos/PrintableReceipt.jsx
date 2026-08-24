@@ -15,7 +15,8 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
     <div ref={ref} className="receipt-root" style={{
       fontFamily: "'Courier New', monospace",
       background: "white",
-      color: "#1e293b",
+      color: "#0f172a",
+      fontWeight: 700,
       maxWidth: "320px",
       margin: "0 auto",
       padding: "16px 14px",
@@ -26,7 +27,7 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
         .receipt-root .dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }
         .receipt-root .row { display: flex; justify-content: space-between; }
         .receipt-root .center { text-align: center; }
-        .receipt-root .bold { font-weight: 700; }
+        .receipt-root .bold { font-weight: 800; }
         .receipt-root .item-line { margin: 3px 0; }
         @media print {
           .receipt-root { max-width: none; padding: 8px; }
@@ -40,10 +41,10 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
           <img src={company.logo_url} alt={company.name} style={{ height: "48px", marginBottom: "4px", objectFit: "contain" }} />
         )}
         <div className="bold" style={{ fontSize: "15px" }}>{company?.name || "My Retailer Pro"}</div>
-        {company?.address && <div style={{ fontSize: "11px", color: "#64748b" }}>{company.address}</div>}
-        {company?.phone && <div style={{ fontSize: "11px", color: "#64748b" }}>Tel: {company.phone}</div>}
-        {company?.email && <div style={{ fontSize: "11px", color: "#64748b" }}>{company.email}</div>}
-        {company?.tax_id && <div style={{ fontSize: "11px", color: "#64748b" }}>Tax ID: {company.tax_id}</div>}
+        {company?.address && <div style={{ fontSize: "11px", color: "#334155" }}>{company.address}</div>}
+        {company?.phone && <div style={{ fontSize: "11px", color: "#334155" }}>Tel: {company.phone}</div>}
+        {company?.email && <div style={{ fontSize: "11px", color: "#334155" }}>{company.email}</div>}
+        {company?.tax_id && <div style={{ fontSize: "11px", color: "#334155" }}>Tax ID: {company.tax_id}</div>}
       </div>
 
       <div className="dashed" />
@@ -65,7 +66,7 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
       {sale?.items?.map((item, i) => (
         <div key={i} className="item-line">
           <div className="bold" style={{ fontSize: "11px" }}>{item.product_name}</div>
-          <div className="row" style={{ fontSize: "11px", color: "#475569" }}>
+          <div className="row" style={{ fontSize: "11px", color: "#1e293b" }}>
             <span>{item.quantity} x {money(item.unit_price)}</span>
             <span className="bold" style={{ color: "#1e293b" }}>{money(item.total)}</span>
           </div>
@@ -143,7 +144,7 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
             style={{ width: "90px", height: "90px" }}
           />
         </div>
-        <div style={{ fontSize: "9px", color: "#94a3b8", marginTop: "4px" }}>Scan for company details</div>
+        <div style={{ fontSize: "9px", color: "#64748b", marginTop: "4px" }}>Scan for company details</div>
       </div>
     </div>
   );
