@@ -26,20 +26,20 @@ export default function CartPanel({ cart, products = [], onUpdateQuantity, onRem
   };
 
   return (
-    <div className="p-4">
+    <div className="p-2 sm:p-3">
       {cart.length === 0 ? (
-        <div className="text-center py-12">
-          <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="text-center py-10">
+          <ShoppingCart className="w-14 h-14 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500">Cart is empty</p>
           <p className="text-sm text-slate-400 mt-1">Add products to get started</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {cart.map((item) => (
-            <div key={item.product_id} className="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-blue-300 transition-colors">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
+            <div key={item.product_id} className="bg-slate-50 rounded-lg p-2.5 sm:p-3 border border-slate-200 hover:border-blue-300 transition-colors">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {item.image_url ? (
                       <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover" />
                     ) : (
@@ -61,7 +61,7 @@ export default function CartPanel({ cart, products = [], onUpdateQuantity, onRem
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-xs font-medium text-slate-500 shrink-0 w-14">Variety</span>
                 <select
                   value={item.variety || "Pieces"}
@@ -79,7 +79,7 @@ export default function CartPanel({ cart, products = [], onUpdateQuantity, onRem
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-2.5">
                 <span className="text-xs font-medium text-slate-500 shrink-0 w-14">Price</span>
                 <Input
                   type="number"

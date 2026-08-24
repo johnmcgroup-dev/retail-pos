@@ -672,7 +672,23 @@ export default function POS() {
           remaining -= deduct;
         }
       }
-      
+
+      // Persist each cart line's selected variety price onto the product table
+      // so the chosen variety becomes a saved selling option for future sales.
+      for (const item of cart) {
+        try {
+          const product = products.find(p => p.id === item.product_id);
+          if (!product) continue;
+          const variety = item.variety || "Pieces";
+          if (variety !== "Pieces" && item.unit_price > 0 && product.varieties?.[variety] == null) {
+            const varieties = { ...(product.varieties || {}), [variety]: item.unit_price };
+            await base44.entities.Product.update(item.product_id, { varieties });
+          }
+        } catch (e) {
+          console.error("Error persisting variety price:", e);
+        }
+      }
+
       return sale;
     },
     onSuccess: async (result, saleData) => {
@@ -972,7 +988,7 @@ export default function POS() {
             </div>
           )}
 
-          <div className="flex-1 overflow-auto min-h-0">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 overscroll-contain">
             <CartPanel
               cart={cart}
               products={products}
