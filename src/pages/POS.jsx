@@ -51,6 +51,8 @@ export default function POS() {
   const [stockWarning, setStockWarning] = useState("");
   const [showCalculator, setShowCalculator] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
+  // Guards against a hardware scanner's trailing Enter re-adding the same item
+  const justScannedRef = useRef(false);
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
@@ -332,6 +334,14 @@ export default function POS() {
       return;
     }
     if (e.key !== "Enter") return;
+
+    // Swallow the trailing Enter emitted by a hardware scanner — the onChange
+    // exact-match already added the item; this prevents the double-count bug.
+    if (justScannedRef.current) {
+      justScannedRef.current = false;
+      e.preventDefault();
+      return;
+    }
 
     const term = searchTerm.trim();
 
@@ -822,12 +832,13 @@ export default function POS() {
                     );
                     if (exact) {
                       addToCart(exact);
-                      setTimeout(() => {
-                        setSearchTerm("");
-                        setShowSearchDropdown(false);
-                        setHighlightedIndex(0);
-                        searchInputRef.current?.focus();
-                      }, 50);
+                      setSearchTerm("");
+                      setShowSearchDropdown(false);
+                      setHighlightedIndex(0);
+                      searchInputRef.current?.focus();
+                      // Suppress the scanner's trailing Enter so one scan = one add
+                      justScannedRef.current = true;
+                      setTimeout(() => { justScannedRef.current = false; }, 300);
                     }
                   }
                 }}

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { generateLowStockAlerts } from "@/lib/generateLowStockAlerts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
 import BulkCategoryAssignDialog from "../components/products/BulkCategoryAssignDialog";
+import BulkEditDialog from "../components/products/BulkEditDialog";
 import ProductsExportButtons from "../components/products/ProductsExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import PullToRefresh from "@/components/shared/PullToRefresh";
@@ -21,6 +23,7 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkCategory, setShowBulkCategory] = useState(false);
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -127,6 +130,17 @@ export default function Products() {
   const getInventoryForProduct = (productId) => inventory.find(inv => inv.product_id === productId);
   const getStockLevel = (productId) => getInventoryForProduct(productId)?.quantity ?? 0;
 
+  // Auto-generate low-stock / out-of-stock alerts based on each product's reorder_level.
+  // (A scheduled backend version needs Builder+; this runs on the Products page load.)
+  useEffect(() => {
+    if (!companyId || !products.length) return;
+    generateLowStockAlerts({ companyId, products, inventory }).then((res) => {
+      if (res.created > 0 || res.resolved > 0) {
+        queryClient.invalidateQueries(["alerts"]);
+      }
+    });
+  }, [companyId, products, inventory]);
+
   return (
     <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries(["products"]); }} className="p-6 md:p-8 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -178,6 +192,9 @@ export default function Products() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>Clear</Button>
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowBulkEdit(true)}>
+              <Edit className="w-4 h-4" /> Bulk Edit
+            </Button>
             <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => setShowBulkCategory(true)}>
               <Tag className="w-4 h-4" /> Assign Category
             </Button>
@@ -300,6 +317,18 @@ export default function Products() {
         onClose={() => setShowBulkCategory(false)}
         selectedProducts={selectedProducts}
         companies={companies}
+      />
+
+      <BulkEditDialog
+        open={showBulkEdit}
+        onClose={() => setShowBulkEdit(false)}
+        selectedProducts={selectedProducts}
+        inventory={inventory}
+        companyId={companyId}
+        onSaved={() => {
+          queryClient.invalidateQueries(["products"]);
+          queryClient.invalidateQueries(["inventory"]);
+        }}
       />
     </PullToRefresh>
   );
