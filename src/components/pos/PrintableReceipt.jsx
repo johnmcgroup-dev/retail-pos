@@ -13,17 +13,19 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
 
   return (
     <div ref={ref} className="receipt-root" style={{
-      fontFamily: "'Courier New', monospace",
+      fontFamily: "Arial, sans-serif",
       background: "white",
       color: "#0f172a",
       fontWeight: 700,
-      maxWidth: "320px",
+      maxWidth: "360px",
       margin: "0 auto",
       padding: "16px 14px",
-      fontSize: "12px",
-      lineHeight: "1.5",
+      fontSize: "14pt",
+      lineHeight: "1.45",
     }}>
       <style>{`
+        .receipt-root { font-family: Arial, sans-serif; font-weight: 700; font-size: 14pt; }
+        .receipt-root, .receipt-root * { font-family: Arial, sans-serif !important; font-weight: 700 !important; font-size: 14pt !important; }
         .receipt-root .dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }
         .receipt-root .row { display: flex; justify-content: space-between; }
         .receipt-root .center { text-align: center; }

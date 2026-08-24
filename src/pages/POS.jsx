@@ -31,6 +31,17 @@ import PinnedItems from "../components/pos/PinnedItems";
 import QuickCalculator from "../components/pos/QuickCalculator";
 import { logActivity } from "@/lib/logActivity";
 
+// How many base units (pieces) each selling variety represents.
+// Used to convert a cart line's variety quantity back to piece-equivalents
+// before deducting from piece-based inventory.
+const VARIETY_TO_PIECES = {
+  Pieces: 1,
+  Roll: 1,
+  Bundle: 1,
+  Dozen: 12,
+  Carton: 12,
+};
+
 export default function POS() {
   const queryClient = useQueryClient();
   const { isOnline, wasOffline } = useOnlineStatus();
@@ -448,7 +459,8 @@ export default function POS() {
         price = product?.varieties?.[variety] ?? item.unit_price;
       }
       const tax = item.unit_price ? item.tax * (price / item.unit_price) : item.tax;
-      return { ...item, variety, unit_price: price, tax, total: price * item.quantity };
+      // Switching variety changes the unit, so reset quantity to 1 of the new variety
+      return { ...item, variety, unit_price: price, quantity: 1, tax, total: price };
     }));
   };
 
@@ -649,7 +661,7 @@ export default function POS() {
           return new Date(a.expiration_date) - new Date(b.expiration_date);
         });
 
-        let remaining = item.quantity;
+        let remaining = item.quantity * (VARIETY_TO_PIECES[item.variety] || 1);
         for (const inv of sorted) {
           if (remaining <= 0) break;
           if ((inv.quantity || 0) <= 0) continue;
@@ -702,7 +714,8 @@ export default function POS() {
     // Block the sale if any cart line is out of stock or below requested qty
     for (const item of cart) {
       const available = getAvailableStock(item.product_id);
-      if (item.quantity < 1 || available <= 0 || item.quantity > available) {
+      const needed = item.quantity * (VARIETY_TO_PIECES[item.variety] || 1);
+      if (item.quantity < 1 || available <= 0 || needed > available) {
         setShowCheckout(false);
         playErrorBuzz();
         setStockWarning(`"${item.product_name}" is out of stock (only ${available} available). Sale blocked.`);
@@ -962,6 +975,7 @@ export default function POS() {
           <div className="flex-1 overflow-auto min-h-0">
             <CartPanel
               cart={cart}
+              products={products}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
               onUpdateVariety={updateVariety}

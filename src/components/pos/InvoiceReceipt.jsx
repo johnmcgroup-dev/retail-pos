@@ -6,7 +6,12 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
   const currency = company?.currency || 'USD';
 
   return (
-    <div ref={ref} className="bg-white p-8 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div ref={ref} className="inv-receipt bg-white p-8 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+      <style>{`
+        .inv-receipt { font-size: 14pt; font-weight: 700; }
+        .inv-receipt, .inv-receipt * { font-weight: 700 !important; }
+        .inv-receipt .text-xs, .inv-receipt .text-sm { font-size: 14pt !important; }
+      `}</style>
       {/* Header */}
       <div className="text-center border-b-2 border-slate-300 pb-6 mb-6">
         {company?.logo_url && (

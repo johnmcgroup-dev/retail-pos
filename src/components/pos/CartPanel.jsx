@@ -6,8 +6,15 @@ import { formatCurrency } from "@/utils";
 
 const VARIETIES = ["Pieces", "Roll", "Bundle", "Dozen", "Carton"];
 
-export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
+export default function CartPanel({ cart, products = [], onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
   const [savedId, setSavedId] = useState(null);
+
+  const varietyPrice = (productId, variety) => {
+    const p = products.find(x => x.id === productId);
+    if (!p) return null;
+    if (variety === "Pieces") return p.selling_price ?? null;
+    return p.varieties?.[variety] ?? null;
+  };
 
   const handleSave = (item) => {
     if (!onSaveVarietyPrice) return;
@@ -61,7 +68,14 @@ export default function CartPanel({ cart, onUpdateQuantity, onRemoveItem, onUpda
                   onChange={(e) => onUpdateVariety && onUpdateVariety(item.product_id, e.target.value)}
                   className="h-8 text-xs border border-slate-300 rounded-md px-2 bg-white flex-1 min-w-0"
                 >
-                  {VARIETIES.map(v => <option key={v} value={v}>{v}</option>)}
+                  {VARIETIES.map(v => {
+                    const price = varietyPrice(item.product_id, v);
+                    return (
+                      <option key={v} value={v}>
+                        {v}{price != null ? ` — ${formatCurrency(price, currency)}` : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
