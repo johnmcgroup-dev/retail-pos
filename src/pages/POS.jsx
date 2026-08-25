@@ -450,6 +450,16 @@ export default function POS() {
       // Switching variety changes the unit, so reset quantity to 1 of the new variety
       return { ...item, variety, unit_price: price, quantity: 1, tax, total: price };
     }));
+
+    // Auto-persist the variety if it was NOT pre-configured on the product page.
+    // "Pieces" maps to selling_price (always present) — and already-configured
+    // varieties are only updated when the cashier clicks Save in the cart.
+    if (variety !== "Pieces" && product && product.varieties?.[variety] == null) {
+      const item = cart.find(i => i.product_id === productId);
+      const autoPrice = getVarietyPrice(product, variety) ?? item?.unit_price ?? product.selling_price;
+      const autoQty = getVarietyQuantity(product, variety);
+      saveVarietyPrice(productId, variety, autoPrice, autoQty);
+    }
   };
 
   // Save the current variety price back onto the product so it auto-fills next time.
