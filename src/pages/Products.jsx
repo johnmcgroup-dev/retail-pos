@@ -4,13 +4,14 @@ import { generateLowStockAlerts } from "@/lib/generateLowStockAlerts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle, Sparkles, Loader2, Tag } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Upload, AlertTriangle, Sparkles, Loader2, Tag, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ProductDialog from "../components/products/ProductDialog";
 import BulkCategoryAssignDialog from "../components/products/BulkCategoryAssignDialog";
 import BulkEditDialog from "../components/products/BulkEditDialog";
+import BulkDeleteDialog from "../components/products/BulkDeleteDialog";
 import ProductsExportButtons from "../components/products/ProductsExportButtons";
 import { Checkbox } from "@/components/ui/checkbox";
 import PullToRefresh from "@/components/shared/PullToRefresh";
@@ -24,6 +25,7 @@ export default function Products() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -31,6 +33,7 @@ export default function Products() {
     staleTime: 5 * 60 * 1000,
   });
   const companyId = user?.company_id || user?.tenant_id;
+  const isDeveloper = user?.email === "johnmcgroup@gmail.com";
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products", companyId],
@@ -126,6 +129,8 @@ export default function Products() {
     });
   };
   const selectedProducts = products.filter(p => selectedIds.has(p.id));
+  const selectAllProducts = () => setSelectedIds(new Set(products.map(p => p.id)));
+  const bulkDeleteTargets = selectedProducts.length > 0 ? selectedProducts : products;
 
   const getInventoryForProduct = (productId) => inventory.find(inv => inv.product_id === productId);
   const getStockLevel = (productId) => getInventoryForProduct(productId)?.quantity ?? 0;
@@ -162,6 +167,9 @@ export default function Products() {
               Bulk Import
             </Button>
           </Link>
+          <Button variant="outline" className="gap-2" onClick={() => { selectAllProducts(); setShowBulkEdit(true); }}>
+            <Edit className="w-4 h-4" /> Bulk Edit Mode
+          </Button>
           <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             Add Product
@@ -184,13 +192,18 @@ export default function Products() {
 
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50 border border-blue-200 rounded-xl p-3 sticky top-0 z-10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label="Select all filtered products" />
             <span className="text-sm font-medium text-blue-900">
               {selectedIds.size} selected
             </span>
+            {selectedIds.size < products.length && (
+              <Button variant="link" size="sm" className="h-auto py-0 px-1 text-blue-700" onClick={selectAllProducts}>
+                Select all {products.length} products
+              </Button>
+            )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>Clear</Button>
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowBulkEdit(true)}>
               <Edit className="w-4 h-4" /> Bulk Edit
@@ -198,6 +211,11 @@ export default function Products() {
             <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => setShowBulkCategory(true)}>
               <Tag className="w-4 h-4" /> Assign Category
             </Button>
+            {isDeveloper && (
+              <Button size="sm" variant="destructive" className="gap-2" onClick={() => setShowBulkDelete(true)}>
+                <Trash2 className="w-4 h-4" /> Delete All
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -328,6 +346,19 @@ export default function Products() {
         onSaved={() => {
           queryClient.invalidateQueries(["products"]);
           queryClient.invalidateQueries(["inventory"]);
+        }}
+      />
+
+      <BulkDeleteDialog
+        open={showBulkDelete}
+        onClose={() => setShowBulkDelete(false)}
+        products={bulkDeleteTargets}
+        inventory={inventory}
+        onDeleted={() => {
+          queryClient.invalidateQueries(["products"]);
+          queryClient.invalidateQueries(["inventory"]);
+          queryClient.invalidateQueries(["alerts"]);
+          setSelectedIds(new Set());
         }}
       />
     </PullToRefresh>

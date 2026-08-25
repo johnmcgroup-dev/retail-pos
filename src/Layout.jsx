@@ -64,6 +64,7 @@ import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
 import OfflineIndicator from "@/components/shared/OfflineIndicator";
 import InstallPrompt from "@/components/shared/InstallPrompt";
+import LowStockAlertWatcher from "@/components/shared/LowStockAlertWatcher";
 import { useAuth } from "@/lib/AuthContext";
 
 const navigationItems = [
@@ -368,6 +369,7 @@ export default function Layout({ children, currentPageName }) {
     <SidebarProvider defaultOpen={false}>
       <OfflineIndicator />
       <InstallPrompt />
+      <LowStockAlertWatcher />
       
       <div className="h-[100dvh] flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <Sidebar className="border-r border-slate-200 bg-white select-none hidden md:flex" collapsible="icon">
