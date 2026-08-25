@@ -8,9 +8,13 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
   return (
     <div ref={ref} className="inv-receipt bg-white p-8 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
       <style>{`
-        .inv-receipt { font-size: 14pt; font-weight: 700; }
-        .inv-receipt, .inv-receipt * { font-weight: 700 !important; }
-        .inv-receipt .text-xs, .inv-receipt .text-sm { font-size: 14pt !important; }
+        .inv-receipt { font-family: Arial, sans-serif; font-size: 15pt; font-weight: 700; }
+        .inv-receipt, .inv-receipt * { font-family: Arial, sans-serif !important; font-weight: 700 !important; font-size: 15pt !important; }
+        .inv-receipt .text-xs, .inv-receipt .text-sm { font-size: 15pt !important; }
+        @media print {
+          .inv-receipt { max-width: none; padding: 4mm; }
+          @page { size: A4; margin: 6mm; }
+        }
       `}</style>
       {/* Header */}
       <div className="text-center border-b-2 border-slate-300 pb-6 mb-6">

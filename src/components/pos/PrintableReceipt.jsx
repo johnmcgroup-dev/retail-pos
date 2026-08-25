@@ -20,20 +20,20 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
       maxWidth: "360px",
       margin: "0 auto",
       padding: "16px 14px",
-      fontSize: "14pt",
-      lineHeight: "1.45",
+      fontSize: "15pt",
+      lineHeight: "1.4",
     }}>
       <style>{`
-        .receipt-root { font-family: Arial, sans-serif; font-weight: 700; font-size: 14pt; }
-        .receipt-root, .receipt-root * { font-family: Arial, sans-serif !important; font-weight: 700 !important; font-size: 14pt !important; }
-        .receipt-root .dashed { border-top: 1px dashed #cbd5e1; margin: 8px 0; }
+        .receipt-root { font-family: Arial, sans-serif; font-weight: 700; font-size: 15pt; }
+        .receipt-root, .receipt-root * { font-family: Arial, sans-serif !important; font-weight: 700 !important; font-size: 15pt !important; }
+        .receipt-root .dashed { border-top: 1px dashed #334155; margin: 6px 0; }
         .receipt-root .row { display: flex; justify-content: space-between; }
         .receipt-root .center { text-align: center; }
         .receipt-root .bold { font-weight: 800; }
         .receipt-root .item-line { margin: 3px 0; }
         @media print {
-          .receipt-root { max-width: none; padding: 8px; }
-          @page { margin: 6mm; }
+          .receipt-root { max-width: none; padding: 4px; }
+          @page { size: 80mm auto; margin: 4mm; }
         }
       `}</style>
 

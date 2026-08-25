@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import PrintableReceipt from "@/components/pos/PrintableReceipt";
 import EmailReceiptForm from "@/components/pos/EmailReceiptForm";
 import { formatCurrency } from "@/utils";
+import { logActivity } from "@/lib/logActivity";
 
 export default function SaleHistoryDialog({ open, onClose, companyId, company, user, initialSale }) {
   const queryClient = useQueryClient();
@@ -67,8 +68,8 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
     doc.write(`
       <html><head><title>Receipt ${selectedSale?.invoice_number || ""}</title>
       <style>
-        body { margin: 0; padding: 0; font-family: 'Courier New', monospace; }
-        @media print { @page { margin: 6mm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-weight: 700; }
+        @media print { @page { size: 80mm auto; margin: 4mm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style></head><body>${receiptHtml}</body></html>
     `);
     doc.close();
@@ -159,6 +160,30 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
           }
         }
       }
+
+      // Audit: log the return and the inventory restock it triggered
+      await logActivity({
+        companyId,
+        entityType: "return",
+        action: "create",
+        entityId: returnRecord.id,
+        referenceNumber: returnNumber,
+        amount: refundTotal,
+        performedBy: currentUser.email,
+        performedByName: currentUser.full_name,
+        description: `Return ${returnNumber} for invoice ${selectedSale.invoice_number} — ${returnItems.length} item(s), ${refundMethod}`,
+        details: { original_sale_id: selectedSale.id, invoice_number: selectedSale.invoice_number, refund_method: refundMethod, reason: returnReason || "Customer return" },
+      });
+      await logActivity({
+        companyId,
+        entityType: "inventory",
+        action: "restock",
+        referenceNumber: `Return ${returnNumber}`,
+        performedBy: currentUser.email,
+        performedByName: currentUser.full_name,
+        description: `Restock from return ${returnNumber}: ${returnItems.map(i => `${i.product_name} +${i.quantity}`).join(", ")}`,
+        details: { return_id: returnRecord.id, items: returnItems.map(i => ({ product_id: i.product_id, quantity: i.quantity })) },
+      });
 
       return returnRecord;
     },
