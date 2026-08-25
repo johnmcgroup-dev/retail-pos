@@ -30,17 +30,7 @@ import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
 import PinnedItems from "../components/pos/PinnedItems";
 import QuickCalculator from "../components/pos/QuickCalculator";
 import { logActivity } from "@/lib/logActivity";
-
-// How many base units (pieces) each selling variety represents.
-// Used to convert a cart line's variety quantity back to piece-equivalents
-// before deducting from piece-based inventory.
-const VARIETY_TO_PIECES = {
-  Pieces: 1,
-  Roll: 1,
-  Bundle: 1,
-  Dozen: 12,
-  Carton: 12,
-};
+import { getVarietyPrice, getVarietyQuantity, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -62,8 +52,10 @@ export default function POS() {
   const [stockWarning, setStockWarning] = useState("");
   const [showCalculator, setShowCalculator] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
-  // Guards against a hardware scanner's trailing Enter re-adding the same item
-  const justScannedRef = useRef(false);
+  // Guards against a hardware scanner's trailing Enter re-adding the same item.
+  // Records the last scan value + timestamp so the Enter key can be swallowed
+  // reliably even on scanners with longer key latency.
+  const justScannedRef = useRef({ at: 0, value: null });
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
@@ -348,8 +340,9 @@ export default function POS() {
 
     // Swallow the trailing Enter emitted by a hardware scanner — the onChange
     // exact-match already added the item; this prevents the double-count bug.
-    if (justScannedRef.current) {
-      justScannedRef.current = false;
+    const sinceScan = Date.now() - justScannedRef.current.at;
+    if (justScannedRef.current.value != null && sinceScan < 1500) {
+      justScannedRef.current = { at: 0, value: null };
       e.preventDefault();
       return;
     }
@@ -452,12 +445,7 @@ export default function POS() {
     const product = products.find(p => p.id === productId);
     setCart(cart.map(item => {
       if (item.product_id !== productId) return item;
-      let price = item.unit_price;
-      if (variety === "Pieces") {
-        price = product?.selling_price ?? item.unit_price;
-      } else {
-        price = product?.varieties?.[variety] ?? item.unit_price;
-      }
+      const price = getVarietyPrice(product, variety) ?? item.unit_price;
       const tax = item.unit_price ? item.tax * (price / item.unit_price) : item.tax;
       // Switching variety changes the unit, so reset quantity to 1 of the new variety
       return { ...item, variety, unit_price: price, quantity: 1, tax, total: price };
@@ -466,14 +454,18 @@ export default function POS() {
 
   // Save the current variety price back onto the product so it auto-fills next time.
   // "Pieces" maps to selling_price; other varieties are stored in the product's varieties map.
-  const saveVarietyPrice = async (productId, variety, price) => {
+  const saveVarietyPrice = async (productId, variety, price, quantity) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
     try {
       if (variety === "Pieces") {
         await base44.entities.Product.update(productId, { selling_price: price });
       } else {
-        const varieties = { ...(product.varieties || {}), [variety]: price };
+        const existing = product.varieties?.[variety];
+        const baseQty = (typeof existing === "object" && existing?.quantity)
+          ? existing.quantity
+          : (DEFAULT_VARIETY_QTY[variety] ?? 1);
+        const varieties = { ...(product.varieties || {}), [variety]: { price, quantity: quantity || baseQty } };
         await base44.entities.Product.update(productId, { varieties });
       }
       queryClient.invalidateQueries(["products"]);
@@ -661,7 +653,9 @@ export default function POS() {
           return new Date(a.expiration_date) - new Date(b.expiration_date);
         });
 
-        let remaining = item.quantity * (VARIETY_TO_PIECES[item.variety] || 1);
+        const product = products.find(p => p.id === item.product_id);
+        const perUnit = getVarietyQuantity(product, item.variety);
+        let remaining = item.quantity * perUnit;
         for (const inv of sorted) {
           if (remaining <= 0) break;
           if ((inv.quantity || 0) <= 0) continue;
@@ -681,7 +675,8 @@ export default function POS() {
           if (!product) continue;
           const variety = item.variety || "Pieces";
           if (variety !== "Pieces" && item.unit_price > 0 && product.varieties?.[variety] == null) {
-            const varieties = { ...(product.varieties || {}), [variety]: item.unit_price };
+            const quantity = getVarietyQuantity(product, variety);
+            const varieties = { ...(product.varieties || {}), [variety]: { price: item.unit_price, quantity } };
             await base44.entities.Product.update(item.product_id, { varieties });
           }
         } catch (e) {
@@ -730,7 +725,8 @@ export default function POS() {
     // Block the sale if any cart line is out of stock or below requested qty
     for (const item of cart) {
       const available = getAvailableStock(item.product_id);
-      const needed = item.quantity * (VARIETY_TO_PIECES[item.variety] || 1);
+      const product = products.find(p => p.id === item.product_id);
+      const needed = item.quantity * getVarietyQuantity(product, item.variety);
       if (item.quantity < 1 || available <= 0 || needed > available) {
         setShowCheckout(false);
         playErrorBuzz();
@@ -757,6 +753,8 @@ export default function POS() {
     
     const saleData = {
       company_id: companyId,
+      company_name: selectedCompany?.name || companies[0]?.name || "",
+      tenant_id: user?.tenant_id || companyId,
       invoice_number: invoiceNumber,
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || "Walk-in Customer",
@@ -865,9 +863,8 @@ export default function POS() {
                       setShowSearchDropdown(false);
                       setHighlightedIndex(0);
                       searchInputRef.current?.focus();
-                      // Suppress the scanner's trailing Enter so one scan = one add
-                      justScannedRef.current = true;
-                      setTimeout(() => { justScannedRef.current = false; }, 300);
+                      // Record the scan so the trailing Enter is swallowed (one scan = one add)
+                      justScannedRef.current = { at: Date.now(), value: trimmed };
                     }
                   }
                 }}

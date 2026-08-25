@@ -317,6 +317,8 @@ export default function StaffPOS() {
       const invoiceNumber = `INV-${Date.now()}`;
       const saleData = {
         company_id: companyId,
+        company_name: company?.name || "",
+        tenant_id: user?.tenant_id || companyId,
         invoice_number: invoiceNumber,
         customer_name: "Walk-in Customer",
         sale_date: new Date().toISOString(),

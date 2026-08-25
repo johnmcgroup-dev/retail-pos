@@ -23,6 +23,7 @@ import { Upload, X, Image as ImageIcon, Camera, Package, AlertTriangle } from "l
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CameraCapture from "./CameraCapture";
 import DrawerSelect from "@/components/shared/DrawerSelect";
+import { VARIETIES, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
 
 export default function ProductDialog({ open, onClose, product, companies, inventoryItem, products = [], onSwitchToExisting }) {
   const queryClient = useQueryClient();
@@ -507,6 +508,55 @@ export default function ProductDialog({ open, onClose, product, companies, inven
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-1 block">Varieties & Pricing</Label>
+            <p className="text-xs text-slate-500 mb-2">Set the price and how many pieces each variety contains. "Pieces" uses the Selling Price above and counts as 1 piece.</p>
+            <div className="border border-slate-200 rounded-lg p-3 space-y-2">
+              {VARIETIES.map((v) => {
+                const stored = formData.varieties?.[v];
+                const isLegacy = typeof stored === "number";
+                const price = v === "Pieces" ? formData.selling_price : (isLegacy ? stored : stored?.price ?? "");
+                const qty = v === "Pieces" ? 1 : (isLegacy ? (DEFAULT_VARIETY_QTY[v] ?? 1) : stored?.quantity ?? (DEFAULT_VARIETY_QTY[v] ?? 1));
+                const setField = (field, val) => {
+                  if (v === "Pieces") {
+                    if (field === "price") setFormData({ ...formData, selling_price: val });
+                    return;
+                  }
+                  const base = isLegacy ? { price: stored } : (stored || {});
+                  const varieties = { ...(formData.varieties || {}), [v]: { ...base, [field]: val } };
+                  setFormData({ ...formData, varieties });
+                };
+                return (
+                  <div key={v} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-3 text-sm font-medium text-slate-700">{v}</div>
+                    <div className="col-span-5">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={price}
+                        onChange={(e) => setField("price", parseFloat(e.target.value) || 0)}
+                        placeholder="Price"
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <Input
+                        type="number"
+                        min="1"
+                        value={qty}
+                        disabled={v === "Pieces"}
+                        onChange={(e) => setField("quantity", parseInt(e.target.value) || 1)}
+                        placeholder="Pcs / unit"
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

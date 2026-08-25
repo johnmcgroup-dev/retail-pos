@@ -3,22 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus, Trash2, ShoppingCart, Package, Save } from "lucide-react";
 import { formatCurrency } from "@/utils";
-
-const VARIETIES = ["Pieces", "Roll", "Bundle", "Dozen", "Carton"];
+import { VARIETIES, getVarietyPrice, getVarietyQuantity } from "@/lib/varieties";
 
 export default function CartPanel({ cart, products = [], onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
   const [savedId, setSavedId] = useState(null);
+  const [units, setUnits] = useState({});
 
-  const varietyPrice = (productId, variety) => {
-    const p = products.find(x => x.id === productId);
-    if (!p) return null;
-    if (variety === "Pieces") return p.selling_price ?? null;
-    return p.varieties?.[variety] ?? null;
+  const unitKey = (pid, v) => `${pid}|${v}`;
+
+  const getUnit = (item) => {
+    const k = unitKey(item.product_id, item.variety || "Pieces");
+    if (units[k] != null) return units[k];
+    return getVarietyQuantity(products.find(p => p.id === item.product_id), item.variety || "Pieces");
   };
 
   const handleSave = (item) => {
     if (!onSaveVarietyPrice) return;
-    Promise.resolve(onSaveVarietyPrice(item.product_id, item.variety || "Pieces", item.unit_price))
+    Promise.resolve(onSaveVarietyPrice(item.product_id, item.variety || "Pieces", item.unit_price, getUnit(item)))
       .then(() => {
         setSavedId(item.product_id);
         setTimeout(() => setSavedId(null), 1500);
@@ -69,7 +70,7 @@ export default function CartPanel({ cart, products = [], onUpdateQuantity, onRem
                   className="h-8 text-xs border border-slate-300 rounded-md px-2 bg-white flex-1 min-w-0"
                 >
                   {VARIETIES.map(v => {
-                    const price = varietyPrice(item.product_id, v);
+                    const price = getVarietyPrice(products.find(p => p.id === item.product_id), v);
                     return (
                       <option key={v} value={v}>
                         {v}{price != null ? ` — ${formatCurrency(price, currency)}` : ""}
@@ -89,6 +90,17 @@ export default function CartPanel({ cart, products = [], onUpdateQuantity, onRem
                   min="0"
                   step="0.01"
                 />
+                {item.variety && item.variety !== "Pieces" && (
+                  <Input
+                    type="number"
+                    value={getUnit(item)}
+                    onChange={(e) => setUnits({ ...units, [unitKey(item.product_id, item.variety)]: parseInt(e.target.value) || 1 })}
+                    className="w-16 h-8 text-center shrink-0"
+                    min="1"
+                    title="Pieces per unit (for stock deduction)"
+                    placeholder="pcs"
+                  />
+                )}
                 {onSaveVarietyPrice && (
                   <Button
                     variant="outline"

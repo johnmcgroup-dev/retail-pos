@@ -3,7 +3,16 @@
   "type": "object",
   "properties": {
     "company_id": {
-      "type": "string"
+      "type": "string",
+      "description": "Tenant/company this sale belongs to"
+    },
+    "company_name": {
+      "type": "string",
+      "description": "Company name at time of sale (denormalized for easy multi-tenant fetching)"
+    },
+    "tenant_id": {
+      "type": "string",
+      "description": "Tenant id at time of sale (denormalized for easy multi-tenant fetching)"
     },
     "invoice_number": {
       "type": "string"
@@ -28,6 +37,10 @@
           },
           "product_name": {
             "type": "string"
+          },
+          "variety": {
+            "type": "string",
+            "description": "Selling variety (Pieces, Roll, Bundle, Dozen, Packet, Carton)"
           },
           "quantity": {
             "type": "number"

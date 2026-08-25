@@ -35,9 +35,18 @@
     },
     "varieties": {
       "type": "object",
-      "description": "Per-variety selling prices keyed by variety name (Roll, Bundle, Dozen, Carton). Pieces always falls back to selling_price.",
+      "description": "Per-variety pricing keyed by variety name (Roll, Bundle, Dozen, Packet, Carton). Each value is { price, quantity } where quantity is the number of pieces one unit of that variety represents (used to deduct piece-based inventory). Pieces always falls back to selling_price with quantity 1.",
       "additionalProperties": {
-        "type": "number"
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Pieces per unit of this variety"
+          }
+        }
       }
     },
     "wholesale_price": {
