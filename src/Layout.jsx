@@ -333,7 +333,7 @@ export default function Layout({ children, currentPageName }) {
   // Minimal shell for "user" (staff) role — no sidebar, just header + content
   if (authUser?.role === 'user') {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-50">
+      <div className="h-[100dvh] flex flex-col bg-slate-50">
         <header className="bg-white border-b border-slate-200 px-4 py-3 shadow-sm sticky top-0 z-10 safe-area-top">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -369,7 +369,7 @@ export default function Layout({ children, currentPageName }) {
       <OfflineIndicator />
       <InstallPrompt />
       
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="h-[100dvh] flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <Sidebar className="border-r border-slate-200 bg-white select-none hidden md:flex" collapsible="icon">
           <SidebarHeader className="border-b border-slate-200 p-3 md:p-5">
             <div className="flex items-center gap-2 md:gap-3">

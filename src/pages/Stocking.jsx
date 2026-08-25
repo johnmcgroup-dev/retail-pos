@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Truck, Package, DollarSign, ClipboardList, Plus, Trash2, PackagePlus, Building2, CreditCard, Banknote, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { logActivity } from "@/lib/logActivity";
 
 const EMPTY_ITEM = {
   product_id: "", quantity: 1, unit_cost: 0,
@@ -269,6 +270,19 @@ export default function Stocking() {
           reason: "supplier_delivery",
           notes: `PO: ${poNumber}, Batch: ${item.batch_number}, Vendor: ${vendor?.name || ""}`,
           adjustment_date: now
+        });
+
+        // Audit: unified activity log for this inventory restock
+        await logActivity({
+          companyId,
+          entityType: "inventory",
+          action: "restock",
+          entityId: inventoryId,
+          referenceNumber: product.name,
+          performedBy: user.email,
+          performedByName: user.full_name,
+          description: `Restock via ${poNumber}: ${product.name} ${prevQty} → ${prevQty + Number(item.quantity)} (+${item.quantity}, batch ${item.batch_number || "—"})`,
+          details: { product_id: item.product_id, previous_quantity: prevQty, new_quantity: prevQty + Number(item.quantity), change: Number(item.quantity), vendor: vendor?.name, po_number: poNumber },
         });
       }
 

@@ -391,7 +391,7 @@ export default function StaffPOS() {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-slate-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-lg safe-area-top">
         <div className="flex items-center gap-3">

@@ -781,7 +781,7 @@ export default function POS() {
   const totals = calculateTotals();
 
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden bg-slate-50">
+    <div className="h-full flex flex-col overflow-hidden bg-slate-50">
 
       {/* Mobile tab bar */}
       <div className="md:hidden flex bg-white border-b border-slate-200 shrink-0 safe-area-top">
