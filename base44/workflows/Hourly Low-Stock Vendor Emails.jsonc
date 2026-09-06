@@ -1,0 +1,44 @@
+{
+  "name": "Hourly Low-Stock Vendor Emails",
+  "description": "Scans inventory each hour; for any supplied products below safety stock, emails the linked vendor via Gmail to request restocking and logs a reorder_suggestion alert. De-duplicated per product within 24h.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 1,
+      "interval_unit": "hours",
+      "interval_anchor": "2026-06-24T13:11:29.170000",
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "hourly_low_stock_vendor_emails",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "emailLowStockVendors",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "emailLowStockVendors"
+  }
+}
