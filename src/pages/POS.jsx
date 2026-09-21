@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -451,15 +451,43 @@ export default function POS() {
       return { ...item, variety, unit_price: price, quantity: 1, tax, total: price };
     }));
 
-    // Auto-persist the variety if it was NOT pre-configured on the product page.
-    // "Pieces" maps to selling_price (always present) — and already-configured
-    // varieties are only updated when the cashier clicks Save in the cart.
-    if (variety !== "Pieces" && product && product.varieties?.[variety] == null) {
-      const item = cart.find(i => i.product_id === productId);
-      const autoPrice = getVarietyPrice(product, variety) ?? item?.unit_price ?? product.selling_price;
-      const autoQty = getVarietyQuantity(product, variety);
-      saveVarietyPrice(productId, variety, autoPrice, autoQty);
-    }
+    // Variety/price changes stay LOCAL to the cart here — they are only
+    // written to the product when the cashier clicks Save in the cart.
+  };
+
+  // Cart lines whose variety/price no longer match the product's saved values.
+  // Shown as "unsaved changes" until Save persists them to the product.
+  const unsavedVarietyIds = useMemo(() =>
+    cart
+      .filter(item => {
+        const product = products.find(p => p.id === item.product_id);
+        if (!product) return false;
+        const v = item.variety || "Pieces";
+        if (v === "Pieces") return item.unit_price !== product.selling_price;
+        const cfg = product.varieties?.[v];
+        if (!cfg) return true;
+        return item.unit_price !== cfg.price;
+      })
+      .map(item => item.product_id),
+    [cart, products]
+  );
+  const hasUnsavedVarieties = unsavedVarietyIds.length > 0;
+
+  // Warn before leaving the page with unsaved variety/price changes
+  useEffect(() => {
+    if (!hasUnsavedVarieties) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedVarieties]);
+
+  // Clearing the cart discards unsaved variety changes — confirm first
+  const handleClearCart = () => {
+    if (hasUnsavedVarieties && !window.confirm("You have unsaved variety/price changes. Clear the cart anyway?")) return;
+    clearCart();
   };
 
   // Save the current variety price back onto the product so it auto-fills next time.
@@ -965,7 +993,7 @@ export default function POS() {
                   <Calculator className="w-4 h-4" /> Calc
                 </Button>
                 {cart.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearCart} className="text-white hover:bg-white/20 text-xs">
+                  <Button variant="ghost" size="sm" onClick={handleClearCart} className="text-white hover:bg-white/20 text-xs">
                     Clear All
                   </Button>
                 )}
@@ -1004,6 +1032,7 @@ export default function POS() {
               onUpdateVariety={updateVariety}
               onUpdateUnitPrice={updateUnitPrice}
               onSaveVarietyPrice={saveVarietyPrice}
+              unsavedIds={unsavedVarietyIds}
               currency={currency}
             />
           </div>
@@ -1075,7 +1104,7 @@ export default function POS() {
         cart={cart}
         onAddToCart={handleVoiceAddToCart}
         onRemoveFromCart={removeFromCart}
-        onClearCart={clearCart}
+        onClearCart={handleClearCart}
         onCheckout={handleCheckout}
         totals={totals}
         currency={currency}

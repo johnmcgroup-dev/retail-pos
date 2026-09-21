@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, ShoppingCart, Package, Save } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Package, Save, AlertCircle } from "lucide-react";
 import { formatCurrency } from "@/utils";
 import { VARIETIES, getVarietyPrice, getVarietyQuantity } from "@/lib/varieties";
 
-export default function CartPanel({ cart, products = [], onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
+export default function CartPanel({ cart, products = [], unsavedIds = [], onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
   const [savedId, setSavedId] = useState(null);
   const [units, setUnits] = useState({});
 
@@ -50,6 +50,12 @@ export default function CartPanel({ cart, products = [], onUpdateQuantity, onRem
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-slate-900 truncate">{item.product_name}</h4>
                     <p className="text-sm text-slate-600">{formatCurrency(item.unit_price, currency)} <span className="text-xs text-slate-500">per {item.variety || "Pieces"}</span></p>
+                    {unsavedIds.includes(item.product_id) && (
+                      <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">
+                        <AlertCircle className="w-3 h-3" />
+                        Unsaved changes
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Button
