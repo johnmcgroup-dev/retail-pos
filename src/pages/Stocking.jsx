@@ -14,6 +14,7 @@ import { Truck, Package, DollarSign, ClipboardList, Plus, Trash2, PackagePlus, B
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { logActivity } from "@/lib/logActivity";
+import ProductSearchBox from "@/components/stocking/ProductSearchBox";
 
 const EMPTY_ITEM = {
   product_id: "", quantity: 1, unit_cost: 0,
@@ -142,6 +143,7 @@ export default function Stocking() {
   const [taxRate, setTaxRate] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [payingPurchase, setPayingPurchase] = useState(null);
+  const [productSearch, setProductSearch] = useState("");
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -166,6 +168,21 @@ export default function Stocking() {
   const companyId = companies[0]?.id;
   const selectedVendor = vendors.find(v => v.id === vendorId);
   const getProduct = (pid) => products.find(p => p.id === pid);
+
+  const activeProducts = products.filter(p => p.status === 'active' || !p.status);
+  const searchMatchesProduct = (p) => {
+    const t = productSearch.toLowerCase().trim();
+    if (!t) return true;
+    return (
+      p.name?.toLowerCase().includes(t) ||
+      p.category?.toLowerCase().includes(t) ||
+      p.sku?.toLowerCase().includes(t) ||
+      p.description?.toLowerCase().includes(t) ||
+      (p.barcodes || []).some(b => b?.toLowerCase().includes(t))
+    );
+  };
+  const filteredProducts = activeProducts.filter(searchMatchesProduct);
+  const noProductMatches = productSearch.trim() !== "" && filteredProducts.length === 0;
 
   const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_cost)), 0);
   const taxAmount = subtotal * (taxRate / 100);
@@ -415,6 +432,21 @@ export default function Stocking() {
                     )}
                   </div>
 
+                  {/* Product search */}
+                  <div>
+                    <Label>Search Products</Label>
+                    <div className="mt-1">
+                      <ProductSearchBox
+                        products={activeProducts}
+                        value={productSearch}
+                        onChange={setProductSearch}
+                      />
+                    </div>
+                    {noProductMatches && (
+                      <p className="mt-1 text-xs text-red-500">No products found</p>
+                    )}
+                  </div>
+
                   {/* Line items */}
                   <div className="border rounded-lg overflow-hidden">
                     <div className="overflow-x-auto">
@@ -440,7 +472,7 @@ export default function Stocking() {
                                   <DrawerSelect
                                     value={item.product_id}
                                     onValueChange={v => updateItem(index, "product_id", v)}
-                                    options={products.filter(p => p.status === 'active' || !p.status).map(p => ({
+                                    options={filteredProducts.map(p => ({
                                       value: p.id,
                                       label: p.name
                                     }))}
