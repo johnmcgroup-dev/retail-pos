@@ -67,6 +67,17 @@ import InstallPrompt from "@/components/shared/InstallPrompt";
 import LowStockAlertWatcher from "@/components/shared/LowStockAlertWatcher";
 import { useAuth } from "@/lib/AuthContext";
 
+const DEVELOPER_EMAIL = "johnmcgroup@gmail.com";
+
+// Pages restricted to the developer account only, regardless of role
+const DEVELOPER_ONLY_TITLES = [
+  "Online Store",
+  "Online Orders",
+  "E-commerce Sync",
+  "Tenant Management",
+  "Company Setup",
+];
+
 const navigationItems = [
   {
     title: "Dashboard",
@@ -315,9 +326,11 @@ export default function Layout({ children, currentPageName }) {
     base44.auth.logout();
   };
 
+  const isDeveloper = ((user?.email || authUser?.email || "")).toLowerCase() === DEVELOPER_EMAIL;
+
   const filteredNavItems = navigationItems.filter(item => {
-    // "Tenant Management" is restricted to the developer account only
-    if (item.title === "Tenant Management" && user?.email !== "johnmcgroup@gmail.com") return false;
+    // Developer-only pages stay hidden from every other user, whatever their role
+    if (DEVELOPER_ONLY_TITLES.includes(item.title) && !isDeveloper) return false;
     if (item.adminOnly) {
       const role = user?.role;
       return role === 'admin' || role === 'owner' || role === 'super_admin';

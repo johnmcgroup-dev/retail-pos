@@ -12,7 +12,8 @@ import {
   AlertCircle,
   Package,
   Award,
-  Calculator
+  Calculator,
+  PackagePlus
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
@@ -29,6 +30,7 @@ import SearchInput from "../components/shared/SearchInput";
 import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
 import PinnedItems from "../components/pos/PinnedItems";
 import QuickCalculator from "../components/pos/QuickCalculator";
+import AddStockDialog from "../components/pos/AddStockDialog";
 import { logActivity } from "@/lib/logActivity";
 import { getVarietyPrice, getVarietyQuantity, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
 
@@ -51,6 +53,7 @@ export default function POS() {
   const [saleCompleted, setSaleCompleted] = useState(null);
   const [stockWarning, setStockWarning] = useState("");
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showAddStock, setShowAddStock] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
   // Guards against a hardware scanner's trailing Enter re-adding the same item.
   // Records the last scan value + timestamp so the Enter key can be swallowed
@@ -299,8 +302,19 @@ export default function POS() {
     );
   });
 
-  // Dropdown search results (top 8) — show all products even with empty search
-  const searchResults = filteredProducts.slice(0, 8);
+  // Dropdown search results (top 8) — includes out-of-stock products so they stay
+  // visible (greyed out) instead of silently disappearing from the list.
+  const searchResults = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    return products
+      .filter(p =>
+        !term ||
+        p.name?.toLowerCase().includes(term) ||
+        p.sku?.toLowerCase().includes(term) ||
+        (p.barcodes || []).some(b => b.toLowerCase().includes(term))
+      )
+      .slice(0, 8);
+  }, [products, searchTerm]);
 
   const handleScanResult = (text) => {
     setSearchTerm(text);
@@ -923,10 +937,13 @@ export default function POS() {
                   ) : searchResults.map((product, idx) => (
                     <div
                       key={product.id}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                        idx === highlightedIndex ? "bg-blue-50" : "hover:bg-slate-50"
+                      className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                        getAvailableStock(product.id) <= 0
+                          ? "opacity-50 cursor-not-allowed"
+                          : `cursor-pointer ${idx === highlightedIndex ? "bg-blue-50" : "hover:bg-slate-50"}`
                       }`}
                       onMouseDown={() => {
+                        if (getAvailableStock(product.id) <= 0) return;
                         addToCart(product);
                         setSearchTerm("");
                         setShowSearchDropdown(false);
@@ -945,13 +962,31 @@ export default function POS() {
                         <p className="font-semibold text-slate-900 text-sm truncate">{product.name}</p>
                         {product.category && <p className="text-xs text-slate-500 truncate">{product.category}</p>}
                       </div>
-                      <span className="font-bold text-blue-600 text-sm flex-shrink-0">
-                        {formatCurrency(product.selling_price || 0, currency)}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getAvailableStock(product.id) <= 0 && (
+                          <span className="text-[10px] font-semibold text-red-700 bg-red-100 border border-red-200 rounded-full px-2 py-0.5">
+                            Out of stock
+                          </span>
+                        )}
+                        <span className={`font-bold text-sm ${getAvailableStock(product.id) <= 0 ? "text-slate-500" : "text-blue-600"}`}>
+                          {formatCurrency(product.selling_price || 0, currency)}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+            <div className="mt-2 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddStock(true)}
+                className="gap-1.5 border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <PackagePlus className="w-4 h-4" />
+                Add Stock
+              </Button>
             </div>
             {usingCachedData && offlineCache.getLastSync() && (
               <p className="text-xs text-slate-500 mt-1">
@@ -1088,6 +1123,18 @@ export default function POS() {
       </div>
 
       <QuickCalculator open={showCalculator} onClose={() => setShowCalculator(false)} />
+
+      <AddStockDialog
+        open={showAddStock}
+        onClose={() => setShowAddStock(false)}
+        products={products}
+        inventory={inventory}
+        companyId={posCompanyId}
+        onSuccess={() => {
+          queryClient.invalidateQueries(["inventory"]);
+          queryClient.invalidateQueries(["products"]);
+        }}
+      />
 
       <PaymentGatewayDialog
         open={showCheckout}

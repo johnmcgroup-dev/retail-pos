@@ -14,6 +14,7 @@ import TenantSetup from '@/pages/TenantSetup';
 import TrialExpired from '@/components/shared/TrialExpired';
 import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
+import DeveloperOnlyRoute from '@/components/shared/DeveloperOnlyRoute';
 import PageTransition from "@/components/shared/PageTransition";
 import Landing from '@/pages/Landing';
 import Storefront from '@/pages/Storefront';
@@ -165,7 +166,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/StaffSales" element={<LayoutWrapper currentPageName="StaffSales"><StaffSales /></LayoutWrapper>} />
         <Route path="/StaffDashboard" element={<LayoutWrapper currentPageName="StaffDashboard"><StaffDashboard /></LayoutWrapper>} />
-        <Route path="/TenantManagement" element={<LayoutWrapper currentPageName="TenantManagement"><TenantManagement /></LayoutWrapper>} />
+        <Route path="/TenantManagement" element={<LayoutWrapper currentPageName="TenantManagement"><DeveloperOnlyRoute><TenantManagement /></DeveloperOnlyRoute></LayoutWrapper>} />
         <Route path="/VendorDashboard" element={<LayoutWrapper currentPageName="VendorDashboard"><VendorDashboard /></LayoutWrapper>} />
         <Route path="/Returns" element={<LayoutWrapper currentPageName="Returns"><Returns /></LayoutWrapper>} />
         <Route path="/Warehouses" element={<LayoutWrapper currentPageName="Warehouses"><Warehouses /></LayoutWrapper>} />
@@ -177,7 +178,7 @@ const AuthenticatedApp = () => {
           <Route
             key={path}
             path={`/${path}`}
-            element={<LayoutWrapper currentPageName={path}><Page /></LayoutWrapper>}
+            element={<LayoutWrapper currentPageName={path}><DeveloperOnlyRoute><Page /></DeveloperOnlyRoute></LayoutWrapper>}
           />
         ))}
         <Route path="*" element={<PageNotFound />} />
