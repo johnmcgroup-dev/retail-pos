@@ -168,6 +168,12 @@ export default function Stocking() {
     queryFn: () => base44.entities.Company.list(),
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: purchases = [] } = useQuery({
     queryKey: ["purchases"],
     queryFn: () => base44.entities.Purchase.list("-purchase_date"),
@@ -178,7 +184,9 @@ export default function Stocking() {
     queryFn: () => base44.entities.Inventory.list(),
   });
 
-  const companyId = companies[0]?.id;
+  // Always the signed-in user's own company: an admin can list several companies
+  // and companies[0] may belong to a different tenant (which fails the save).
+  const companyId = currentUser?.company_id || currentUser?.tenant_id || companies[0]?.id;
   const selectedVendor = vendors.find(v => v.id === vendorId);
   const getProduct = (pid) => products.find(p => p.id === pid);
 
