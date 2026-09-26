@@ -10,11 +10,14 @@ import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Truck, Package, DollarSign, ClipboardList, Plus, Trash2, PackagePlus, Building2, CreditCard, Banknote, CheckCircle } from "lucide-react";
+import { Truck, Package, DollarSign, ClipboardList, Plus, Trash2, PackagePlus, Building2, CreditCard, Banknote, CheckCircle, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { logActivity } from "@/lib/logActivity";
 import ProductSearchBox from "@/components/stocking/ProductSearchBox";
+import SearchResultsPanel from "@/components/stocking/SearchResultsPanel";
+import StockProductDialog from "@/components/inventory/StockProductDialog";
+import ProductDialog from "@/components/products/ProductDialog";
 
 const EMPTY_ITEM = {
   product_id: "", quantity: 1, unit_cost: 0,
@@ -143,7 +146,12 @@ export default function Stocking() {
   const [taxRate, setTaxRate] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [payingPurchase, setPayingPurchase] = useState(null);
-  const [productSearch, setProductSearch] = useState("");
+  // Product search is completely independent of the product records and of the
+  // order form below: its own local list of picked products, never a filter that
+  // rewrites shared data.
+  const [searchResults, setSearchResults] = useState([]);
+  const [stockingProduct, setStockingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -165,24 +173,24 @@ export default function Stocking() {
     queryFn: () => base44.entities.Purchase.list("-purchase_date"),
   });
 
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: () => base44.entities.Inventory.list(),
+  });
+
   const companyId = companies[0]?.id;
   const selectedVendor = vendors.find(v => v.id === vendorId);
   const getProduct = (pid) => products.find(p => p.id === pid);
 
   const activeProducts = products.filter(p => p.status === 'active' || !p.status);
-  const searchMatchesProduct = (p) => {
-    const t = productSearch.toLowerCase().trim();
-    if (!t) return true;
-    return (
-      p.name?.toLowerCase().includes(t) ||
-      p.category?.toLowerCase().includes(t) ||
-      p.sku?.toLowerCase().includes(t) ||
-      p.description?.toLowerCase().includes(t) ||
-      (p.barcodes || []).some(b => b?.toLowerCase().includes(t))
-    );
+
+  // Search-result helpers — display only, no product record is ever written.
+  const addSearchResult = (product) => {
+    setSearchResults(prev => (prev.some(p => p.id === product.id) ? prev : [...prev, product]));
   };
-  const filteredProducts = activeProducts.filter(searchMatchesProduct);
-  const noProductMatches = productSearch.trim() !== "" && filteredProducts.length === 0;
+  const removeSearchResult = (id) => setSearchResults(prev => prev.filter(p => p.id !== id));
+  const clearSearchResults = () => setSearchResults([]);
+  const getInventoryForProduct = (productId) => inventory.find(i => i.product_id === productId);
 
   const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_cost)), 0);
   const taxAmount = subtotal * (taxRate / 100);
@@ -377,6 +385,31 @@ export default function Stocking() {
         </CardContent></Card>
       </div>
 
+      {/* Product search — read-only. It only fills the Search Results panel below;
+          the product catalog and the supply order form are never touched. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="w-5 h-5 text-blue-600" />
+            Find Products
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ProductSearchBox products={activeProducts} onSelect={addSearchResult} />
+          <p className="text-xs text-slate-500">
+            Searching only filters the suggestions. It never edits, saves or deletes a product.
+          </p>
+          <SearchResultsPanel
+            products={searchResults}
+            getInventory={getInventoryForProduct}
+            onRemove={removeSearchResult}
+            onClearAll={clearSearchResults}
+            onStock={setStockingProduct}
+            onEdit={setEditingProduct}
+          />
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="new-order">
         <TabsList className="grid grid-cols-2 w-full max-w-sm">
           <TabsTrigger value="new-order">New Supply Order</TabsTrigger>
@@ -432,21 +465,6 @@ export default function Stocking() {
                     )}
                   </div>
 
-                  {/* Product search */}
-                  <div>
-                    <Label>Search Products</Label>
-                    <div className="mt-1">
-                      <ProductSearchBox
-                        products={activeProducts}
-                        value={productSearch}
-                        onChange={setProductSearch}
-                      />
-                    </div>
-                    {noProductMatches && (
-                      <p className="mt-1 text-xs text-red-500">No products found</p>
-                    )}
-                  </div>
-
                   {/* Line items */}
                   <div className="border rounded-lg overflow-hidden">
                     <div className="overflow-x-auto">
@@ -472,7 +490,7 @@ export default function Stocking() {
                                   <DrawerSelect
                                     value={item.product_id}
                                     onValueChange={v => updateItem(index, "product_id", v)}
-                                    options={filteredProducts.map(p => ({
+                                    options={activeProducts.map(p => ({
                                       value: p.id,
                                       label: p.name
                                     }))}
@@ -612,6 +630,29 @@ export default function Stocking() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {stockingProduct && (
+        <StockProductDialog
+          open={!!stockingProduct}
+          onClose={() => setStockingProduct(null)}
+          product={stockingProduct}
+          inventoryItem={getInventoryForProduct(stockingProduct.id)}
+          companyId={companyId}
+          onSuccess={() => {
+            queryClient.invalidateQueries(["inventory"]);
+            queryClient.invalidateQueries(["alerts"]);
+          }}
+        />
+      )}
+
+      <ProductDialog
+        open={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        product={editingProduct}
+        companies={companies}
+        products={products}
+        inventoryItem={editingProduct ? getInventoryForProduct(editingProduct.id) : null}
+      />
 
       {payingPurchase && (
         <PayPurchaseDialog

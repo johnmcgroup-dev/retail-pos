@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+// Case-insensitive, partial matching across every searchable product field.
 const matchesTerm = (p, t) =>
   p.name?.toLowerCase().includes(t) ||
   p.category?.toLowerCase().includes(t) ||
@@ -9,13 +10,21 @@ const matchesTerm = (p, t) =>
   p.description?.toLowerCase().includes(t) ||
   (p.barcodes || []).some((b) => b?.toLowerCase().includes(t));
 
-// Google-style live search box: suggestions dropdown + caller-side list filtering.
-export default function ProductSearchBox({ products, value, onChange }) {
+/**
+ * Read-only product search box.
+ *
+ * It keeps its own local search text and only ever *reads* the products it is
+ * given. It never updates, saves or deletes a product, and it never changes the
+ * list the caller passes in. Picking a suggestion just calls onSelect(product).
+ */
+export default function ProductSearchBox({ products = [], onSelect }) {
+  const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
-  const term = (value || "").toLowerCase().trim();
-  const suggestions = term ? products.filter((p) => matchesTerm(p, term)).slice(0, 8) : [];
-  const showDropdown = open && !!term;
+
+  const query = term.toLowerCase().trim();
+  const suggestions = query ? products.filter((p) => matchesTerm(p, query)).slice(0, 8) : [];
+  const showDropdown = open && !!query;
 
   // Close when clicking anywhere outside the box
   useEffect(() => {
@@ -27,26 +36,32 @@ export default function ProductSearchBox({ products, value, onChange }) {
     return () => document.removeEventListener("pointerdown", close);
   }, [open]);
 
+  const pick = (product) => {
+    onSelect?.(product);
+    setTerm("");
+    setOpen(false);
+  };
+
   return (
     <div className="relative" ref={rootRef}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         <Input
-          value={value}
+          value={term}
           onChange={(e) => {
+            setTerm(e.target.value);
             setOpen(true);
-            onChange(e.target.value);
           }}
           onFocus={() => setOpen(true)}
           placeholder="Search products by name, category, barcode or SKU…"
           className="pl-9 pr-9"
         />
-        {value && (
+        {term && (
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
-              onChange("");
+              setTerm("");
               setOpen(false);
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
@@ -67,8 +82,7 @@ export default function ProductSearchBox({ products, value, onChange }) {
                 type="button"
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  onChange(p.name);
-                  setOpen(false);
+                  pick(p);
                 }}
                 className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-start gap-2"
               >
