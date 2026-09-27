@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,6 +152,11 @@ export default function Stocking() {
   const [searchResults, setSearchResults] = useState([]);
   const [stockingProduct, setStockingProduct] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  // Combobox the user targeted by hand (overrides auto-fill) and the row to flash
+  // after a product is placed. Purely local — nothing is saved from here.
+  const [targetRowIndex, setTargetRowIndex] = useState(null);
+  const [highlightedRow, setHighlightedRow] = useState(null);
+  const highlightTimer = useRef(null);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -200,6 +205,55 @@ export default function Stocking() {
   const clearSearchResults = () => setSearchResults([]);
   const getInventoryForProduct = (productId) => inventory.find(i => i.product_id === productId);
 
+  const flashRow = (index) => {
+    setHighlightedRow(index);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightedRow(null), 2500);
+  };
+
+  useEffect(() => () => { if (highlightTimer.current) clearTimeout(highlightTimer.current); }, []);
+
+  useEffect(() => {
+    if (highlightedRow === null) return;
+    document.getElementById(`stock-row-${highlightedRow}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [highlightedRow]);
+
+  // Place a picked product into the supply-order table: the combobox the user
+  // targeted by hand wins, otherwise the first empty one, otherwise a new row.
+  // It only fills the row for editing — nothing is saved until the order is submitted.
+  const placeProductInTable = (product) => {
+    const existingIndex = items.findIndex(it => it.product_id === product.id);
+    if (existingIndex !== -1) {
+      // Already in the table — point at it instead of adding a duplicate.
+      flashRow(existingIndex);
+      setTargetRowIndex(null);
+      return;
+    }
+    const manualIndex = targetRowIndex !== null && items[targetRowIndex] ? targetRowIndex : -1;
+    const emptyIndex = manualIndex !== -1 ? manualIndex : items.findIndex(it => !it.product_id);
+    const withProduct = (row) => ({
+      ...row,
+      product_id: product.id,
+      unit_cost: product.cost_price || 0,
+      batch_number: row.batch_number || generateBatchNumber(),
+    });
+    if (emptyIndex === -1) {
+      setItems([...items, withProduct({ ...EMPTY_ITEM })]);
+      flashRow(items.length);
+    } else {
+      const next = [...items];
+      next[emptyIndex] = withProduct(next[emptyIndex]);
+      setItems(next);
+      flashRow(emptyIndex);
+    }
+    setTargetRowIndex(null);
+  };
+
+  const handleSearchSelect = (product) => {
+    addSearchResult(product);
+    placeProductInTable(product);
+  };
+
   const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_cost)), 0);
   const taxAmount = subtotal * (taxRate / 100);
   const total = subtotal + taxAmount;
@@ -208,6 +262,7 @@ export default function Stocking() {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     if (field === "product_id") {
+      setTargetRowIndex(null);
       const product = getProduct(value);
       if (product) {
         newItems[index].unit_cost = product.cost_price || 0;
@@ -403,7 +458,7 @@ export default function Stocking() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ProductSearchBox products={activeProducts} onSelect={addSearchResult} />
+          <ProductSearchBox products={activeProducts} onSelect={handleSearchSelect} />
           <p className="text-xs text-slate-500">
             Searching only filters the suggestions. It never edits, saves or deletes a product.
           </p>
@@ -493,11 +548,16 @@ export default function Stocking() {
                           {items.map((item, index) => {
                             const lineTotal = Number(item.quantity) * Number(item.unit_cost);
                             return (
-                              <tr key={index}>
+                              <tr
+                                key={index}
+                                id={`stock-row-${index}`}
+                                className={highlightedRow === index ? "bg-blue-50 ring-2 ring-inset ring-blue-400" : ""}
+                              >
                                 <td className="p-2">
                                   <DrawerSelect
                                     value={item.product_id}
                                     onValueChange={v => updateItem(index, "product_id", v)}
+                                    onActivate={() => setTargetRowIndex(index)}
                                     options={activeProducts.map(p => ({
                                       value: p.id,
                                       label: p.name

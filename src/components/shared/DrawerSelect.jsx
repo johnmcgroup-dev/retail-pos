@@ -7,7 +7,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-export default function DrawerSelect({ value, onValueChange, options, placeholder, triggerClassName = "", label = "Select" }) {
+export default function DrawerSelect({ value, onValueChange, options, placeholder, triggerClassName = "", label = "Select", onActivate }) {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.value === value);
 
@@ -17,6 +17,7 @@ export default function DrawerSelect({ value, onValueChange, options, placeholde
       <select
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
+        onClick={onActivate}
         className={`hidden md:block ${triggerClassName}`}
       >
         {options.map(o => (
@@ -27,7 +28,7 @@ export default function DrawerSelect({ value, onValueChange, options, placeholde
       {/* Mobile: button + drawer */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => { onActivate?.(); setOpen(true); }}
         className={`md:hidden flex items-center justify-between text-left min-h-[44px] ${triggerClassName}`}
       >
         <span className="truncate">{selected?.label || placeholder || "Select..."}</span>
