@@ -3,8 +3,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/components/utils";
 import { format, subDays } from "date-fns";
+import ClickableCard from "@/components/details/ClickableCard";
 
-export default function RevenueChart({ sales = [], currency = 'NGN', showSymbol = true }) {
+export default function RevenueChart({ sales = [], currency = 'NGN', showSymbol = true, onOpenDetail }) {
   const data = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
@@ -26,6 +27,7 @@ export default function RevenueChart({ sales = [], currency = 'NGN', showSymbol 
   const totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0);
 
   return (
+    <ClickableCard enabled={sales.length > 0} onClick={onOpenDetail}>
     <Card className="shadow-md">
       <CardHeader className="border-b border-slate-100 pb-3">
         <div className="flex items-center justify-between">
@@ -63,5 +65,6 @@ export default function RevenueChart({ sales = [], currency = 'NGN', showSymbol 
         </ResponsiveContainer>
       </CardContent>
     </Card>
+    </ClickableCard>
   );
 }

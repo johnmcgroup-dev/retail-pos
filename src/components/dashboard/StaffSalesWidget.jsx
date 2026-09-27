@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, TrendingUp } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { formatCurrency } from "@/utils";
+import ClickableCard from "@/components/details/ClickableCard";
 
-export default function StaffSalesWidget({ sales = [], currency = "USD", showSymbol = false }) {
+export default function StaffSalesWidget({ sales = [], currency = "USD", showSymbol = false, onOpenDetail }) {
   const [period, setPeriod] = useState("today");
 
   const getDateRange = () => {
@@ -48,6 +49,7 @@ export default function StaffSalesWidget({ sales = [], currency = "USD", showSym
   const rankColors = ["bg-yellow-400", "bg-slate-300", "bg-orange-400"];
 
   return (
+    <ClickableCard enabled={staffList.length > 0} onClick={onOpenDetail}>
     <Card className="shadow-md">
       <CardHeader className="border-b border-slate-100 pb-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -114,5 +116,6 @@ export default function StaffSalesWidget({ sales = [], currency = "USD", showSym
         )}
       </CardContent>
     </Card>
+    </ClickableCard>
   );
 }

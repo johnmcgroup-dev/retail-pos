@@ -1,7 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ClickableCard from "@/components/details/ClickableCard";
+import CardDetailDialog from "@/components/details/CardDetailDialog";
 import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -13,6 +15,7 @@ const CHART_COLOR = "#2563eb";
 const QTY_COLOR = "#10b981";
 
 export default function InventoryDashboard() {
+  const [detail, setDetail] = useState(null);
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({ queryKey: ["companies"], queryFn: () => base44.entities.Company.list() });
   const company = (me && companies.find(c => c.id === (me.company_id || me.tenant_id))) || companies[0];
@@ -78,56 +81,103 @@ export default function InventoryDashboard() {
         </p>
       </div>
 
-      {/* KPI summary */}
+      {/* KPI summary — each card opens the stock data behind it */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600">Total Stock Value</p>
-                <p className="text-xl md:text-2xl font-bold text-slate-900">{formatCurrency(totalValue, currency)}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">At cost price</p>
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Total Stock Value",
+            subtitle: "Stock on hand valued at cost price, by product, category and location",
+            focus: "value",
+            inventory, products, warehouses, currency, showSymbol: true,
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-600">Total Stock Value</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-900">{formatCurrency(totalValue, currency)}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">At cost price</p>
+                </div>
+                <DollarSign className="w-8 h-8 text-green-500" />
               </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600">Total Quantity</p>
-                <p className="text-xl md:text-2xl font-bold text-slate-900">{totalQty.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Units in stock</p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
+
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Total Quantity",
+            subtitle: "Units in stock by product and location",
+            focus: "quantity",
+            inventory, products, warehouses, currency, showSymbol: true,
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-600">Total Quantity</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-900">{totalQty.toLocaleString()}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Units in stock</p>
+                </div>
+                <Boxes className="w-8 h-8 text-blue-500" />
               </div>
-              <Boxes className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600">Warehouses</p>
-                <p className="text-xl md:text-2xl font-bold text-slate-900">{byWarehouse.length}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Locations</p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
+
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Warehouses",
+            subtitle: "Stock held in each warehouse location",
+            focus: "locations",
+            inventory, products, warehouses, currency, showSymbol: true,
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-600">Warehouses</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-900">{byWarehouse.length}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Locations</p>
+                </div>
+                <WarehouseIcon className="w-8 h-8 text-purple-500" />
               </div>
-              <WarehouseIcon className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600">Unique SKUs</p>
-                <p className="text-xl md:text-2xl font-bold text-slate-900">{totalSkus}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Products tracked</p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
+
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Unique SKUs",
+            subtitle: "Every product currently tracked in stock",
+            focus: "skus",
+            inventory, products, warehouses, currency, showSymbol: true,
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-600">Unique SKUs</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-900">{totalSkus}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Products tracked</p>
+                </div>
+                <Package className="w-8 h-8 text-amber-500" />
               </div>
-              <Package className="w-8 h-8 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
       </div>
 
       {/* Charts */}
@@ -219,6 +269,8 @@ export default function InventoryDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <CardDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

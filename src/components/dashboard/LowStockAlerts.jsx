@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, PackagePlus, TrendingDown, Boxes } from "lucide-react";
 import StockProductDialog from "@/components/inventory/StockProductDialog";
 
-export default function LowStockAlerts({ currency = "NGN", showSymbol = true }) {
+export default function LowStockAlerts({ currency = "NGN", showSymbol = true, onOpenDetail }) {
   const queryClient = useQueryClient();
   const [stockProduct, setStockProduct] = useState(null);
 
@@ -60,8 +60,21 @@ export default function LowStockAlerts({ currency = "NGN", showSymbol = true }) 
   const outOfStockCount = lowStockProducts.filter(p => p.stock === 0).length;
   const lowStockCount = lowStockProducts.filter(p => p.stock > 0).length;
 
+  const canOpen = lowStockProducts.length > 0;
+
   return (
-    <Card className="shadow-md border-orange-200">
+    <Card
+      onClick={canOpen ? () => onOpenDetail?.(lowStockProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        quantity: p.stock,
+        reorder_level: p.reorder_level ?? 10,
+        unit: p.unit,
+        sku: p.sku,
+        category: p.category,
+      }))) : undefined}
+      className={`shadow-md border-orange-200 ${canOpen ? "cursor-pointer hover:shadow-lg transition-shadow" : ""}`}
+    >
       <CardHeader className="border-b border-slate-100 pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm md:text-base">
@@ -133,7 +146,7 @@ export default function LowStockAlerts({ currency = "NGN", showSymbol = true }) 
                         ? 'bg-red-600 hover:bg-red-700'
                         : 'bg-yellow-600 hover:bg-yellow-700'
                     }`}
-                    onClick={() => setStockProduct({ product: p, inventoryItem: p.invItem })}
+                    onClick={(e) => { e.stopPropagation(); setStockProduct({ product: p, inventoryItem: p.invItem }); }}
                   >
                     <PackagePlus className="w-3 h-3" />
                     Stock

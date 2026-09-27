@@ -1,5 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ClickableCard from "@/components/details/ClickableCard";
+import CardDetailDialog from "@/components/details/CardDetailDialog";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Package, AlertTriangle, TrendingDown, DollarSign, Percent, RotateCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +9,8 @@ import { format, differenceInDays } from "date-fns";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-export default function InventoryDashboard({ inventory, products, sales, purchases, isLoading }) {
+export default function InventoryDashboard({ inventory, products, sales, purchases, isLoading, currency = "NGN", showSymbol = true }) {
+  const [detail, setDetail] = useState(null);
   // Enrich inventory with product details
   const enrichedInventory = useMemo(() => {
     return inventory.map(inv => {
@@ -79,6 +82,16 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
   // Days inventory outstanding
   const daysInventory = inventoryTurnover > 0 ? (365 / inventoryTurnover).toFixed(0) : 0;
 
+  // Cost of goods sold, shown alongside the turnover figure in its detail view
+  const cogsValue = useMemo(() => {
+    return sales.reduce((sum, sale) => {
+      return sum + (sale.items || []).reduce((itemSum, item) => {
+        const product = products.find(p => p.id === item.product_id);
+        return itemSum + ((item.quantity || 0) * (product?.cost_price || 0));
+      }, 0);
+    }, 0);
+  }, [sales, products]);
+
   // Top products by value
   const topValueProducts = useMemo(() => {
     return enrichedInventory
@@ -123,62 +136,129 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Inventory Value</p>
-                <p className="text-2xl font-bold text-slate-900">₦{inventoryValue.toFixed(2)}</p>
-                <p className="text-xs text-slate-500 mt-1">At cost price</p>
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Inventory Value",
+            subtitle: "Stock on hand valued at cost price",
+            focus: "value",
+            inventory, products, currency, showSymbol,
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Inventory Value</p>
+                  <p className="text-2xl font-bold text-slate-900">₦{inventoryValue.toFixed(2)}</p>
+                  <p className="text-xs text-slate-500 mt-1">At cost price</p>
+                </div>
+                <DollarSign className="w-10 h-10 text-green-500" />
               </div>
-              <DollarSign className="w-10 h-10 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Retail Value</p>
-                <p className="text-2xl font-bold text-slate-900">₦{retailValue.toFixed(2)}</p>
-                <p className="text-xs text-slate-500 mt-1">Selling price</p>
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Retail Value",
+            subtitle: "Stock on hand valued at selling price",
+            focus: "retail",
+            inventory, products, currency, showSymbol,
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Retail Value</p>
+                  <p className="text-2xl font-bold text-slate-900">₦{retailValue.toFixed(2)}</p>
+                  <p className="text-xs text-slate-500 mt-1">Selling price</p>
+                </div>
+                <Package className="w-10 h-10 text-blue-500" />
               </div>
-              <Package className="w-10 h-10 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Turnover Rate</p>
-                <p className="text-2xl font-bold text-slate-900">{inventoryTurnover}x</p>
-                <p className="text-xs text-slate-500 mt-1">{daysInventory} days avg</p>
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Turnover Rate",
+            subtitle: `Cost of goods sold against the stock you hold (${inventoryTurnover}x)`,
+            focus: "turnover",
+            inventory, products, currency, showSymbol,
+            turnover: { rate: inventoryTurnover, days: daysInventory, cogs: cogsValue, value: inventoryValue },
+          })}
+        >
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Turnover Rate</p>
+                  <p className="text-2xl font-bold text-slate-900">{inventoryTurnover}x</p>
+                  <p className="text-xs text-slate-500 mt-1">{daysInventory} days avg</p>
+                </div>
+                <RotateCw className="w-10 h-10 text-purple-500" />
               </div>
-              <RotateCw className="w-10 h-10 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-red-700">Alerts</p>
-                <p className="text-2xl font-bold text-red-900">{lowStockItems.length + expiringItems.length}</p>
-                <p className="text-xs text-red-600 mt-1">Need attention</p>
+        <ClickableCard
+          enabled={lowStockItems.length + expiringItems.length > 0}
+          onClick={() => setDetail({
+            kind: "stockAlerts",
+            title: "Stock Alerts",
+            subtitle: "Low stock and expiring items that need attention",
+            items: lowStockItems.map(inv => ({
+              id: inv.id,
+              name: inv.product.name,
+              quantity: inv.quantity,
+              reorder_level: inv.product.reorder_level ?? 10,
+              unit: inv.product.unit,
+              sku: inv.product.sku,
+              category: inv.product.category,
+            })),
+            expiring: expiringItems.map(inv => ({
+              id: inv.id,
+              name: inv.product.name,
+              quantity: inv.quantity,
+              expiration_date: inv.expiration_date,
+              days_left: differenceInDays(new Date(inv.expiration_date), new Date()),
+            })),
+          })}
+        >
+          <Card className="bg-red-50 border-red-200 shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-700">Alerts</p>
+                  <p className="text-2xl font-bold text-red-900">{lowStockItems.length + expiringItems.length}</p>
+                  <p className="text-xs text-red-600 mt-1">Need attention</p>
+                </div>
+                <AlertTriangle className="w-10 h-10 text-red-500" />
               </div>
-              <AlertTriangle className="w-10 h-10 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Inventory by Category */}
-        <Card>
+        <Card
+          onClick={() => setDetail({
+            kind: "category",
+            title: "Inventory Value by Category",
+            subtitle: "Stock value in each category, with the products behind it",
+            inventory, products, currency, showSymbol,
+          })}
+          className="shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+        >
           <CardHeader>
             <CardTitle>Inventory Value by Category</CardTitle>
           </CardHeader>
@@ -209,7 +289,15 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
         </Card>
 
         {/* Stock Status */}
-        <Card>
+        <Card
+          onClick={() => setDetail({
+            kind: "stockStatus",
+            title: "Stock Status Distribution",
+            subtitle: "Which products are in stock, low, or out of stock",
+            inventory, products,
+          })}
+          className="shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+        >
           <CardHeader>
             <CardTitle>Stock Status Distribution</CardTitle>
           </CardHeader>
@@ -328,6 +416,8 @@ export default function InventoryDashboard({ inventory, products, sales, purchas
           )}
         </div>
       )}
+
+      <CardDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

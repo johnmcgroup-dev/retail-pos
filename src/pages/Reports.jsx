@@ -10,9 +10,12 @@ import InventoryDashboard from "../components/reports/InventoryDashboard";
 import ProfitLossStatement from "../components/reports/ProfitLossStatement";
 import StaffSalesBreakdown from "../components/reports/StaffSalesBreakdown";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ClickableCard from "@/components/details/ClickableCard";
+import CardDetailDialog from "@/components/details/CardDetailDialog";
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState("month");
+  const [detail, setDetail] = useState(null);
 
   const { data: sales = [], isLoading: salesLoading } = useQuery({
     queryKey: ["sales"],
@@ -82,6 +85,16 @@ export default function Reports() {
   const netProfit = totalRevenue - totalExpenses;
   const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
+  const currency = company?.currency || "NGN";
+  const showSymbol = company?.show_currency_symbol !== false;
+  const periodLabels = {
+    today: "Today",
+    week: "This Week",
+    month: "This Month",
+    quarter: "Last 3 Months",
+    year: "Last 12 Months",
+  };
+
   return (
     <div className="p-6 md:p-8 space-y-6">
       {/* Header */}
@@ -109,58 +122,118 @@ export default function Reports() {
 
       {/* Key Metrics Overview */}
       <div className="grid md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Revenue</p>
-                <p className="text-2xl font-bold">₦{totalRevenue.toFixed(2)}</p>
-                <p className="text-xs opacity-80 mt-1">{filteredData.sales.length} transactions</p>
+        <ClickableCard
+          enabled={filteredData.sales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Total Revenue",
+            subtitle: `All sales for ${periodLabels[dateRange]}`,
+            sales: filteredData.sales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[dateRange],
+            focus: "revenue",
+          })}
+        >
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Total Revenue</p>
+                  <p className="text-2xl font-bold">₦{totalRevenue.toFixed(2)}</p>
+                  <p className="text-xs opacity-80 mt-1">{filteredData.sales.length} transactions</p>
+                </div>
+                <DollarSign className="w-10 h-10 opacity-80" />
               </div>
-              <DollarSign className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white shadow-xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Expenses</p>
-                <p className="text-2xl font-bold">₦{totalExpenses.toFixed(2)}</p>
-                <p className="text-xs opacity-80 mt-1">{filteredData.expenses.length} expenses</p>
+        <ClickableCard
+          enabled={filteredData.expenses.length > 0}
+          onClick={() => setDetail({
+            kind: "expenses",
+            title: "Total Expenses",
+            subtitle: `Every expense record for ${periodLabels[dateRange]}`,
+            expenses: filteredData.expenses,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[dateRange],
+          })}
+        >
+          <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Total Expenses</p>
+                  <p className="text-2xl font-bold">₦{totalExpenses.toFixed(2)}</p>
+                  <p className="text-xs opacity-80 mt-1">{filteredData.expenses.length} expenses</p>
+                </div>
+                <TrendingUp className="w-10 h-10 opacity-80" />
               </div>
-              <TrendingUp className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Net Profit</p>
-                <p className="text-2xl font-bold">₦{netProfit.toFixed(2)}</p>
-                <p className="text-xs opacity-80 mt-1">{netProfit >= 0 ? 'Profitable' : 'Loss'}</p>
+        <ClickableCard
+          enabled={filteredData.sales.length > 0 || filteredData.expenses.length > 0}
+          onClick={() => setDetail({
+            kind: "profit",
+            title: "Net Profit",
+            subtitle: `Revenue, cost of goods and expenses for ${periodLabels[dateRange]}`,
+            sales: filteredData.sales,
+            expenses: filteredData.expenses,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[dateRange],
+          })}
+        >
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Net Profit</p>
+                  <p className="text-2xl font-bold">₦{netProfit.toFixed(2)}</p>
+                  <p className="text-xs opacity-80 mt-1">{netProfit >= 0 ? 'Profitable' : 'Loss'}</p>
+                </div>
+                <BarChart3 className="w-10 h-10 opacity-80" />
               </div>
-              <BarChart3 className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Profit Margin</p>
-                <p className="text-2xl font-bold">{profitMargin.toFixed(1)}%</p>
-                <p className="text-xs opacity-80 mt-1">Margin rate</p>
+        <ClickableCard
+          enabled={filteredData.sales.length > 0}
+          onClick={() => setDetail({
+            kind: "profit",
+            title: "Profit Margin",
+            subtitle: `How the ${profitMargin.toFixed(1)}% margin is made up for ${periodLabels[dateRange]}`,
+            sales: filteredData.sales,
+            expenses: filteredData.expenses,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[dateRange],
+          })}
+        >
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Profit Margin</p>
+                  <p className="text-2xl font-bold">{profitMargin.toFixed(1)}%</p>
+                  <p className="text-xs opacity-80 mt-1">Margin rate</p>
+                </div>
+                <Package className="w-10 h-10 opacity-80" />
               </div>
-              <Package className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </ClickableCard>
       </div>
+
+      <CardDetailDialog detail={detail} onClose={() => setDetail(null)} />
 
       {/* Detailed Dashboards */}
       <Tabs defaultValue="sales" className="space-y-6">
@@ -199,6 +272,8 @@ export default function Reports() {
             sales={sales}
             purchases={purchases}
             isLoading={isLoading}
+            currency={currency}
+            showSymbol={showSymbol}
           />
         </TabsContent>
 

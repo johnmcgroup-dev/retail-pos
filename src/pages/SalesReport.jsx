@@ -9,9 +9,12 @@ import { TrendingUp, DollarSign, Package, ArrowUpRight, ArrowDownRight, Calendar
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { formatCurrency } from "@/utils";
 import StaffPerformance from "@/components/reports/StaffPerformance";
+import ClickableCard from "@/components/details/ClickableCard";
+import CardDetailDialog from "@/components/details/CardDetailDialog";
 
 export default function SalesReport() {
   const [period, setPeriod] = useState("today");
+  const [detail, setDetail] = useState(null);
 
   const { data: sales = [] } = useQuery({
     queryKey: ["sales"],
@@ -138,51 +141,111 @@ export default function SalesReport() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs md:text-sm opacity-90">Total Revenue</p>
-              <DollarSign className="w-4 h-4 opacity-80" />
-            </div>
-            <p className="text-xl md:text-3xl font-bold">{formatCurrency(totalRevenue, currency, showSymbol)}</p>
-            <p className="text-xs opacity-80 mt-1">{periodLabels[period]}</p>
-          </CardContent>
-        </Card>
+        <ClickableCard
+          enabled={filteredSales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Total Revenue",
+            subtitle: `All sales for ${periodLabels[period]}`,
+            sales: filteredSales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[period],
+            focus: "revenue",
+          })}
+        >
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs md:text-sm opacity-90">Total Revenue</p>
+                <DollarSign className="w-4 h-4 opacity-80" />
+              </div>
+              <p className="text-xl md:text-3xl font-bold">{formatCurrency(totalRevenue, currency, showSymbol)}</p>
+              <p className="text-xs opacity-80 mt-1">{periodLabels[period]}</p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs md:text-sm opacity-90">Gross Profit</p>
-              <TrendingUp className="w-4 h-4 opacity-80" />
-            </div>
-            <p className="text-xl md:text-3xl font-bold">{formatCurrency(grossProfit, currency, showSymbol)}</p>
-            <p className="text-xs opacity-80 mt-1">Margin: {profitMargin.toFixed(1)}%</p>
-          </CardContent>
-        </Card>
+        <ClickableCard
+          enabled={filteredSales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Gross Profit",
+            subtitle: `Revenue, cost of goods and profit per product for ${periodLabels[period]}`,
+            sales: filteredSales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[period],
+            focus: "profit",
+          })}
+        >
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs md:text-sm opacity-90">Gross Profit</p>
+                <TrendingUp className="w-4 h-4 opacity-80" />
+              </div>
+              <p className="text-xl md:text-3xl font-bold">{formatCurrency(grossProfit, currency, showSymbol)}</p>
+              <p className="text-xs opacity-80 mt-1">Margin: {profitMargin.toFixed(1)}%</p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs md:text-sm opacity-90">Transactions</p>
-              <Package className="w-4 h-4 opacity-80" />
-            </div>
-            <p className="text-xl md:text-3xl font-bold">{totalTransactions}</p>
-            <p className="text-xs opacity-80 mt-1">Avg: {formatCurrency(avgOrderValue, currency, showSymbol)}</p>
-          </CardContent>
-        </Card>
+        <ClickableCard
+          enabled={filteredSales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Transactions",
+            subtitle: `Every transaction recorded for ${periodLabels[period]}`,
+            sales: filteredSales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[period],
+            focus: "transactions",
+          })}
+        >
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs md:text-sm opacity-90">Transactions</p>
+                <Package className="w-4 h-4 opacity-80" />
+              </div>
+              <p className="text-xl md:text-3xl font-bold">{totalTransactions}</p>
+              <p className="text-xs opacity-80 mt-1">Avg: {formatCurrency(avgOrderValue, currency, showSymbol)}</p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
 
-        <Card className={`${profitMargin >= 20 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : profitMargin >= 10 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' : 'bg-gradient-to-br from-red-500 to-red-600'} text-white`}>
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs md:text-sm opacity-90">Profit Margin</p>
-              {profitMargin >= 10 ? <ArrowUpRight className="w-4 h-4 opacity-80" /> : <ArrowDownRight className="w-4 h-4 opacity-80" />}
-            </div>
-            <p className="text-xl md:text-3xl font-bold">{profitMargin.toFixed(1)}%</p>
-            <p className="text-xs opacity-80 mt-1">
-              {profitMargin >= 20 ? "Excellent" : profitMargin >= 10 ? "Good" : "Needs Attention"}
-            </p>
-          </CardContent>
-        </Card>
+        <ClickableCard
+          enabled={filteredSales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Profit Margin",
+            subtitle: `How the ${profitMargin.toFixed(1)}% margin is made up for ${periodLabels[period]}`,
+            sales: filteredSales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: periodLabels[period],
+            focus: "profit",
+          })}
+        >
+          <Card className={`${profitMargin >= 20 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : profitMargin >= 10 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' : 'bg-gradient-to-br from-red-500 to-red-600'} text-white`}>
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs md:text-sm opacity-90">Profit Margin</p>
+                {profitMargin >= 10 ? <ArrowUpRight className="w-4 h-4 opacity-80" /> : <ArrowDownRight className="w-4 h-4 opacity-80" />}
+              </div>
+              <p className="text-xl md:text-3xl font-bold">{profitMargin.toFixed(1)}%</p>
+              <p className="text-xs opacity-80 mt-1">
+                {profitMargin >= 20 ? "Excellent" : profitMargin >= 10 ? "Good" : "Needs Attention"}
+              </p>
+            </CardContent>
+          </Card>
+        </ClickableCard>
       </div>
 
       {/* Revenue by Payment Method */}
@@ -331,6 +394,8 @@ export default function SalesReport() {
       </Card>
       {/* Staff Performance */}
       <StaffPerformance sales={sales} currency={currency} showSymbol={showSymbol} />
+
+      <CardDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

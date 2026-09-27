@@ -16,6 +16,7 @@ import ProductsExportButtons from "../components/products/ProductsExportButtons"
 import { Checkbox } from "@/components/ui/checkbox";
 import PullToRefresh from "@/components/shared/PullToRefresh";
 import SearchInput from "../components/shared/SearchInput";
+import CardDetailDialog from "@/components/details/CardDetailDialog";
 
 export default function Products() {
   const queryClient = useQueryClient();
@@ -26,6 +27,7 @@ export default function Products() {
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [detailProduct, setDetailProduct] = useState(null);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -222,9 +224,13 @@ export default function Products() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className={`cv-auto hover:shadow-lg transition-shadow relative ${selectedIds.has(product.id) ? "ring-2 ring-blue-400" : ""}`}>
+          <Card
+            key={product.id}
+            onClick={() => setDetailProduct(product)}
+            className={`cv-auto cursor-pointer hover:shadow-lg transition-shadow relative ${selectedIds.has(product.id) ? "ring-2 ring-blue-400" : ""}`}
+          >
             <CardContent className="p-6">
-              <div className="absolute top-3 right-3 z-10">
+              <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={selectedIds.has(product.id)}
                   onCheckedChange={() => toggleSelect(product.id)}
@@ -236,7 +242,7 @@ export default function Products() {
                   <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                 ) : (
                   <button
-                    onClick={() => generateImageMutation.mutate(product)}
+                    onClick={(e) => { e.stopPropagation(); generateImageMutation.mutate(product); }}
                     disabled={generateImageMutation.isPending}
                     className="flex flex-col items-center justify-center w-full h-full gap-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   >
@@ -293,7 +299,7 @@ export default function Products() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleEdit(product)}
+                  onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
                   className="flex-1"
                 >
                   <Edit className="w-4 h-4 mr-1" />
@@ -302,7 +308,7 @@ export default function Products() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDelete(product.id)}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -360,6 +366,20 @@ export default function Products() {
           queryClient.invalidateQueries(["alerts"]);
           setSelectedIds(new Set());
         }}
+      />
+
+      <CardDetailDialog
+        detail={detailProduct ? {
+          kind: "product",
+          title: detailProduct.name,
+          subtitle: "Full product details, pricing, stock and stock history",
+          product: detailProduct,
+          inventoryItem: getInventoryForProduct(detailProduct.id),
+          companyId,
+          currency: companies.find((c) => c.id === companyId)?.currency || "NGN",
+          showSymbol: companies.find((c) => c.id === companyId)?.show_currency_symbol !== false,
+        } : null}
+        onClose={() => setDetailProduct(null)}
       />
     </PullToRefresh>
   );

@@ -20,9 +20,12 @@ import OfflineIndicator from "../components/shared/OfflineIndicator";
 import StaffSalesWidget from "../components/dashboard/StaffSalesWidget";
 import LowStockAlerts from "../components/dashboard/LowStockAlerts";
 import RevenueChart from "../components/dashboard/RevenueChart";
+import ClickableCard from "../components/details/ClickableCard";
+import CardDetailDialog from "../components/details/CardDetailDialog";
 
 export default function Dashboard() {
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [detail, setDetail] = useState(null);
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -198,8 +201,21 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Link to={createPageUrl("SalesReport")} className="block">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+        <ClickableCard
+          enabled={todaySales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Today's Sales",
+            subtitle: "Every transaction recorded today, with the full breakdown",
+            sales: todaySales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: "Today",
+            focus: "revenue",
+          })}
+        >
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl">
             <CardHeader className="pb-2 md:pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs md:text-sm font-medium opacity-90">Today's Sales</CardTitle>
@@ -213,10 +229,23 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
-        </Link>
+        </ClickableCard>
 
-        <Link to={createPageUrl("Reports")} className="block">
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+        <ClickableCard
+          enabled={monthSales.length > 0}
+          onClick={() => setDetail({
+            kind: "sales",
+            title: "Monthly Revenue",
+            subtitle: "All sales recorded this month, with the full breakdown",
+            sales: monthSales,
+            products,
+            currency,
+            showSymbol,
+            periodLabel: "This Month",
+            focus: "revenue",
+          })}
+        >
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl">
             <CardHeader className="pb-2 md:pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs md:text-sm font-medium opacity-90">Monthly Revenue</CardTitle>
@@ -230,10 +259,22 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
-        </Link>
+        </ClickableCard>
 
-        <Link to={createPageUrl("Inventory")} className="block">
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+        <ClickableCard
+          enabled={inventory.length > 0}
+          onClick={() => setDetail({
+            kind: "stockValue",
+            title: "Inventory Value",
+            subtitle: "Stock on hand valued at cost price, by product, category and location",
+            focus: "value",
+            inventory,
+            products,
+            currency,
+            showSymbol,
+          })}
+        >
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl">
             <CardHeader className="pb-2 md:pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs md:text-sm font-medium opacity-90">Inventory Value</CardTitle>
@@ -247,10 +288,20 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
-        </Link>
+        </ClickableCard>
 
-        <Link to={createPageUrl("Customers")} className="block">
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer touch-manipulation">
+        <ClickableCard
+          enabled={customers.length > 0}
+          onClick={() => setDetail({
+            kind: "customers",
+            title: "Customers",
+            subtitle: "Every customer record with purchases, balances and loyalty points",
+            customers,
+            currency,
+            showSymbol,
+          })}
+        >
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-xl">
             <CardHeader className="pb-2 md:pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs md:text-sm font-medium opacity-90">Customers</CardTitle>
@@ -264,18 +315,51 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
-        </Link>
+        </ClickableCard>
       </div>
       
       {/* Daily Revenue Chart */}
-      <RevenueChart sales={sales} currency={currency} showSymbol={showSymbol} />
+      <RevenueChart
+        sales={sales}
+        currency={currency}
+        showSymbol={showSymbol}
+        onOpenDetail={() => setDetail({
+          kind: "dailyRevenue",
+          title: "Daily Revenue — Last 30 Days",
+          subtitle: "Day-by-day revenue for the last 30 days",
+          sales,
+          currency,
+          showSymbol,
+        })}
+      />
 
       {/* Staff Sales Widget */}
-      <StaffSalesWidget sales={sales} currency={currency} showSymbol={showSymbol} />
+      <StaffSalesWidget
+        sales={sales}
+        currency={currency}
+        showSymbol={showSymbol}
+        onOpenDetail={() => setDetail({
+          kind: "staffSales",
+          title: "Sales by Staff",
+          subtitle: "Each staff member's sales and transactions",
+          sales,
+          currency,
+          showSymbol,
+        })}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="lg:col-span-1">
-          <LowStockAlerts currency={currency} showSymbol={showSymbol} />
+          <LowStockAlerts
+            currency={currency}
+            showSymbol={showSymbol}
+            onOpenDetail={(items) => setDetail({
+              kind: "stockAlerts",
+              title: "Stock Alerts",
+              subtitle: "Every product at or below its reorder level",
+              items,
+            })}
+          />
         </div>
 
         <Card className="lg:col-span-2 shadow-md">
@@ -312,6 +396,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <CardDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
