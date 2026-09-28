@@ -812,20 +812,28 @@ export default function POS() {
 
   const handleCheckout = async (paymentData) => {
     const totals = calculateTotals();
-    // Save-path enforcement of the POS stock restrictions: admins are not blocked,
-    // every other role keeps the guard exactly as before.
-    if (!isAdmin) {
-      for (const item of cart) {
-        const available = getAvailableStock(item.product_id);
-        const product = products.find(p => p.id === item.product_id);
-        const needed = item.quantity * getVarietyQuantity(product, item.variety);
-        if (item.quantity < 1 || available <= 0 || needed > available) {
-          setShowCheckout(false);
-          playErrorBuzz();
-          setStockWarning(`"${item.product_name}" is out of stock (only ${available} available). Sale blocked.`);
-          setTimeout(() => setStockWarning(""), 5000);
-          throw new Error(`Out of stock: ${item.product_name}`);
-        }
+    // Stock floor for every role: a sale can never take an item's stock below zero.
+    // Admins keep their other exemptions (discounts, price overrides, amount limits);
+    // only the offending line is blocked, with the available quantity shown, and the
+    // rest of the cart is left untouched so it can be adjusted or removed.
+    for (const item of cart) {
+      const available = getAvailableStock(item.product_id);
+      const product = products.find(p => p.id === item.product_id);
+      const perUnit = getVarietyQuantity(product, item.variety);
+      const needed = item.quantity * perUnit;
+      if (item.quantity < 1 || available <= 0 || needed > available) {
+        setShowCheckout(false);
+        playErrorBuzz();
+        const availableLabel = perUnit > 1
+          ? `${available} pieces (${Math.floor(available / perUnit)} ${item.variety})`
+          : `${available}`;
+        setStockWarning(
+          available <= 0
+            ? `"${item.product_name}" has no stock left — remove it from the cart to continue.`
+            : `Only ${availableLabel} of "${item.product_name}" in stock — reduce the quantity or remove it to continue.`
+        );
+        setTimeout(() => setStockWarning(""), 6000);
+        throw new Error(`Not enough stock: ${item.product_name}`);
       }
     }
     const invoiceNumber = `INV-${Date.now()}`;
