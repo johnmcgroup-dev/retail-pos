@@ -35,6 +35,7 @@ import QuickCalculator from "../components/pos/QuickCalculator";
 import AddStockDialog from "../components/pos/AddStockDialog";
 import { logActivity } from "@/lib/logActivity";
 import { getVarietyPrice, getVarietyQuantity, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
+import { loadCart, saveCart, clearSavedCart } from "@/lib/posCartStorage";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -57,13 +58,19 @@ export default function POS() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
+  const [cartReady, setCartReady] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
+  const cartOwnerRef = useRef(null);
   // Guards against a hardware scanner's trailing Enter re-adding the same item.
   // Records the last scan value + timestamp so the Enter key can be swallowed
   // reliably even on scanners with longer key latency.
   const justScannedRef = useRef({ at: 0, value: null });
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
+
+  // Admin/owner roles are not blocked by the POS selling restrictions (stock limits).
+  // Every other role keeps the standard restrictions exactly as they were.
+  const isAdmin = ["admin", "owner", "super_admin"].includes(user?.role);
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
@@ -160,6 +167,24 @@ export default function POS() {
   useEffect(() => {
     loyaltyRedeemRef.current = loyaltyRedeem;
   }, [loyaltyRedeem]);
+
+  // Restore this user's saved cart once per page load, then keep the saved copy in
+  // sync. The cart is only ever emptied by an explicit Clear or a completed sale —
+  // never by navigation, refresh, restocking, variant changes or discounts.
+  useEffect(() => {
+    if (cartOwnerRef.current) return;
+    const owner = user?.id || user?.email;
+    if (!owner) return;
+    cartOwnerRef.current = owner;
+    const saved = loadCart(owner);
+    if (saved && saved.length > 0) setCart(saved);
+    setCartReady(true);
+  }, [user]);
+
+  useEffect(() => {
+    if (!cartReady || !cartOwnerRef.current) return;
+    saveCart(cartOwnerRef.current, cart);
+  }, [cart, cartReady]);
 
   const dismissAlertMutation = useMutation({
     mutationFn: (alertId) => base44.entities.Alert.update(alertId, { is_dismissed: true }),
@@ -294,8 +319,8 @@ export default function POS() {
   const getAvailableStock = (productId) => stockByProduct[productId] || 0;
 
   const filteredProducts = products.filter(p => {
-    // Hide products with zero or negative stock
-    if (getAvailableStock(p.id) <= 0) return false;
+    // Hide products with zero or negative stock (admins may still sell them)
+    if (!isAdmin && getAvailableStock(p.id) <= 0) return false;
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return (
@@ -401,8 +426,8 @@ export default function POS() {
     const existingItem = cart.find(item => item.product_id === product.id);
     const currentQtyInCart = existingItem?.quantity || 0;
 
-    // Disallow adding more than available stock — alert staff
-    if (availableStock <= 0 || currentQtyInCart + 1 > availableStock) {
+    // Disallow adding more than available stock — alert staff (admins are exempt)
+    if (!isAdmin && (availableStock <= 0 || currentQtyInCart + 1 > availableStock)) {
       playErrorBuzz();
       setStockWarning(`"${product.name}" is out of stock.`);
       setTimeout(() => setStockWarning(""), 3000);
@@ -434,8 +459,8 @@ export default function POS() {
 
   const updateQuantity = (productId, newQuantity) => {
     const availableStock = getAvailableStock(productId);
-    // Disallow setting quantity above available stock — alert staff
-    if (availableStock <= 0 || newQuantity > availableStock) {
+    // Disallow setting quantity above available stock — alert staff (admins are exempt)
+    if (!isAdmin && (availableStock <= 0 || newQuantity > availableStock)) {
       playErrorBuzz();
       setStockWarning(`Only ${availableStock} in stock.`);
       setTimeout(() => setStockWarning(""), 3000);
@@ -501,9 +526,13 @@ export default function POS() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasUnsavedVarieties]);
 
-  // Clearing the cart discards unsaved variety changes — confirm first
+  // Clearing is always an explicit, confirmed action
   const handleClearCart = () => {
-    if (hasUnsavedVarieties && !window.confirm("You have unsaved variety/price changes. Clear the cart anyway?")) return;
+    if (cart.length === 0) return;
+    const message = hasUnsavedVarieties
+      ? "You have unsaved variety/price changes. Clear all items from the cart?"
+      : "Clear all items from the cart?";
+    if (!window.confirm(message)) return;
     clearCart();
   };
 
@@ -545,7 +574,7 @@ export default function POS() {
     const existingItem = cart.find(item => item.product_id === product.id);
     const currentQty = existingItem?.quantity || 0;
 
-    if (currentQty + quantity > availableStock) {
+    if (!isAdmin && currentQty + quantity > availableStock) {
       playErrorBuzz();
       return { success: false, reason: "stock" };
     }
@@ -576,11 +605,13 @@ export default function POS() {
     return { success: true };
   };
 
+  // Empties the cart and its saved copy — only called by a confirmed Clear or a completed sale
   const clearCart = () => {
     setCart([]);
     setSelectedCustomer(null);
     setOrderDiscount({ type: "percentage", value: 0 });
     setLoyaltyRedeem({ enabled: false, points: 0 });
+    if (cartOwnerRef.current) clearSavedCart(cartOwnerRef.current);
   };
 
   const calculateTotals = () => {
@@ -777,17 +808,20 @@ export default function POS() {
 
   const handleCheckout = async (paymentData) => {
     const totals = calculateTotals();
-    // Block the sale if any cart line is out of stock or below requested qty
-    for (const item of cart) {
-      const available = getAvailableStock(item.product_id);
-      const product = products.find(p => p.id === item.product_id);
-      const needed = item.quantity * getVarietyQuantity(product, item.variety);
-      if (item.quantity < 1 || available <= 0 || needed > available) {
-        setShowCheckout(false);
-        playErrorBuzz();
-        setStockWarning(`"${item.product_name}" is out of stock (only ${available} available). Sale blocked.`);
-        setTimeout(() => setStockWarning(""), 5000);
-        throw new Error(`Out of stock: ${item.product_name}`);
+    // Save-path enforcement of the POS stock restrictions: admins are not blocked,
+    // every other role keeps the guard exactly as before.
+    if (!isAdmin) {
+      for (const item of cart) {
+        const available = getAvailableStock(item.product_id);
+        const product = products.find(p => p.id === item.product_id);
+        const needed = item.quantity * getVarietyQuantity(product, item.variety);
+        if (item.quantity < 1 || available <= 0 || needed > available) {
+          setShowCheckout(false);
+          playErrorBuzz();
+          setStockWarning(`"${item.product_name}" is out of stock (only ${available} available). Sale blocked.`);
+          setTimeout(() => setStockWarning(""), 5000);
+          throw new Error(`Out of stock: ${item.product_name}`);
+        }
       }
     }
     const invoiceNumber = `INV-${Date.now()}`;
