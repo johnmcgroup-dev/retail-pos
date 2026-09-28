@@ -489,7 +489,7 @@ export default function POS() {
   // Pulls the saved per-variety price from the product so it auto-fills when switched.
   const updateVariety = (productId, variety) => {
     const product = products.find(p => p.id === productId);
-    setCart(cart.map(item => {
+    persistCart(cart.map(item => {
       if (item.product_id !== productId) return item;
       const price = getVarietyPrice(product, variety) ?? item.unit_price;
       const tax = item.unit_price ? item.tax * (price / item.unit_price) : item.tax;
@@ -564,7 +564,7 @@ export default function POS() {
 
   // Edit the per-variety unit price; recalculates proportional tax and line total
   const updateUnitPrice = (productId, newPrice) => {
-    setCart(cart.map(item => {
+    persistCart(cart.map(item => {
       if (item.product_id !== productId) return item;
       const price = Math.max(0, Number(newPrice) || 0);
       const tax = item.unit_price ? item.tax * (price / item.unit_price) : item.tax;
