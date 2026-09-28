@@ -58,9 +58,9 @@ export default function POS() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
-  const [cartReady, setCartReady] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
   const cartOwnerRef = useRef(null);
+  const cartTouchedRef = useRef(false);
   // Guards against a hardware scanner's trailing Enter re-adding the same item.
   // Records the last scan value + timestamp so the Enter key can be swallowed
   // reliably even on scanners with longer key latency.
@@ -168,23 +168,27 @@ export default function POS() {
     loyaltyRedeemRef.current = loyaltyRedeem;
   }, [loyaltyRedeem]);
 
-  // Restore this user's saved cart once per page load, then keep the saved copy in
-  // sync. The cart is only ever emptied by an explicit Clear or a completed sale —
-  // never by navigation, refresh, restocking, variant changes or discounts.
+  // Restore this user's saved cart once per page load. Every cart change persists
+  // itself through persistCart below, so the cart is only ever emptied by an
+  // explicit Clear or a completed sale — never by navigation, refresh, restocking,
+  // variant changes or discounts.
   useEffect(() => {
     if (cartOwnerRef.current) return;
     const owner = user?.id || user?.email;
     if (!owner) return;
     cartOwnerRef.current = owner;
+    if (cartTouchedRef.current) return;
     const saved = loadCart(owner);
     if (saved && saved.length > 0) setCart(saved);
-    setCartReady(true);
   }, [user]);
 
-  useEffect(() => {
-    if (!cartReady || !cartOwnerRef.current) return;
-    saveCart(cartOwnerRef.current, cart);
-  }, [cart, cartReady]);
+  // Single entry point for cart changes: updates the cart and the user's saved copy
+  // together, so the two can never drift apart.
+  const persistCart = (next) => {
+    cartTouchedRef.current = true;
+    setCart(next);
+    if (cartOwnerRef.current) saveCart(cartOwnerRef.current, next);
+  };
 
   const dismissAlertMutation = useMutation({
     mutationFn: (alertId) => base44.entities.Alert.update(alertId, { is_dismissed: true }),
@@ -437,13 +441,13 @@ export default function POS() {
     playScanBeep();
     if (existingItem) {
       const newQty = existingItem.quantity + 1;
-      setCart(cart.map(item =>
+      persistCart(cart.map(item =>
         item.product_id === product.id
           ? { ...item, quantity: newQty, total: item.unit_price * newQty }
           : item
       ));
     } else {
-      setCart([...cart, {
+      persistCart([...cart, {
         product_id: product.id,
         product_name: product.name,
         image_url: product.image_url,
@@ -469,7 +473,7 @@ export default function POS() {
     if (newQuantity <= 0) {
       removeFromCart(productId);
     } else {
-      setCart(cart.map(item =>
+      persistCart(cart.map(item =>
         item.product_id === productId
           ? { ...item, quantity: newQuantity, total: item.unit_price * newQuantity }
           : item
@@ -478,7 +482,7 @@ export default function POS() {
   };
 
   const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.product_id !== productId));
+    persistCart(cart.filter(item => item.product_id !== productId));
   };
 
   // Change the selling variety (Pieces / Roll / Bundle / Dozen / Carton) for a cart line.
@@ -583,13 +587,13 @@ export default function POS() {
 
     if (existingItem) {
       const newQty = currentQty + quantity;
-      setCart(cart.map(item =>
+      persistCart(cart.map(item =>
         item.product_id === product.id
           ? { ...item, quantity: newQty, total: item.unit_price * newQty }
           : item
       ));
     } else {
-      setCart([...cart, {
+      persistCart([...cart, {
         product_id: product.id,
         product_name: product.name,
         image_url: product.image_url,
@@ -607,7 +611,7 @@ export default function POS() {
 
   // Empties the cart and its saved copy — only called by a confirmed Clear or a completed sale
   const clearCart = () => {
-    setCart([]);
+    persistCart([]);
     setSelectedCustomer(null);
     setOrderDiscount({ type: "percentage", value: 0 });
     setLoyaltyRedeem({ enabled: false, points: 0 });
