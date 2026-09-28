@@ -13,12 +13,14 @@ import {
   Package,
   Award,
   Calculator,
-  PackagePlus
+  PackagePlus,
+  Tag
 } from "lucide-react";
 import ProductGrid from "../components/pos/ProductGrid";
 import CartPanel from "../components/pos/CartPanel";
 import PaymentGatewayDialog from "../components/pos/PaymentGatewayDialog";
 import DiscountPanel from "../components/pos/DiscountPanel";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import CustomerSelector from "../components/pos/CustomerSelector";
 import ConnectionStatus from "../components/shared/ConnectionStatus";
 import { formatCurrency, getCurrencySymbol, offlineCache, CACHE_KEYS } from "../components/utils";
@@ -54,6 +56,7 @@ export default function POS() {
   const [stockWarning, setStockWarning] = useState("");
   const [showCalculator, setShowCalculator] = useState(false);
   const [showAddStock, setShowAddStock] = useState(false);
+  const [showDiscount, setShowDiscount] = useState(false);
   const loyaltyRedeemRef = useRef(loyaltyRedeem);
   // Guards against a hardware scanner's trailing Enter re-adding the same item.
   // Records the last scan value + timestamp so the Enter key can be swallowed
@@ -995,13 +998,8 @@ export default function POS() {
             )}
           </div>
 
-          <PinnedItems
-            products={products}
-            sales={sales}
-            onAddToCart={(product) => { addToCart(product); setMobileTab("cart"); }}
-            currency={currency}
-            stockByProduct={stockByProduct}
-          />
+          {/* Favorites (PinnedItems) panel intentionally hidden from the POS layout —
+              component and data kept so it can be restored by re-adding it here. */}
 
           <div className="flex-1 overflow-auto p-3">
             <ProductGrid
@@ -1014,7 +1012,7 @@ export default function POS() {
         </div>
 
         {/* Cart Panel */}
-        <div className={`w-full md:w-[420px] bg-white border-l border-slate-200 flex flex-col shrink-0 ${mobileTab === "products" ? "hidden md:flex" : "flex"}`}>
+        <div className={`w-full md:w-[440px] lg:w-[520px] xl:w-[580px] bg-white border-l border-slate-200 flex flex-col shrink-0 ${mobileTab === "products" ? "hidden md:flex" : "flex"}`}>
           <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 shrink-0">
             <div className="flex items-center justify-between text-white">
               <div>
@@ -1072,18 +1070,44 @@ export default function POS() {
             />
           </div>
 
-          <div className="border-t border-slate-200 p-4 bg-slate-50 shrink-0 space-y-3">
-            <DiscountPanel
-              subtotal={totals.subtotal}
-              customer={selectedCustomer}
-              loyaltyProgram={loyaltyProgram}
-              orderDiscount={orderDiscount}
-              setOrderDiscount={setOrderDiscount}
-              loyaltyRedeem={loyaltyRedeem}
-              setLoyaltyRedeem={setLoyaltyRedeem}
-              currency={currency}
-            />
-            <div className="space-y-2 text-sm">
+          <div className="border-t border-slate-200 p-3 md:p-4 bg-slate-50 shrink-0 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Popover open={showDiscount} onOpenChange={setShowDiscount}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 border-blue-200 bg-white text-slate-700 hover:bg-blue-50"
+                  >
+                    <Tag className="w-3.5 h-3.5 text-blue-600" />
+                    Discount
+                    {totals.discountAmount > 0 && (
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                        -{formatCurrency(totals.discountAmount, currency)}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  side="top"
+                  className="w-[19rem] max-w-[calc(100vw-2rem)] p-3 max-h-[70vh] overflow-y-auto"
+                >
+                  <DiscountPanel
+                    subtotal={totals.subtotal}
+                    customer={selectedCustomer}
+                    loyaltyProgram={loyaltyProgram}
+                    orderDiscount={orderDiscount}
+                    setOrderDiscount={setOrderDiscount}
+                    loyaltyRedeem={loyaltyRedeem}
+                    setLoyaltyRedeem={setLoyaltyRedeem}
+                    currency={currency}
+                    alwaysExpanded
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-1.5 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal:</span>
                 <span className="font-semibold">{formatCurrency(totals.subtotal, currency)}</span>
@@ -1094,7 +1118,7 @@ export default function POS() {
               </div>
               {totals.orderDiscountAmount > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Order Discount:</span>
+                  <span className="text-slate-600">Discount:</span>
                   <span className="font-semibold text-green-600">-{formatCurrency(totals.orderDiscountAmount, currency)}</span>
                 </div>
               )}
