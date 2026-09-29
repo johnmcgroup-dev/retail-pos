@@ -36,6 +36,7 @@ import AddStockDialog from "../components/pos/AddStockDialog";
 import { logActivity } from "@/lib/logActivity";
 import { getVarietyPrice, getVarietyQuantity, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
 import { loadCart, saveCart, clearSavedCart } from "@/lib/posCartStorage";
+import { retryOnRateLimit } from "@/lib/requestRetry";
 
 export default function POS() {
   const queryClient = useQueryClient();
@@ -65,6 +66,8 @@ export default function POS() {
   // Records the last scan value + timestamp so the Enter key can be swallowed
   // reliably even on scanners with longer key latency.
   const justScannedRef = useRef({ at: 0, value: null });
+  // Blocks a second submission while a sale is already being written.
+  const saleSubmittingRef = useRef(false);
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
 
@@ -91,8 +94,16 @@ export default function POS() {
           offlineCache.updateLastSync();
           setUsingCachedData(false);
           return data;
-        } catch (_) {
-          // fall through to cache
+        } catch (error) {
+          // Keep the last known products on screen rather than emptying the till.
+          // Only use a stored copy if one exists; otherwise let the refresh retry
+          // in the background and leave the current list in place.
+          const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
+          if (cached && cached.length) {
+            setUsingCachedData(true);
+            return cached;
+          }
+          throw error;
         }
       }
       const cached = offlineCache.get(CACHE_KEYS.PRODUCTS);
@@ -102,13 +113,14 @@ export default function POS() {
       }
       return [];
     },
-    staleTime: 2 * 60 * 1000,
+    // Freshness comes from the app-wide real-time sync (live updates plus a 30s
+    // fallback), so this query does not poll on its own.
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
-    refetchInterval: isOnline ? 5 * 60 * 1000 : false,
   });
 
   const { data: customers = [] } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ["customers", posCompanyId],
     queryFn: async () => {
       if (!isOnline || !posCompanyId) {
         const cached = offlineCache.get(CACHE_KEYS.CUSTOMERS);
@@ -119,12 +131,11 @@ export default function POS() {
       offlineCache.set(CACHE_KEYS.CUSTOMERS, data);
       return data;
     },
-    enabled: isOnline,
-    initialData: () => offlineCache.get(CACHE_KEYS.CUSTOMERS) || []
+    enabled: isOnline && !!posCompanyId,
   });
 
   const { data: inventory = [] } = useQuery({
-    queryKey: ["inventory"],
+    queryKey: ["inventory", posCompanyId],
     queryFn: async () => {
       if (!isOnline) {
         const cached = offlineCache.get(CACHE_KEYS.INVENTORY);
@@ -135,8 +146,7 @@ export default function POS() {
       offlineCache.set(CACHE_KEYS.INVENTORY, data);
       return data;
     },
-    enabled: isOnline,
-    initialData: () => offlineCache.get(CACHE_KEYS.INVENTORY) || []
+    enabled: isOnline && !!posCompanyId,
   });
 
   const { data: alerts = [] } = useQuery({
@@ -256,27 +266,12 @@ export default function POS() {
     setPendingSyncCount(pending.length);
   }, []);
 
-  // Real-time sync: subscribe to Inventory & Product changes so that scanning
-  // and manual searches reflect the latest shared state across all linked devices.
-  useEffect(() => {
-    const unsubInventory = base44.entities.Inventory.subscribe(() => {
-      queryClient.invalidateQueries(["inventory"]);
-    });
-    const unsubProducts = base44.entities.Product.subscribe(() => {
-      queryClient.invalidateQueries(["products"]);
-    });
-    return () => {
-      if (unsubInventory) unsubInventory();
-      if (unsubProducts) unsubProducts();
-    };
-  }, [queryClient]);
-
   const syncOfflineSales = async () => {
     const pendingSales = offlineCache.getPendingOfflineSales();
     
     for (const sale of pendingSales) {
       try {
-        await base44.entities.Sale.create(sale);
+        await retryOnRateLimit(() => base44.entities.Sale.create(sale));
         offlineCache.markSaleSynced(sale.offlineTimestamp);
         
         for (const item of sale.items) {
@@ -298,9 +293,11 @@ export default function POS() {
             if (remaining <= 0) break;
             if ((inv.quantity || 0) <= 0) continue;
             const deduct = Math.min(inv.quantity, remaining);
-            await base44.entities.Inventory.update(inv.id, {
-              quantity: inv.quantity - deduct
-            });
+            await retryOnRateLimit(() =>
+              base44.entities.Inventory.update(inv.id, {
+                quantity: inv.quantity - deduct
+              })
+            );
             remaining -= deduct;
           }
         }
@@ -647,10 +644,10 @@ export default function POS() {
         return { offline: true };
       }
 
-      const sale = await base44.entities.Sale.create(saleData);
+      const sale = await retryOnRateLimit(() => base44.entities.Sale.create(saleData));
       
       if (saleData.payment_data) {
-        await base44.entities.Payment.create({
+        await retryOnRateLimit(() => base44.entities.Payment.create({
           company_id: saleData.company_id,
           reference_type: "sale",
           reference_id: sale.id,
@@ -666,7 +663,7 @@ export default function POS() {
           payment_status: saleData.payment_data.payment_status,
           card_last_four: saleData.payment_data.card_last_four,
           card_brand: saleData.payment_data.card_brand
-        });
+        }));
       }
       
       if (saleData.customer_id && selectedCompany) {
@@ -728,31 +725,36 @@ export default function POS() {
         }
       }
       
-      // FEFO deduction: deduct from earliest-expiring batches first
-      for (const item of cart) {
-        const inventoryRecords = await base44.entities.Inventory.filter({
-          product_id: item.product_id,
-          company_id: saleData.company_id
-        });
+      // FEFO deduction: deduct from earliest-expiring batches first.
+      // One inventory read covers the whole sale (instead of one request per
+      // line), and each batch we actually touch is written back exactly once.
+      const saleInventory = await retryOnRateLimit(() =>
+        base44.entities.Inventory.filter({ company_id: saleData.company_id })
+      );
+      const appliedQuantities = {};
 
-        // Sort by expiration_date ascending (nulls last)
-        const sorted = [...inventoryRecords].sort((a, b) => {
-          if (!a.expiration_date && !b.expiration_date) return 0;
-          if (!a.expiration_date) return 1;
-          if (!b.expiration_date) return -1;
-          return new Date(a.expiration_date) - new Date(b.expiration_date);
-        });
+      for (const item of cart) {
+        const sorted = saleInventory
+          .filter((inv) => inv.product_id === item.product_id)
+          .sort((a, b) => {
+            if (!a.expiration_date && !b.expiration_date) return 0;
+            if (!a.expiration_date) return 1;
+            if (!b.expiration_date) return -1;
+            return new Date(a.expiration_date) - new Date(b.expiration_date);
+          });
 
         const product = products.find(p => p.id === item.product_id);
         const perUnit = getVarietyQuantity(product, item.variety);
         let remaining = item.quantity * perUnit;
         for (const inv of sorted) {
           if (remaining <= 0) break;
-          if ((inv.quantity || 0) <= 0) continue;
-          const deduct = Math.min(inv.quantity, remaining);
-          await base44.entities.Inventory.update(inv.id, {
-            quantity: inv.quantity - deduct
-          });
+          const currentQty = appliedQuantities[inv.id] ?? inv.quantity ?? 0;
+          if (currentQty <= 0) continue;
+          const deduct = Math.min(currentQty, remaining);
+          appliedQuantities[inv.id] = currentQty - deduct;
+          await retryOnRateLimit(() =>
+            base44.entities.Inventory.update(inv.id, { quantity: currentQty - deduct })
+          );
           remaining -= deduct;
         }
       }
@@ -793,15 +795,9 @@ export default function POS() {
         description: `Sale ${saleData.invoice_number} — ${saleData.items?.length || 0} item(s), ${saleData.payment_method}`,
         details: { customer: saleData.customer_name, items: saleData.items?.length || 0, payment_method: saleData.payment_method },
       });
-      // Refresh and re-cache inventory so offline view stays accurate
-      if (isOnline) {
-        try {
-          const freshInventory = await base44.entities.Inventory.list();
-          offlineCache.set(CACHE_KEYS.INVENTORY, freshInventory);
-          const freshProducts = await base44.entities.Product.filter({ status: "active" });
-          offlineCache.set(CACHE_KEYS.PRODUCTS, freshProducts);
-        } catch (_) {}
-      }
+      // Products and inventory are refreshed by the invalidations below (and by
+      // the app-wide real-time sync), which re-cache them for offline use — so
+      // the sale no longer fires its own extra full-list downloads.
       // Voice checkout: announce completion
       setSaleCompleted(`Sale completed for ${formatCurrency(saleData?.total_amount || 0, currency)}`);
       setTimeout(() => setSaleCompleted(null), 200);
@@ -811,6 +807,19 @@ export default function POS() {
   });
 
   const handleCheckout = async (paymentData) => {
+    // A double tap (or a handler fired twice) must never record two sales.
+    if (createSaleMutation.isPending || saleSubmittingRef.current) {
+      throw new Error("A sale is already being completed. Please wait a moment.");
+    }
+    saleSubmittingRef.current = true;
+    try {
+      return await submitSale(paymentData);
+    } finally {
+      saleSubmittingRef.current = false;
+    }
+  };
+
+  const submitSale = async (paymentData) => {
     const totals = calculateTotals();
     // Stock floor for every role: a sale can never take an item's stock below zero.
     // Admins keep their other exemptions (discounts, price overrides, amount limits);

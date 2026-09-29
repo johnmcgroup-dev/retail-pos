@@ -16,6 +16,7 @@ import { CreditCard, Smartphone, DollarSign, AlertCircle, Printer } from "lucide
 import InvoiceReceipt from "./InvoiceReceipt";
 import PrintableReceipt from "./PrintableReceipt";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
+import { friendlyRequestMessage } from "@/lib/requestRetry";
 
 export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline, currency = 'USD' }) {
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -40,19 +41,12 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
     queryFn: () => base44.entities.Customer.list(),
   });
 
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error("Error loading user:", error);
-      }
-    };
-    loadUser();
-  }, []);
+  // Reuses the app-wide "me" query, so opening the payment dialog costs no extra request.
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     setAmountReceived(total);
@@ -142,7 +136,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
           setIsProcessing(false);
         }
       } catch (err) {
-        setError(err.message || "Verification failed. Please try again.");
+        setError(friendlyRequestMessage(err, "Verification failed. Please try again."));
         setIsProcessing(false);
       }
       return;
@@ -206,7 +200,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
       setCompletedSale(sale || paymentData);
       setShowInvoice(true);
     } catch (error) {
-      setError(error.message || "Payment failed");
+      setError(friendlyRequestMessage(error, "Payment failed"));
       setIsProcessing(false);
     }
   };

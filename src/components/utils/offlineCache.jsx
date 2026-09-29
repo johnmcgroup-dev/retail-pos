@@ -8,6 +8,28 @@ export const CACHE_KEYS = {
   OFFLINE_SALES: 'pos_offline_sales'
 };
 
+// Bump this whenever the cached shape/meaning of the data changes: the first
+// load after an update discards anything cached by the previous version.
+const CACHE_VERSION = "v2";
+const CACHE_VERSION_KEY = "pos_cache_version";
+
+// Drops cached data written by an older version of the app, so a page never
+// renders yesterday's stock or prices. Pending offline sales are never
+// discarded — they are unsynced transactions, not cache.
+export function purgeStaleCache() {
+  try {
+    if (localStorage.getItem(CACHE_VERSION_KEY) === CACHE_VERSION) return false;
+    Object.values(CACHE_KEYS).forEach((key) => {
+      if (key === CACHE_KEYS.OFFLINE_SALES) return;
+      localStorage.removeItem(key);
+    });
+    localStorage.setItem(CACHE_VERSION_KEY, CACHE_VERSION);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 export const offlineCache = {
   set: (key, data) => {
     try {
@@ -26,9 +48,10 @@ export const offlineCache = {
       if (!item) return null;
       
       const { data, timestamp } = JSON.parse(item);
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      // Short TTL: the cache is only an offline fallback, never a source of truth.
+      const MAX_CACHE_AGE = 15 * 60 * 1000;
       
-      if (Date.now() - timestamp > TWENTY_FOUR_HOURS) {
+      if (Date.now() - timestamp > MAX_CACHE_AGE) {
         localStorage.removeItem(key);
         return null;
       }

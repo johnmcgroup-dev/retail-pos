@@ -38,7 +38,6 @@ export default function Dashboard() {
         return offlineCache.get(CACHE_KEYS.COMPANIES || 'companies') || [];
       }
     },
-    initialData: () => offlineCache.get(CACHE_KEYS.COMPANIES || 'companies') || [],
     staleTime: 5 * 60 * 1000,
   });
 
@@ -54,8 +53,7 @@ export default function Dashboard() {
       }
     },
     enabled: !!selectedCompany,
-    initialData: () => offlineCache.get(CACHE_KEYS.SALES) || [],
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const { data: products = [] } = useQuery({
@@ -70,8 +68,7 @@ export default function Dashboard() {
       }
     },
     enabled: !!selectedCompany,
-    initialData: () => offlineCache.get(CACHE_KEYS.PRODUCTS) || [],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const { data: inventory = [] } = useQuery({
@@ -86,8 +83,7 @@ export default function Dashboard() {
       }
     },
     enabled: !!selectedCompany,
-    initialData: () => offlineCache.get(CACHE_KEYS.INVENTORY) || [],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const { data: customers = [] } = useQuery({
@@ -102,7 +98,6 @@ export default function Dashboard() {
       }
     },
     enabled: !!selectedCompany,
-    initialData: () => offlineCache.get(CACHE_KEYS.CUSTOMERS) || [],
     staleTime: 5 * 60 * 1000,
   });
 

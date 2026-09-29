@@ -30,6 +30,11 @@ import InventoryDashboard from '@/pages/InventoryDashboard';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { decryptTenantId } from '@/lib/tenantToken';
+import { purgeStaleCache } from '@/components/utils';
+
+// Discard any data cached by an older version of the app before the first
+// render, so a fresh load never shows stale products, stock or sales.
+purgeStaleCache();
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
