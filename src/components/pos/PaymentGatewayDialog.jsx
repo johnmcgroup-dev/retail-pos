@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CreditCard, Smartphone, DollarSign, AlertCircle, Printer } from "lucide-react";
+import { CreditCard, DollarSign, AlertCircle, Printer } from "lucide-react";
 import InvoiceReceipt from "./InvoiceReceipt";
 import PrintableReceipt from "./PrintableReceipt";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
@@ -36,9 +36,11 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
     queryFn: () => base44.entities.Company.list(),
   });
 
+  // Only needed to print the receipt, so the popup itself costs no extra read.
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     queryFn: () => base44.entities.Customer.list(),
+    enabled: showInvoice,
   });
 
   // Reuses the app-wide "me" query, so opening the payment dialog costs no extra request.
@@ -261,7 +263,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
 
             <div>
               <Label className="mb-3 block">Select Payment Method</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("cash")}
@@ -291,20 +293,6 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
 
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod("mobile_money")}
-                  disabled={isOffline}
-                  className={`p-4 border-2 rounded-lg transition-all ${
-                    paymentMethod === "mobile_money"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-slate-200 hover:border-slate-300"
-                  } ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <Smartphone className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                  <p className="font-semibold text-slate-900">Mobile Money</p>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setPaymentMethod("bank_transfer")}
                   disabled={isOffline}
                   className={`p-4 border-2 rounded-lg transition-all ${
@@ -315,20 +303,6 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
                 >
                   <CreditCard className="w-8 h-8 mx-auto mb-2 text-indigo-600" />
                   <p className="font-semibold text-slate-900">Bank Transfer</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod("paystack"); setPaystackStep(null); setPaystackReference(null); setError(""); }}
-                  disabled={isOffline}
-                  className={`p-4 border-2 rounded-lg transition-all ${
-                    paymentMethod === "paystack"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-slate-200 hover:border-slate-300"
-                  } ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <CreditCard className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                  <p className="font-semibold text-slate-900">Paystack</p>
                 </button>
               </div>
             </div>
@@ -351,36 +325,6 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
               </div>
             )}
 
-            {paymentMethod === "paystack" && (
-              <div className="space-y-3">
-                {paystackStep !== "link_ready" ? (
-                  <div>
-                    <Label>Customer Email (for Paystack receipt)</Label>
-                    <Input
-                      type="email"
-                      placeholder="customer@example.com"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-slate-500 mt-2">
-                      A Paystack payment link will be generated for ₦{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}.
-                      The customer pays on the Paystack page, then you verify the payment here.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-                    <p className="text-sm font-semibold text-blue-900">Payment link opened!</p>
-                    <p className="text-xs text-blue-700">
-                      Reference: <span className="font-mono">{paystackReference}</span>
-                    </p>
-                    <p className="text-xs text-blue-700">
-                      Ask the customer to complete payment on the Paystack page, then click "Verify Payment" below.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <DialogFooter>
@@ -388,10 +332,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
               Cancel
             </Button>
             <Button onClick={handlePayment} disabled={isProcessingPayment}>
-              {isProcessingPayment ? "Processing..." :
-                paymentMethod === "paystack" && paystackStep === "link_ready" ? "Verify Payment" :
-                paymentMethod === "paystack" ? "Generate Payment Link" :
-                "Complete Payment"}
+              {isProcessingPayment ? "Processing..." : "Complete Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>

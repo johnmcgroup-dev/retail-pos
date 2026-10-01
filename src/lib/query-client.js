@@ -20,7 +20,14 @@ const normaliseFilters = (filters) => (Array.isArray(filters) ? { queryKey: filt
 export const queryClientInstance = new QueryClient({
 	defaultOptions: {
 		queries: {
+			// One fetch per session per dataset. Everything the app loads is kept in
+			// the cache for five minutes and reused on re-render, on a filter or
+			// search change, and when navigating back to a page — a save/delete
+			// still invalidates its own key, so nothing goes stale after a change.
+			staleTime: 5 * 60 * 1000,
+			gcTime: 30 * 60 * 1000,
 			refetchOnWindowFocus: false,
+			refetchOnReconnect: false,
 			// Reads are safe to repeat, so a throttled fetch retries in the
 			// background instead of surfacing an error.
 			retry: (failureCount, error) => (isRateLimitError(error) ? failureCount < 3 : failureCount < 1),

@@ -113,10 +113,11 @@ export default function POS() {
       }
       return [];
     },
-    // Freshness comes from the app-wide real-time sync (live updates plus a 30s
-    // fallback), so this query does not poll on its own.
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: true,
+    // Freshness comes from the app-wide real-time sync (live updates plus a
+    // periodic fallback re-check), so this query does not poll on its own and
+    // never refetches just because the till's tab regained focus.
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: customers = [] } = useQuery({

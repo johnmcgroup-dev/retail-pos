@@ -9,11 +9,12 @@ import { base44 } from "@/api/base44Client";
 //     subscription misses.
 // Bursts of events are coalesced, and the interval pauses while the tab is
 // hidden, so a busy shop never floods the API with repeat requests.
-// The small, frequently-changing lists are re-checked every 30s. The two large
-// catalogue lists are re-checked less often, because downloading them in full is
-// what consumes the API's read budget — live subscriptions keep them current.
-const FAST_INTERVAL_MS = 30000;
-const HEAVY_INTERVAL_MS = 60000;
+// The small, frequently-changing lists are re-checked every couple of minutes.
+// The two large catalogue lists are re-checked every five, because downloading
+// them in full is what consumes the API's read budget — live subscriptions keep
+// them current between re-checks. Both intervals skip while the tab is hidden.
+const FAST_INTERVAL_MS = 2 * 60 * 1000;
+const HEAVY_INTERVAL_MS = 5 * 60 * 1000;
 const COALESCE_MS = 1500;
 
 const FAST_KEYS = [["sales"], ["alerts"]];

@@ -294,7 +294,9 @@ export default function Layout({ children, currentPageName }) {
   const { data: alerts = [] } = useQuery({
     queryKey: ["alerts"],
     queryFn: () => base44.entities.Alert.filter({ is_dismissed: false }),
-    refetchInterval: 60000,
+    // Alerts are pushed in live by the real-time sync, so this is only a slow
+    // fallback re-check rather than a per-minute poll.
+    refetchInterval: 5 * 60 * 1000,
   });
 
   useEffect(() => {

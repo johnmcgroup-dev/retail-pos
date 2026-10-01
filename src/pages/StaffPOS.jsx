@@ -111,8 +111,8 @@ export default function StaffPOS() {
       return offlineCache.get(CACHE_KEYS.PRODUCTS) || [];
     },
     enabled: !!(company?.id || user?.company_id),
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: inventory = [] } = useQuery({
