@@ -560,7 +560,7 @@ export default function StaffPOS() {
         </div>
 
         {/* Right: Cart */}
-        <div className="w-full md:w-[360px] bg-white border-l border-slate-200 flex flex-col shrink-0 max-h-[50vh] md:max-h-full">
+        <div className="w-full md:w-[480px] lg:w-[560px] bg-white border-l border-slate-200 flex flex-col shrink-0 max-h-[50vh] md:max-h-full">
           <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-indigo-600 text-white shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="font-bold flex items-center gap-2">

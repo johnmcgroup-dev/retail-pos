@@ -11,8 +11,23 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
         .inv-receipt { font-family: Arial, sans-serif; font-size: 15pt; font-weight: 700; }
         .inv-receipt, .inv-receipt * { font-family: Arial, sans-serif !important; font-weight: 700 !important; font-size: 15pt !important; }
         .inv-receipt .text-xs, .inv-receipt .text-sm { font-size: 15pt !important; }
+        /* Item table — explicit borders/alignment so the on-screen view, the
+           printed copy and the exported PDF all render identically. */
+        .inv-receipt table.inv-items { width: 100%; border-collapse: collapse; }
+        .inv-receipt table.inv-items th,
+        .inv-receipt table.inv-items td {
+          border: 1px solid #334155;
+          padding: 6px 8px;
+          color: #0f172a;
+          vertical-align: top;
+        }
+        .inv-receipt table.inv-items thead th { background: #e2e8f0; }
+        .inv-receipt table.inv-items .c-sn { text-align: center; width: 9%; }
+        .inv-receipt table.inv-items .c-item { text-align: left; }
+        .inv-receipt table.inv-items .c-qty { text-align: right; width: 12%; }
+        .inv-receipt table.inv-items .c-money { text-align: right; width: 19%; }
         @media print {
-          .inv-receipt { max-width: none; padding: 4mm; }
+          .inv-receipt { max-width: none; padding: 4mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           @page { size: A4; margin: 6mm; }
         }
       `}</style>
@@ -29,9 +44,9 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
       </div>
 
       {/* Invoice Details */}
-      <div className="grid grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b-2 border-slate-300">
         <div>
-          <h3 className="font-bold text-slate-900 mb-2">INVOICE TO:</h3>
+          <h3 className="font-bold text-slate-900 mb-2">CUSTOMER DETAILS:</h3>
           <p className="font-semibold text-slate-900">{customer?.name || sale?.customer_name || "Walk-in Customer"}</p>
           {customer?.email && <p className="text-slate-900 font-semibold">{customer.email}</p>}
           {customer?.phone && <p className="text-slate-900 font-semibold">{customer.phone}</p>}
@@ -57,24 +72,24 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
       </div>
 
       {/* Items Table */}
-      <table className="w-full mb-6 border-collapse">
+      <table className="inv-items w-full mb-6">
         <thead>
-          <tr className="bg-slate-100 border-y-2 border-slate-300">
-            <th className="text-left py-3 px-4 font-bold text-slate-900">#</th>
-            <th className="text-left py-3 px-4 font-bold text-slate-900">Item</th>
-            <th className="text-center py-3 px-4 font-bold text-slate-900">Qty</th>
-            <th className="text-right py-3 px-4 font-bold text-slate-900">Unit Price</th>
-            <th className="text-right py-3 px-4 font-bold text-slate-900">Total</th>
+          <tr>
+            <th className="c-sn">S/N</th>
+            <th className="c-item">Item</th>
+            <th className="c-qty">Qty</th>
+            <th className="c-money">Unit Price</th>
+            <th className="c-money">Total</th>
           </tr>
         </thead>
         <tbody>
           {sale?.items?.map((item, index) => (
-            <tr key={index} className="border-b border-slate-200">
-              <td className="py-3 px-4 text-slate-900 font-medium">{index + 1}</td>
-              <td className="py-3 px-4 text-slate-900">{item.product_name}</td>
-              <td className="py-3 px-4 text-center text-slate-900 font-medium">{item.quantity}</td>
-              <td className="py-3 px-4 text-right text-slate-900 font-medium">{formatCurrency(item.unit_price, currency)}</td>
-              <td className="py-3 px-4 text-right font-semibold text-slate-900">{formatCurrency(item.total, currency)}</td>
+            <tr key={index}>
+              <td className="c-sn">{index + 1}</td>
+              <td className="c-item">{item.product_name}</td>
+              <td className="c-qty">{item.quantity}</td>
+              <td className="c-money">{formatCurrency(item.unit_price, currency)}</td>
+              <td className="c-money">{formatCurrency(item.total, currency)}</td>
             </tr>
           ))}
         </tbody>
@@ -154,17 +169,6 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
         </div>
       </div>
 
-      {/* Barcode/QR Code placeholder */}
-      <div className="mt-6 text-center">
-        <svg className="mx-auto" width="200" height="40">
-          <rect width="200" height="40" fill="white" />
-          {/* Simple barcode representation */}
-          {[...Array(20)].map((_, i) => (
-            <rect key={i} x={i * 10} y="0" width={Math.random() > 0.5 ? 5 : 3} height="40" fill="black" />
-          ))}
-        </svg>
-        <p className="text-xs text-slate-700 font-medium mt-2">{sale?.invoice_number}</p>
-      </div>
     </div>
   );
 });

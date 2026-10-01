@@ -1067,7 +1067,7 @@ export default function POS() {
         </div>
 
         {/* Cart Panel */}
-        <div className={`w-full md:w-[440px] lg:w-[520px] xl:w-[580px] bg-white border-l border-slate-200 flex flex-col shrink-0 ${mobileTab === "products" ? "hidden md:flex" : "flex"}`}>
+        <div className={`w-full md:w-[500px] lg:w-[620px] xl:w-[700px] bg-white border-l border-slate-200 flex flex-col shrink-0 ${mobileTab === "products" ? "hidden md:flex" : "flex"}`}>
           <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 shrink-0">
             <div className="flex items-center justify-between text-white">
               <div>

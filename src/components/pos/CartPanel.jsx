@@ -48,7 +48,7 @@ export default function CartPanel({ cart, products = [], unsavedIds = [], onUpda
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-slate-900 truncate">{item.product_name}</h4>
+                    <h4 className="font-semibold text-slate-900 break-words leading-snug">{item.product_name}</h4>
                     <p className="text-sm text-slate-600">{formatCurrency(item.unit_price, currency)} <span className="text-xs text-slate-500">per {item.variety || "Pieces"}</span></p>
                     {unsavedIds.includes(item.product_id) && (
                       <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">

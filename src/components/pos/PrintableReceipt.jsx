@@ -133,20 +133,6 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
       {/* Footer */}
       <div className="center" style={{ marginTop: "4px" }}>
         <div className="bold" style={{ fontSize: "12px" }}>{company?.goodwill_message || "Thank you for your business!"}</div>
-        <div style={{ marginTop: "8px", display: "flex", justifyContent: "center" }}>
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=0&data=${encodeURIComponent([
-              company?.name || "My Retailer Pro",
-              company?.address || "",
-              company?.phone ? `Tel: ${company.phone}` : "",
-              company?.email || "",
-              company?.tax_id ? `Tax ID: ${company.tax_id}` : "",
-            ].filter(Boolean).join("\n"))}`}
-            alt="Company QR Code"
-            style={{ width: "90px", height: "90px" }}
-          />
-        </div>
-        <div style={{ fontSize: "9px", color: "#64748b", marginTop: "4px" }}>Scan for company details</div>
       </div>
     </div>
   );
