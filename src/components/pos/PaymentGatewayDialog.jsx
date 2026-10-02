@@ -337,7 +337,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
 
       {/* Invoice Dialog — rendered in a portal at z-[100] so it never underlaps POS */}
       <Dialog open={showInvoice} onOpenChange={handleCloseInvoice}>
-        <DialogContent className="fixed inset-4 md:inset-8 max-w-none w-auto h-auto max-h-none overflow-y-auto z-[100] rounded-xl">
+        <DialogContent className="fixed left-4 top-4 right-4 bottom-4 md:left-8 md:top-8 md:right-8 md:bottom-8 translate-x-0 translate-y-0 max-w-none w-auto h-auto max-h-none overflow-y-auto z-[100] rounded-xl">
           <DialogHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <DialogTitle>Sale Completed</DialogTitle>
