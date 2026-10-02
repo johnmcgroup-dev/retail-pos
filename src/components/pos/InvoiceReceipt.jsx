@@ -1,6 +1,7 @@
 import React, { forwardRef } from "react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/utils";
+import InvoiceCustomerDetails from "@/components/pos/InvoiceCustomerDetails";
 
 const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
   const currency = company?.currency || 'USD';
@@ -45,13 +46,7 @@ const InvoiceReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
 
       {/* Invoice Details */}
       <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b-2 border-slate-300">
-        <div>
-          <h3 className="font-bold text-slate-900 mb-2">CUSTOMER DETAILS:</h3>
-          <p className="font-semibold text-slate-900">{customer?.name || sale?.customer_name || "Walk-in Customer"}</p>
-          {customer?.email && <p className="text-slate-900 font-semibold">{customer.email}</p>}
-          {customer?.phone && <p className="text-slate-900 font-semibold">{customer.phone}</p>}
-          {customer?.address && <p className="text-slate-900 font-semibold">{customer.address}</p>}
-        </div>
+        <InvoiceCustomerDetails sale={sale} customer={customer} showContactExtras />
         <div className="text-right">
           <p className="text-slate-900 font-semibold">
             <span className="font-bold">Invoice #:</span> {sale?.invoice_number}

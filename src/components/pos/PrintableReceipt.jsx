@@ -2,6 +2,7 @@ import React, { forwardRef } from "react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/utils";
 import { Award } from "lucide-react";
+import InvoiceCustomerDetails from "@/components/pos/InvoiceCustomerDetails";
 
 const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => {
   const currency = company?.currency || 'NGN';
@@ -31,6 +32,11 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
         .receipt-root .center { text-align: center; }
         .receipt-root .bold { font-weight: 800; }
         .receipt-root .item-line { margin: 3px 0; }
+        .receipt-root .receipt-items { width: 100%; table-layout: fixed; border-collapse: collapse; }
+        .receipt-root .receipt-items th, .receipt-root .receipt-items td { border: 1px solid #334155; padding: 3px 4px; vertical-align: top; overflow-wrap: anywhere; }
+        .receipt-root .receipt-items th { background: #e2e8f0; text-align: left; }
+        .receipt-root .receipt-items .receipt-sn { width: 16%; text-align: center; }
+        .receipt-root .receipt-items .row { flex-wrap: wrap; gap: 0 6px; }
         @media print {
           .receipt-root { max-width: none; padding: 4px; }
           @page { size: 80mm auto; margin: 4mm; }
@@ -50,6 +56,7 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
       </div>
 
       <div className="dashed" />
+      <InvoiceCustomerDetails sale={sale} customer={customer} />
 
       {/* Transaction details */}
       <div className="bold center" style={{ fontSize: "13px", marginBottom: "4px" }}>RECEIPT</div>
@@ -58,22 +65,28 @@ const PrintableReceipt = forwardRef(({ sale, company, customer, user }, ref) => 
       <div className="row"><span>Time:</span><span>{format(saleDate, "h:mm a")}</span></div>
       <div className="row"><span>Cashier:</span><span>{user?.full_name || sale?.cashier?.split("@")[0] || "Staff"}</span></div>
       <div className="row"><span>Payment:</span><span className="bold" style={{ textTransform: "capitalize" }}>{sale?.payment_method?.replace(/_/g, " ") || "cash"}</span></div>
-      {customer?.name && (
-        <div className="row"><span>Customer:</span><span>{customer.name}</span></div>
-      )}
-
       <div className="dashed" />
 
-      {/* Items */}
-      {sale?.items?.map((item, i) => (
-        <div key={i} className="item-line">
-          <div className="bold" style={{ fontSize: "11px" }}>{item.product_name}</div>
-          <div className="row" style={{ fontSize: "11px", color: "#1e293b" }}>
-            <span>{item.quantity} x {money(item.unit_price)}</span>
-            <span className="bold" style={{ color: "#1e293b" }}>{money(item.total)}</span>
-          </div>
-        </div>
-      ))}
+      {/* Items — keep the existing item content, with a leading serial-number column. */}
+      <table className="receipt-items">
+        <thead><tr><th className="receipt-sn">S/N</th><th>Item</th></tr></thead>
+        <tbody>
+          {sale?.items?.map((item, i) => (
+            <tr key={i}>
+              <td className="receipt-sn">{i + 1}</td>
+              <td>
+                <div className="item-line">
+                  <div className="bold" style={{ fontSize: "11px" }}>{item.product_name}</div>
+                  <div className="row" style={{ fontSize: "11px", color: "#1e293b" }}>
+                    <span>{item.quantity} x {money(item.unit_price)}</span>
+                    <span className="bold" style={{ color: "#1e293b" }}>{money(item.total)}</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <div className="dashed" />
 

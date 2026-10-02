@@ -14,6 +14,7 @@ import PrintableReceipt from "@/components/pos/PrintableReceipt";
 import EmailReceiptForm from "@/components/pos/EmailReceiptForm";
 import { formatCurrency } from "@/utils";
 import { logActivity } from "@/lib/logActivity";
+import useInvoiceCustomer from "@/components/pos/useInvoiceCustomer";
 
 export default function SaleHistoryDialog({ open, onClose, companyId, company, user, initialSale }) {
   const queryClient = useQueryClient();
@@ -26,6 +27,7 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
   const [returnSuccess, setReturnSuccess] = useState(null);
   const [showEmail, setShowEmail] = useState(false);
   const receiptRef = React.useRef(null);
+  const { customer: receiptCustomer, isLoading: isLoadingReceiptCustomer } = useInvoiceCustomer(selectedSale, open);
 
   React.useEffect(() => {
     if (open && initialSale) setSelectedSale(initialSale);
@@ -54,6 +56,7 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
   );
 
   const handlePrint = () => {
+    if (isLoadingReceiptCustomer) return;
     const receiptHtml = receiptRef.current?.outerHTML;
     if (!receiptHtml) return;
     const iframe = document.createElement("iframe");
@@ -316,10 +319,11 @@ export default function SaleHistoryDialog({ open, onClose, companyId, company, u
           {selectedSale && !returnMode && (
             <div className="flex flex-col gap-3">
               <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                <PrintableReceipt ref={receiptRef} sale={selectedSale} company={company} user={user} />
+                <PrintableReceipt ref={receiptRef} sale={selectedSale} company={company} customer={receiptCustomer} user={user} />
+                {isLoadingReceiptCustomer && <p role="status">Loading customer details…</p>}
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" onClick={handlePrint} className="gap-2">
+                <Button variant="outline" onClick={handlePrint} disabled={isLoadingReceiptCustomer} className="gap-2">
                   <Printer className="w-4 h-4" /> Print
                 </Button>
                 <Button variant="outline" onClick={() => setShowEmail(v => !v)} className="gap-2">

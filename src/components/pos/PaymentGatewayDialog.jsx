@@ -17,6 +17,7 @@ import InvoiceReceipt from "./InvoiceReceipt";
 import PrintableReceipt from "./PrintableReceipt";
 import { formatCurrency, getCurrencySymbol } from "@/utils";
 import { friendlyRequestMessage } from "@/lib/requestRetry";
+import useInvoiceCustomer from "@/components/pos/useInvoiceCustomer";
 
 export default function PaymentGatewayDialog({ open, onClose, total, onComplete, isProcessing, isOffline, currency = 'USD' }) {
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -36,12 +37,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
     queryFn: () => base44.entities.Company.list(),
   });
 
-  // Only needed to print the receipt, so the popup itself costs no extra read.
-  const { data: customers = [] } = useQuery({
-    queryKey: ["customers"],
-    queryFn: () => base44.entities.Customer.list(),
-    enabled: showInvoice,
-  });
+  const { customer: receiptCustomer, isLoading: isLoadingReceiptCustomer } = useInvoiceCustomer(completedSale, showInvoice);
 
   // Reuses the app-wide "me" query, so opening the payment dialog costs no extra request.
   const { data: user } = useQuery({
@@ -55,6 +51,7 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
   }, [total]);
 
   const handlePrint = () => {
+    if (isLoadingReceiptCustomer || !invoiceRef.current) return;
     // Use a hidden inline iframe instead of window.open() to avoid WebView sandbox blockages
     const existingIframe = document.getElementById('print-iframe');
     if (existingIframe) existingIframe.remove();
@@ -209,11 +206,11 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
 
   // Auto-print thermal receipt immediately when a sale completes
   useEffect(() => {
-    if (showInvoice && completedSale) {
+    if (showInvoice && completedSale && !isLoadingReceiptCustomer) {
       const timer = setTimeout(() => handlePrint(), 600);
       return () => clearTimeout(timer);
     }
-  }, [showInvoice, completedSale]);
+  }, [showInvoice, completedSale, isLoadingReceiptCustomer]);
 
   const handleCloseInvoice = () => {
     setShowInvoice(false);
@@ -365,23 +362,24 @@ export default function PaymentGatewayDialog({ open, onClose, total, onComplete,
               <PrintableReceipt
                 sale={completedSale}
                 company={receiptCompany}
-                customer={customers.find(c => c.id === completedSale?.customer_id)}
+                customer={receiptCustomer}
                 user={user}
               />
             ) : (
               <InvoiceReceipt
                 sale={completedSale}
                 company={receiptCompany}
-                customer={customers.find(c => c.id === completedSale?.customer_id)}
+                customer={receiptCustomer}
                 user={user}
               />
             )}
           </div>
+          {isLoadingReceiptCustomer && <p role="status">Loading customer details…</p>}
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseInvoice}>
               Close
             </Button>
-            <Button onClick={handlePrint} className="bg-blue-600">
+            <Button onClick={handlePrint} disabled={isLoadingReceiptCustomer} className="bg-blue-600">
               <Printer className="w-4 h-4 mr-2" />
               {receiptView === "thermal" ? "Print Receipt" : "Print Invoice"}
             </Button>
