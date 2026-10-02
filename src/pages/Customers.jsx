@@ -220,7 +220,7 @@ export default function Customers() {
         open={showDialog}
         onClose={handleCloseDialog}
         customer={editingCustomer}
-        companies={companies}
+        company={activeCompany}
       />
 
       <GoogleContactsImport

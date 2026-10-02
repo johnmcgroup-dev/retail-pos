@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function CustomerDialog({ open, onClose, customer, companies }) {
+export default function CustomerDialog({ open, onClose, customer, company }) {
   const queryClient = useQueryClient();
+  const [saveError, setSaveError] = useState("");
   const [formData, setFormData] = useState({
     company_id: "",
     name: "",
@@ -40,10 +41,16 @@ export default function CustomerDialog({ open, onClose, customer, companies }) {
   useEffect(() => {
     if (customer) {
       setFormData(customer);
-    } else if (companies.length > 0) {
-      setFormData(prev => ({ ...prev, company_id: companies[0].id }));
+    } else if (company?.id) {
+      // Save against the company this user belongs to. An admin can see other
+      // tenants' companies in the list, so never take the first one.
+      setFormData(prev => ({ ...prev, company_id: company.id }));
     }
-  }, [customer, companies]);
+  }, [customer, company]);
+
+  useEffect(() => {
+    if (open) setSaveError("");
+  }, [open]);
 
   const saveMutation = useMutation({
     mutationFn: (data) => {
@@ -56,10 +63,18 @@ export default function CustomerDialog({ open, onClose, customer, companies }) {
       queryClient.invalidateQueries(["customers"]);
       onClose();
     },
+    onError: (error) => {
+      setSaveError(error?.message || "Could not save this customer. Please try again.");
+    },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.company_id) {
+      setSaveError("Your account is not linked to a company, so this customer cannot be saved.");
+      return;
+    }
+    setSaveError("");
     saveMutation.mutate(formData);
   };
 
@@ -152,6 +167,10 @@ export default function CustomerDialog({ open, onClose, customer, companies }) {
               rows={3}
             />
           </div>
+
+          {saveError && (
+            <p className="text-sm text-red-600">{saveError}</p>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
