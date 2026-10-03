@@ -76,6 +76,7 @@ const DEVELOPER_ONLY_TITLES = [
   "Online Orders",
   "E-commerce Sync",
   "Tenant Management",
+  "CRM",
   "Company Setup",
 ];
 
@@ -226,7 +227,8 @@ const navigationItems = [
     title: "User Management",
     url: createPageUrl("UserManagement"),
     icon: UserCheck,
-    adminOnly: true
+    // Visible to supervisors and above — cashiers/users never see it
+    roles: ["super_admin", "owner", "admin", "manager", "supervisor"]
   },
   {
     title: "Bulk Import",
@@ -334,6 +336,9 @@ export default function Layout({ children, currentPageName }) {
   const filteredNavItems = navigationItems.filter(item => {
     // Developer-only pages stay hidden from every other user, whatever their role
     if (DEVELOPER_ONLY_TITLES.includes(item.title) && !isDeveloper) return false;
+    if (item.roles) {
+      return item.roles.includes(user?.role_level || user?.role || 'user');
+    }
     if (item.adminOnly) {
       const role = user?.role;
       return role === 'admin' || role === 'owner' || role === 'super_admin';

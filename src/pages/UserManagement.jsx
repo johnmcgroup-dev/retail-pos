@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +51,9 @@ export default function UserManagement() {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
+  const myRole = currentUser?.role_level || currentUser?.role || "user";
+  const isSuperAdmin = myRole === "super_admin";
+
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
     queryFn: () => base44.entities.User.list(),
@@ -72,10 +76,15 @@ export default function UserManagement() {
 
   const company = companies.find(c => c.id === selectedCompanyId) || companies[0];
 
-  // Only show users whose tenant_id or company_id matches the selected company
-  const companyUsers = company
-    ? users.filter(u => u.tenant_id === company.id || u.company_id === company.id)
-    : users;
+  // Super Admin oversees every tenant; every other role sees only their own company
+  const companyUsers = isSuperAdmin
+    ? users
+    : company
+      ? users.filter(u => u.tenant_id === company.id || u.company_id === company.id)
+      : users;
+
+  const tenantNameOf = (u) =>
+    companies.find(c => c.id === (u.tenant_id || u.company_id))?.name || "—";
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { role_level: role }),
@@ -97,7 +106,9 @@ export default function UserManagement() {
     if (!inviteForm.email || !company) return;
     try {
       // Map role_level to platform role (admin or user)
-      const platformRole = ["super_admin", "owner", "admin", "manager"].includes(inviteForm.role) ? "admin" : "user";
+      // Managers and supervisors need to reach the team pages, which the platform
+      // only permits for admin-level accounts — everyone else gets the staff shell.
+      const platformRole = ["super_admin", "owner", "admin", "manager", "supervisor"].includes(inviteForm.role) ? "admin" : "user";
 
       await base44.users.inviteUser(inviteForm.email, platformRole);
 
@@ -146,9 +157,7 @@ export default function UserManagement() {
     }
   };
 
-  const myRole = currentUser?.role_level || currentUser?.role || "user";
   const myRoleLevel = ROLE_ORDER.indexOf(myRole);
-  const isSuperAdmin = myRole === "super_admin";
   const isOwner = myRole === "owner";
   const isAdmin = myRole === "admin";
   const canManage = isSuperAdmin || isOwner || isAdmin;
@@ -162,6 +171,25 @@ export default function UserManagement() {
     const targetLevel = ROLE_ORDER.indexOf(targetUser.role || "user");
     return myRoleLevel > targetLevel && canManage;
   };
+
+  // Cashier / User roles must not reach this page, even by direct URL
+  const canViewUsers = ["super_admin", "owner", "admin", "manager", "supervisor"].includes(myRole);
+  if (currentUser && !canViewUsers) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[60vh]">
+        <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900">Access denied</h2>
+          <p className="text-sm text-slate-500 mt-2">
+            User Management is only available to supervisors and above.
+          </p>
+          <Button asChild className="mt-5">
+            <Link to="/Dashboard">Back to Dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
@@ -184,8 +212,10 @@ export default function UserManagement() {
           <CardContent className="p-4 flex items-center gap-3">
             <Building2 className="w-6 h-6 text-blue-600 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs text-slate-500">Tenant / Company</p>
-              {companies.length > 1 ? (
+              <p className="text-xs text-slate-500">{isSuperAdmin ? "Tenants" : "Tenant / Company"}</p>
+              {isSuperAdmin ? (
+                <p className="font-bold text-slate-900">All tenants ({companies.length})</p>
+              ) : companies.length > 1 ? (
                 <DrawerSelect
                   value={selectedCompanyId}
                   onValueChange={setSelectedCompanyId}
@@ -196,7 +226,9 @@ export default function UserManagement() {
               ) : (
                 <p className="font-bold text-slate-900">{company.name}</p>
               )}
-              <p className="text-xs text-slate-500">ID: <code className="bg-slate-100 px-1 rounded">{company.id}</code></p>
+              {!isSuperAdmin && (
+                <p className="text-xs text-slate-500">ID: <code className="bg-slate-100 px-1 rounded">{company.id}</code></p>
+              )}
             </div>
             <Badge className="ml-auto bg-blue-100 text-blue-700 flex-shrink-0">
               {companyUsers.length} member{companyUsers.length !== 1 ? "s" : ""}
@@ -242,7 +274,9 @@ export default function UserManagement() {
                       <Mail className="w-3 h-3 flex-shrink-0" /> {user.email}
                     </p>
                     {company && (
-                      <p className="text-[10px] text-slate-400 truncate">Tenant: {company.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        Tenant: {isSuperAdmin ? tenantNameOf(user) : company.name}
+                      </p>
                     )}
                   </div>
                 </div>

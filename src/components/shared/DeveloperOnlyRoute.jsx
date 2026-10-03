@@ -12,6 +12,7 @@ const DEVELOPER_ONLY_PATHS = [
   "/OnlineOrders",
   "/EcommerceSync",
   "/TenantManagement",
+  "/CRM",
   "/Settings",
 ];
 

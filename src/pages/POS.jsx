@@ -1126,7 +1126,9 @@ export default function POS() {
             />
           </div>
 
-          <div className="border-t border-slate-200 p-3 md:p-4 bg-slate-50 shrink-0 space-y-2">
+          {/* Pinned to the bottom of the viewport so the Complete Sale button is
+              always reachable without scrolling, whatever the cart length or role. */}
+          <div className="sticky bottom-0 z-20 border-t border-slate-200 p-3 md:p-4 bg-slate-50 shrink-0 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <Popover open={showDiscount} onOpenChange={setShowDiscount}>
                 <PopoverTrigger asChild>
