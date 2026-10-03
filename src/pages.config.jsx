@@ -7,8 +7,35 @@ const PageLoader = () => (
   </div>
 );
 
+// Pages are code-split, and every rebuild renames their bundle files. A tab that
+// was left open therefore asks for a file that no longer exists ("error loading
+// dynamically imported module"). Retry once for a network blip, then reload once
+// so the browser picks up the current build instead of failing the page.
+const loadWithRetry = (importFn) => async () => {
+  try {
+    const mod = await importFn();
+    try { sessionStorage.removeItem("chunk_reload_attempted"); } catch (_) {}
+    return mod;
+  } catch (firstError) {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return await importFn();
+    } catch (retryError) {
+      let alreadyReloaded = false;
+      try { alreadyReloaded = sessionStorage.getItem("chunk_reload_attempted") === "1"; } catch (_) {}
+      if (!alreadyReloaded) {
+        try { sessionStorage.setItem("chunk_reload_attempted", "1"); } catch (_) {}
+        window.location.reload();
+        // Stay suspended: the page is being replaced by the fresh build.
+        return new Promise(() => {});
+      }
+      throw retryError;
+    }
+  }
+};
+
 const lazy = (importFn) => {
-  const LazyComponent = React.lazy(importFn);
+  const LazyComponent = React.lazy(loadWithRetry(importFn));
   return function LazyPage(props) {
     return (
       <Suspense fallback={<PageLoader />}>
