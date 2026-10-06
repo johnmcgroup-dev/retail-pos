@@ -87,6 +87,11 @@ const navigationItems = [
     icon: LayoutDashboard,
   },
   {
+    title: "Sales Overview",
+    url: createPageUrl("SalesOverview"),
+    icon: BarChart3,
+  },
+  {
     title: "POS",
     url: createPageUrl("POS"),
     icon: ShoppingCart,

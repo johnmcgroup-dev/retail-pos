@@ -9,8 +9,7 @@ import { Building2, ArrowRight, Store, Package, CheckCircle2, Loader2 } from "lu
 
 const SEED_STEPS = [
   "Creating your business...",
-  "Fetching grocery catalog from the web...",
-  "Importing products & barcodes...",
+  "Preparing your workspace...",
   "Almost done...",
 ];
 
@@ -25,58 +24,6 @@ export default function TenantSetup({ onComplete }) {
     address: "",
     currency: "NGN",
   });
-
-  const seedGroceryProducts = async (companyId) => {
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a realistic list of 40 common grocery/supermarket products sold in Nigerian retail stores. 
-Include a good mix of categories: beverages, grains/cereals, cooking oil, canned goods, snacks, dairy, condiments, household/cleaning, personal care, frozen foods.
-For each product provide: name, category, a realistic NGN selling price (as a number), a realistic NGN cost price (slightly lower), a barcode (13-digit EAN-13 format starting with 628 for Nigeria), unit (piece/kg/liter/pack/box), and reorder_level (number).
-Return ONLY valid JSON.`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            products: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  category: { type: "string" },
-                  selling_price: { type: "number" },
-                  cost_price: { type: "number" },
-                  barcodes: { type: "array", items: { type: "string" } },
-                  unit: { type: "string" },
-                  reorder_level: { type: "number" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      const products = result?.products || [];
-      if (products.length === 0) return;
-
-      const toCreate = products.map(p => ({
-        company_id: companyId,
-        name: p.name,
-        category: p.category || "General",
-        selling_price: Number(p.selling_price) || 0,
-        cost_price: Number(p.cost_price) || 0,
-        barcodes: Array.isArray(p.barcodes) ? p.barcodes : [],
-        unit: ["piece","kg","liter","meter","box","pack"].includes(p.unit) ? p.unit : "piece",
-        reorder_level: Number(p.reorder_level) || 5,
-        status: "active",
-      }));
-
-      await base44.entities.Product.bulkCreate(toCreate);
-    } catch (err) {
-      console.error("Seed products error:", err);
-      // Non-fatal — company is already created
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,12 +43,9 @@ Return ONLY valid JSON.`,
       await base44.auth.updateMe({ company_id: company.id });
 
       setStep(1);
-      await seedGroceryProducts(company.id);
+      await new Promise(r => setTimeout(r, 500));
 
       setStep(2);
-      await new Promise(r => setTimeout(r, 600));
-
-      setStep(3);
       await new Promise(r => setTimeout(r, 400));
 
       onComplete?.();
@@ -160,7 +104,7 @@ Return ONLY valid JSON.`,
           <p className="text-slate-500 mt-2 text-sm">Let's set up your business to get started</p>
           <div className="mt-3 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1 text-xs text-green-700">
             <Package className="w-3 h-3" />
-            We'll auto-import 40+ grocery products for you!
+            Your store starts empty — add your own products anytime
           </div>
         </div>
 

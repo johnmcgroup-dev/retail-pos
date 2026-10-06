@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import BarcodeScanner from "./BarcodeScanner";
@@ -6,11 +6,21 @@ import BarcodeScanner from "./BarcodeScanner";
 // Search input + camera scan button. When a barcode is scanned the value is
 // passed to onScan (which fills the search box / triggers add).
 export default function SearchInput({
-  value, onChange, onScan, placeholder = "Search...",
+  value, onChange, onScan, placeholder = "Search...", mobilePlaceholder,
   inputRef, className = "", autoFocus, onKeyDown, onFocus, onBlur,
 }) {
   const [scanning, setScanning] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
   const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  // Phones get a shorter placeholder so it isn't cut off inside the field
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsNarrow(mq.matches);
+    const handler = (e) => setIsNarrow(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // Normalise onChange so callers can always read e.target.value, whether the
   // value came from a typed keystroke or a camera scan (which passes a string).
@@ -29,7 +39,7 @@ export default function SearchInput({
         <Input
           ref={inputRef}
           type="text"
-          placeholder={placeholder}
+          placeholder={isNarrow && mobilePlaceholder ? mobilePlaceholder : placeholder}
           value={value}
           onChange={onChange ? (e) => change(e.target.value) : undefined}
           onKeyDown={onKeyDown}
@@ -43,7 +53,7 @@ export default function SearchInput({
           type="button"
           aria-label="Scan barcode"
           onClick={() => setScanning(true)}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 md:p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
           title="Scan with camera"
         >
           <Camera className="w-4 h-4" />

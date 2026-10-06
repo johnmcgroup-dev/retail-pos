@@ -892,7 +892,7 @@ export default function POS() {
   const totals = calculateTotals();
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-slate-50">
+    <div className="relative h-full flex flex-col overflow-hidden bg-slate-50">
 
       {/* Mobile tab bar */}
       <div className="md:hidden flex bg-white border-b border-slate-200 shrink-0 safe-area-top">
@@ -926,7 +926,9 @@ export default function POS() {
 
         {/* Products Panel */}
         <div className={`flex-1 flex flex-col overflow-hidden ${mobileTab === "cart" ? "hidden md:flex" : "flex"}`}>
-          <div className="p-3 bg-white border-b border-slate-200 shrink-0">
+          {/* Alerts sit below the search on phones so the search is always the
+              first thing on screen; the desktop order is unchanged. */}
+          <div className="order-2 md:order-1 p-3 bg-white border-b border-slate-200 shrink-0 max-h-[30vh] overflow-y-auto md:max-h-none md:overflow-visible">
             <ConnectionStatus usingCache={usingCachedData && isOnline} />
             <AlertBanner
               alerts={alerts.filter(a => a.severity === 'critical')}
@@ -950,11 +952,13 @@ export default function POS() {
             )}
           </div>
 
-          <div className="p-3 bg-white border-b border-slate-200 shrink-0">
+          {/* Dedicated search block — first element on phones, roomy tap target */}
+          <div className="order-1 md:order-2 p-3 bg-white border-b-2 border-blue-100 shadow-sm shrink-0">
             <div className="relative">
               <SearchInput
                 inputRef={searchInputRef}
                 placeholder="Search or scan barcode (Enter to add)..."
+                mobilePlaceholder="Search product or scan barcode"
                 value={searchTerm}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -983,7 +987,7 @@ export default function POS() {
                 onBlur={() => setTimeout(() => setShowSearchDropdown(false), 150)}
                 onFocus={() => setShowSearchDropdown(true)}
                 onScan={handleScanResult}
-                className="h-10 text-sm"
+                className="h-12 md:h-10 text-base md:text-sm"
               />
               {/* Live search dropdown — shows all products on focus, filters as you type/scan */}
               {showSearchDropdown && (
@@ -1057,7 +1061,7 @@ export default function POS() {
           {/* Favorites (PinnedItems) panel intentionally hidden from the POS layout —
               component and data kept so it can be restored by re-adding it here. */}
 
-          <div className="flex-1 overflow-auto p-3">
+          <div className="order-3 flex-1 overflow-auto p-3 pb-28 md:pb-3">
             <ProductGrid
               products={filteredProducts}
               onAddToCart={(product) => { addToCart(product); setMobileTab("cart"); }}
@@ -1192,8 +1196,41 @@ export default function POS() {
               </div>
             </div>
 
+            {/* Right padding keeps the button clear of the floating chat bubble on phones */}
+            <div className="pr-[4.75rem] md:pr-0">
+              <Button
+                className="w-full h-12 text-base bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
+                disabled={cart.length === 0}
+                onClick={() => setShowCheckout(true)}
+              >
+                <DollarSign className="w-5 h-5 mr-2" />
+                Complete Sale {!isOnline && "(Cash Only)"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating checkout bar — pinned to the bottom of the screen on phones so
+          Complete Sale is always reachable while browsing products, whatever the
+          user's role. On the Cart tab the panel's own totals row already sits at
+          the bottom, so the bar steps aside there. Sits above the bottom nav. */}
+      {mobileTab === "products" && (
+        <div
+          className="md:hidden absolute bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white pl-3 pr-20 pt-2 shadow-[0_-4px_16px_rgba(15,23,42,0.10)]"
+          style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium text-slate-500">
+                Total · {cart.length} item{cart.length === 1 ? "" : "s"}
+              </p>
+              <p className="text-lg font-bold text-slate-900 leading-tight">
+                {formatCurrency(totals.total, currency)}
+              </p>
+            </div>
             <Button
-              className="w-full h-12 text-base bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
+              className="flex-1 h-12 text-base bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-md"
               disabled={cart.length === 0}
               onClick={() => setShowCheckout(true)}
             >
@@ -1202,7 +1239,7 @@ export default function POS() {
             </Button>
           </div>
         </div>
-      </div>
+      )}
 
       <QuickCalculator open={showCalculator} onClose={() => setShowCalculator(false)} />
 
