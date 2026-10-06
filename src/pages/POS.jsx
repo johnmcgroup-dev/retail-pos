@@ -926,9 +926,12 @@ export default function POS() {
 
         {/* Products Panel */}
         <div className={`flex-1 flex flex-col overflow-hidden ${mobileTab === "cart" ? "hidden md:flex" : "flex"}`}>
-          {/* Alerts sit below the search on phones so the search is always the
-              first thing on screen; the desktop order is unchanged. */}
-          <div className="order-2 md:order-1 p-3 bg-white border-b border-slate-200 shrink-0 max-h-[30vh] overflow-y-auto md:max-h-none md:overflow-visible">
+          {/* Alerts always sit below the search. On desktop this block grows with
+              the account's alerts (and with pending offline sales / stock warnings)
+              and used to push the search box down out of the visible panel area.
+              It is now capped and scrolls internally on every screen size so it can
+              never displace the search box or squeeze the product grid. */}
+          <div className="order-2 p-3 bg-white border-b border-slate-200 shrink-0 max-h-[30vh] overflow-y-auto">
             <ConnectionStatus usingCache={usingCachedData && isOnline} />
             <AlertBanner
               alerts={alerts.filter(a => a.severity === 'critical')}
@@ -952,8 +955,9 @@ export default function POS() {
             )}
           </div>
 
-          {/* Dedicated search block — first element on phones, roomy tap target */}
-          <div className="order-1 md:order-2 p-3 bg-white border-b-2 border-blue-100 shadow-sm shrink-0">
+          {/* Dedicated search block — always the first row of the products panel,
+              on desktop too, so it keeps a visible, dedicated space for every account */}
+          <div className="order-1 p-3 bg-white border-b-2 border-blue-100 shadow-sm shrink-0">
             <div className="relative">
               <SearchInput
                 inputRef={searchInputRef}
