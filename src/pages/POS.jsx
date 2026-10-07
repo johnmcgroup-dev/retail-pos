@@ -34,7 +34,13 @@ import PinnedItems from "../components/pos/PinnedItems";
 import QuickCalculator from "../components/pos/QuickCalculator";
 import AddStockDialog from "../components/pos/AddStockDialog";
 import { logActivity } from "@/lib/logActivity";
-import { getVarietyPrice, getVarietyQuantity, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
+import {
+  getVarietyPrice,
+  getVarietyQuantity,
+  withHalfVarietyOverride,
+  isHalfVariety,
+  DEFAULT_VARIETY_QTY,
+} from "@/lib/varieties";
 import { loadCart, saveCart, clearSavedCart } from "@/lib/posCartStorage";
 import { retryOnRateLimit } from "@/lib/requestRetry";
 
@@ -508,9 +514,11 @@ export default function POS() {
         if (!product) return false;
         const v = item.variety || "Pieces";
         if (v === "Pieces") return item.unit_price !== product.selling_price;
-        const cfg = product.varieties?.[v];
-        if (!cfg) return true;
-        return item.unit_price !== cfg.price;
+        // Saved price for this variety — for a half variety that is the manual
+        // override, or half of the parent while the field is still untouched.
+        const savedPrice = getVarietyPrice(product, v);
+        if (savedPrice == null) return true;
+        return item.unit_price !== savedPrice;
       })
       .map(item => item.product_id),
     [cart, products]
@@ -546,6 +554,11 @@ export default function POS() {
     try {
       if (variety === "Pieces") {
         await base44.entities.Product.update(productId, { selling_price: price });
+      } else if (isHalfVariety(variety)) {
+        // Half varieties only keep what the user overrode: saving the plain
+        // auto-calculated half back leaves the field following its parent.
+        const varieties = withHalfVarietyOverride(product, variety, { price, quantity });
+        await base44.entities.Product.update(productId, { varieties });
       } else {
         const existing = product.varieties?.[variety];
         const baseQty = (typeof existing === "object" && existing?.quantity)
@@ -767,7 +780,9 @@ export default function POS() {
           const product = products.find(p => p.id === item.product_id);
           if (!product) continue;
           const variety = item.variety || "Pieces";
-          if (variety !== "Pieces" && item.unit_price > 0 && product.varieties?.[variety] == null) {
+          // Half varieties are skipped: they follow their parent unless the user
+          // saved an explicit override, so there is nothing to persist here.
+          if (variety !== "Pieces" && !isHalfVariety(variety) && item.unit_price > 0 && product.varieties?.[variety] == null) {
             const quantity = getVarietyQuantity(product, variety);
             const varieties = { ...(product.varieties || {}), [variety]: { price: item.unit_price, quantity } };
             await base44.entities.Product.update(item.product_id, { varieties });

@@ -23,7 +23,15 @@ import { Upload, X, Image as ImageIcon, Camera, Package, AlertTriangle } from "l
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import CameraCapture from "./CameraCapture";
 import DrawerSelect from "@/components/shared/DrawerSelect";
-import { VARIETIES, DEFAULT_VARIETY_QTY } from "@/lib/varieties";
+import {
+  VARIETIES,
+  DEFAULT_VARIETY_QTY,
+  HALF_VARIETY_OF,
+  getStoredVariety,
+  halfQuantity,
+  roundPrice,
+} from "@/lib/varieties";
+import HalfVarietyRow from "./HalfVarietyRow";
 
 export default function ProductDialog({ open, onClose, product, companies, inventoryItem, products = [], onSwitchToExisting }) {
   const queryClient = useQueryClient();
@@ -513,7 +521,7 @@ export default function ProductDialog({ open, onClose, product, companies, inven
 
           <div>
             <Label className="mb-1 block">Varieties & Pricing</Label>
-            <p className="text-xs text-slate-500 mb-2">Set the price and how many pieces each variety contains. "Pieces" uses the Selling Price above and counts as 1 piece.</p>
+            <p className="text-xs text-slate-500 mb-2">Set the price and how many pieces each variety contains. "Pieces" uses the Selling Price above and counts as 1 piece. Half varieties start at half of their parent and can be edited — use the reset button to put a half variety back to half of its parent.</p>
             <div className="border border-slate-200 rounded-lg p-3 space-y-2">
               {VARIETIES.map((v) => {
                 const stored = formData.varieties?.[v];
@@ -529,32 +537,62 @@ export default function ProductDialog({ open, onClose, product, companies, inven
                   const varieties = { ...(formData.varieties || {}), [v]: { ...base, [field]: val } };
                   setFormData({ ...formData, varieties });
                 };
+                // Half variety of this row: defaults to half of the values above and
+                // only stores the fields the user actually overrides, so an untouched
+                // half keeps following its parent.
+                const halfVariety = HALF_VARIETY_OF[v];
+                const halfStored = halfVariety ? getStoredVariety(formData, halfVariety) : null;
+                const setHalfField = (field, val) => {
+                  const varieties = {
+                    ...(formData.varieties || {}),
+                    [halfVariety]: { ...(halfStored || {}), [field]: val },
+                  };
+                  setFormData({ ...formData, varieties });
+                };
+                const resetHalf = () => {
+                  const varieties = { ...(formData.varieties || {}) };
+                  delete varieties[halfVariety];
+                  setFormData({ ...formData, varieties });
+                };
                 return (
-                  <div key={v} className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-3 text-sm font-medium text-slate-700">{v}</div>
-                    <div className="col-span-5">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={price}
-                        onChange={(e) => setField("price", parseFloat(e.target.value) || 0)}
-                        placeholder="Price"
-                        className="h-8"
-                      />
+                  <React.Fragment key={v}>
+                    <div className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-3 text-sm font-medium text-slate-700">{v}</div>
+                      <div className="col-span-5">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={price}
+                          onChange={(e) => setField("price", parseFloat(e.target.value) || 0)}
+                          placeholder="Price"
+                          className="h-8"
+                        />
+                      </div>
+                      <div className="col-span-4">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={qty}
+                          disabled={v === "Pieces"}
+                          onChange={(e) => setField("quantity", parseInt(e.target.value) || 1)}
+                          placeholder="Pcs / unit"
+                          className="h-8"
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-4">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={qty}
-                        disabled={v === "Pieces"}
-                        onChange={(e) => setField("quantity", parseInt(e.target.value) || 1)}
-                        placeholder="Pcs / unit"
-                        className="h-8"
+                    {halfVariety && (
+                      <HalfVarietyRow
+                        label={halfVariety}
+                        parent={v}
+                        price={halfStored?.price ?? (price === "" ? "" : roundPrice((Number(price) || 0) / 2))}
+                        quantity={halfStored?.quantity ?? halfQuantity(Number(qty) || 1)}
+                        isOverridden={!!halfStored && (halfStored.price != null || halfStored.quantity != null)}
+                        onChange={setHalfField}
+                        onReset={resetHalf}
                       />
-                    </div>
-                  </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </div>

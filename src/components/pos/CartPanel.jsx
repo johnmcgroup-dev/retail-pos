@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, ShoppingCart, Package, Save, AlertCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Package, Save, AlertCircle, RotateCcw } from "lucide-react";
 import { formatCurrency } from "@/utils";
-import { VARIETIES, getVarietyPrice, getVarietyQuantity } from "@/lib/varieties";
+import {
+  VARIETY_OPTIONS,
+  getVarietyPrice,
+  getVarietyQuantity,
+  getHalfVarietyDefaults,
+  isHalfVariety,
+  halfVarietyParent,
+} from "@/lib/varieties";
 
 export default function CartPanel({ cart, products = [], unsavedIds = [], onUpdateQuantity, onRemoveItem, onUpdateVariety, onUpdateUnitPrice, onSaveVarietyPrice, currency = 'USD' }) {
   const [savedId, setSavedId] = useState(null);
@@ -75,7 +82,7 @@ export default function CartPanel({ cart, products = [], unsavedIds = [], onUpda
                   onChange={(e) => onUpdateVariety && onUpdateVariety(item.product_id, e.target.value)}
                   className="h-8 text-xs border border-slate-300 rounded-md px-2 bg-white flex-1 min-w-0"
                 >
-                  {VARIETIES.map(v => {
+                  {VARIETY_OPTIONS.map(v => {
                     const price = getVarietyPrice(products.find(p => p.id === item.product_id), v);
                     return (
                       <option key={v} value={v}>
@@ -106,6 +113,25 @@ export default function CartPanel({ cart, products = [], unsavedIds = [], onUpda
                     title="Pieces per unit (for stock deduction)"
                     placeholder="pcs"
                   />
+                )}
+                {isHalfVariety(item.variety) && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-blue-700 border-blue-200 hover:bg-blue-50"
+                    title={`Reset to half of ${halfVarietyParent(item.variety)}`}
+                    aria-label={`Reset to half of ${halfVarietyParent(item.variety)}`}
+                    onClick={() => {
+                      const product = products.find(p => p.id === item.product_id);
+                      const defaults = getHalfVarietyDefaults(product, item.variety);
+                      if (defaults.price != null && onUpdateUnitPrice) {
+                        onUpdateUnitPrice(item.product_id, defaults.price);
+                      }
+                      setUnits({ ...units, [unitKey(item.product_id, item.variety)]: defaults.quantity });
+                    }}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </Button>
                 )}
                 {onSaveVarietyPrice && (
                   <Button

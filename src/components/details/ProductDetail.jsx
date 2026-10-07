@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils";
 import { format } from "date-fns";
 import { Package, History, Tag, Boxes } from "lucide-react";
+import { getVarietyPrice, getVarietyQuantity } from "@/lib/varieties";
 
 function Field({ label, value }) {
   return (
@@ -108,13 +109,13 @@ export default function ProductDetail({ product, inventoryItem = null, companyId
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {varieties.map(([name, v]) => (
+                {varieties.map(([name]) => (
                   <tr key={name}>
                     <td className="p-2 text-slate-800">{name}</td>
                     <td className="p-2 text-right text-slate-900 font-medium">
-                      {formatCurrency(v?.price || 0, currency, showSymbol)}
+                      {formatCurrency(getVarietyPrice(product, name) ?? 0, currency, showSymbol)}
                     </td>
-                    <td className="p-2 text-right text-slate-600">{v?.quantity ?? 1}</td>
+                    <td className="p-2 text-right text-slate-600">{getVarietyQuantity(product, name)}</td>
                   </tr>
                 ))}
               </tbody>
