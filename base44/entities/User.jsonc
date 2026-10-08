@@ -26,7 +26,14 @@
     },
     "warehouse_id": {
       "type": "string",
-      "description": "Default warehouse for this user"
+      "description": "Default warehouse/branch for this user"
+    },
+    "branch_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Branches/warehouses this user is assigned to. Non-owner/admin users only see and operate on these branches."
     },
     "permissions": {
       "type": "object",

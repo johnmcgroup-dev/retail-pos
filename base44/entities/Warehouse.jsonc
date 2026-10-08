@@ -4,15 +4,15 @@
   "properties": {
     "company_id": {
       "type": "string",
-      "description": "Company that owns this warehouse"
+      "description": "Company that owns this branch/warehouse"
     },
     "name": {
       "type": "string",
-      "description": "Warehouse name"
+      "description": "Branch/warehouse name"
     },
     "code": {
       "type": "string",
-      "description": "Warehouse code/identifier"
+      "description": "Branch/warehouse code/identifier"
     },
     "address": {
       "type": "string"
@@ -52,6 +52,11 @@
       ],
       "default": "main"
     },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "The tenant's default branch \u2014 new stock, sales and records fall back to it"
+    },
     "is_active": {
       "type": "boolean",
       "default": true
@@ -66,15 +71,16 @@
   ],
   "rls": {
     "create": {
-      "data.company_id": "{{user.data.company_id}}"
-    },
-    "read": {
-      "data.company_id": "{{user.data.company_id}}"
-    },
-    "update": {
       "$and": [
         {
-          "data.company_id": "{{user.data.company_id}}"
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
         },
         {
           "$or": [
@@ -90,7 +96,78 @@
             },
             {
               "user_condition": {
-                "role": "manager"
+                "role": "super_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "super_admin"
+              }
+            },
+            {
+              "id": {
+                "$in": "{{user.data.branch_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "super_admin"
               }
             }
           ]
@@ -100,7 +177,14 @@
     "delete": {
       "$and": [
         {
-          "data.company_id": "{{user.data.company_id}}"
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
         },
         {
           "$or": [
@@ -112,6 +196,11 @@
             {
               "user_condition": {
                 "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "super_admin"
               }
             }
           ]
