@@ -5,6 +5,10 @@
     "company_id": {
       "type": "string"
     },
+    "branch_id": {
+      "type": "string",
+      "description": "Branch/warehouse the stock is received into"
+    },
     "po_number": {
       "type": "string",
       "description": "Purchase Order Number"
@@ -96,7 +100,40 @@
       "data.company_id": "{{user.data.company_id}}"
     },
     "read": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$and": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "super_admin"
+              }
+            },
+            {
+              "data.branch_id": {
+                "$in": "{{user.data.branch_ids}}"
+              }
+            },
+            {
+              "data.branch_id": {
+                "$exists": false
+              }
+            }
+          ]
+        }
+      ]
     },
     "update": {
       "$and": [
