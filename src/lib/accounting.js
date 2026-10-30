@@ -255,13 +255,20 @@ export function buildPostings({
  * Posting to the journal (idempotent)
  * ------------------------------------------------------------------ */
 
-async function alreadyPosted(sourceIds) {
+// Reading every already-posted source key in one paginated pass keeps a posting
+// run to a handful of requests, instead of one query per batch of records.
+async function alreadyPosted(companyId) {
   const posted = new Set();
-  const chunkSize = 100;
-  for (let i = 0; i < sourceIds.length; i += chunkSize) {
-    const chunk = sourceIds.slice(i, i + chunkSize);
-    const page = await base44.entities.JournalEntry.filter({ source_id: { $in: chunk } }, "-date", 500);
-    (page.items || page || []).forEach((entry) => posted.add(entry.source_id));
+  let cursor = null;
+  for (let page = 0; page < 12; page += 1) {
+    const result = await base44.entities.JournalEntry.filter(
+      { company_id: companyId },
+      { sort: "created_date", limit: 500, cursor }
+    );
+    const items = result.items || result || [];
+    items.forEach((entry) => posted.add(entry.source_id));
+    if (!result.has_more || !result.next_cursor) break;
+    cursor = result.next_cursor;
   }
   return posted;
 }
@@ -288,7 +295,7 @@ export async function postTransactions({ companyId, branchNameFor = () => "" }) 
     productCosts,
   });
 
-  const posted = await alreadyPosted(candidates.map((p) => p.source_id));
+  const posted = await alreadyPosted(companyId);
   const fresh = candidates.filter((p) => !posted.has(p.source_id));
 
   if (fresh.length) {
@@ -299,8 +306,8 @@ export async function postTransactions({ companyId, branchNameFor = () => "" }) 
       debit_total: round(posting.lines.reduce((sum, line) => sum + line.debit, 0)),
       credit_total: round(posting.lines.reduce((sum, line) => sum + line.credit, 0)),
     }));
-    for (let i = 0; i < records.length; i += 100) {
-      await base44.entities.JournalEntry.bulkCreate(records.slice(i, i + 100));
+    for (let i = 0; i < records.length; i += 500) {
+      await base44.entities.JournalEntry.bulkCreate(records.slice(i, i + 500));
     }
   }
 
