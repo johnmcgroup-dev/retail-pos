@@ -103,134 +103,42 @@
   ],
   "rls": {
     "create": {
-      "$and": [
+      "$or": [
         {
-          "$or": [
-            {
-              "data.company_id": "{{user.data.company_id}}"
-            },
-            {
-              "data.company_id": "{{user.data.tenant_id}}"
-            }
-          ]
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "$or": [
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "owner"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "manager"
-              }
-            }
-          ]
+          "data.company_id": "{{user.data.tenant_id}}"
         }
       ]
     },
     "read": {
-      "$and": [
+      "$or": [
         {
-          "$or": [
-            {
-              "data.company_id": "{{user.data.company_id}}"
-            },
-            {
-              "data.company_id": "{{user.data.tenant_id}}"
-            }
-          ]
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "$or": [
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "owner"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "manager"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "supervisor"
-              }
-            }
-          ]
+          "data.company_id": "{{user.data.tenant_id}}"
         }
       ]
     },
     "update": {
-      "$and": [
+      "$or": [
         {
-          "$or": [
-            {
-              "data.company_id": "{{user.data.company_id}}"
-            },
-            {
-              "data.company_id": "{{user.data.tenant_id}}"
-            }
-          ]
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "$or": [
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "owner"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "manager"
-              }
-            }
-          ]
+          "data.company_id": "{{user.data.tenant_id}}"
         }
       ]
     },
     "delete": {
-      "$and": [
+      "$or": [
         {
-          "$or": [
-            {
-              "data.company_id": "{{user.data.company_id}}"
-            },
-            {
-              "data.company_id": "{{user.data.tenant_id}}"
-            }
-          ]
+          "data.company_id": "{{user.data.company_id}}"
         },
         {
-          "$or": [
-            {
-              "user_condition": {
-                "role": "admin"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "owner"
-              }
-            }
-          ]
+          "data.company_id": "{{user.data.tenant_id}}"
         }
       ]
     }
