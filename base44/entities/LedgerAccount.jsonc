@@ -1,0 +1,144 @@
+{
+  "name": "LedgerAccount",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Tenant that owns this account"
+    },
+    "code": {
+      "type": "string",
+      "description": "Account code, e.g. 1000"
+    },
+    "name": {
+      "type": "string",
+      "description": "Account name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "asset",
+        "liability",
+        "equity",
+        "income",
+        "expense"
+      ],
+      "description": "Account class used by the trial balance and balance sheet"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": false,
+      "description": "Part of the default chart of accounts created automatically"
+    }
+  },
+  "required": [
+    "company_id",
+    "code",
+    "name",
+    "type"
+  ],
+  "rls": {
+    "create": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

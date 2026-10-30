@@ -1,0 +1,183 @@
+{
+  "name": "JournalEntry",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Branch the transaction belongs to"
+    },
+    "branch_name": {
+      "type": "string",
+      "description": "Branch name at the time of posting"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Invoice / PO / return number this came from"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "sale",
+        "sale_cogs",
+        "purchase",
+        "expense",
+        "return",
+        "return_stock",
+        "payroll",
+        "manual"
+      ],
+      "description": "Which record generated this entry"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Unique key of the originating record, used to avoid posting twice"
+    },
+    "lines": {
+      "type": "array",
+      "description": "Debit and credit lines of this entry",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "debit": {
+            "type": "number"
+          },
+          "credit": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "debit_total": {
+      "type": "number"
+    },
+    "credit_total": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "company_id",
+    "date",
+    "description",
+    "source_id",
+    "lines"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "supervisor"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

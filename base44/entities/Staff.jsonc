@@ -1,0 +1,238 @@
+{
+  "name": "Staff",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Branch the employee works at"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Linked app user account, when the employee signs in"
+    },
+    "employee_number": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "job_title": {
+      "type": "string"
+    },
+    "role_level": {
+      "type": "string",
+      "enum": [
+        "super_admin",
+        "owner",
+        "admin",
+        "manager",
+        "supervisor",
+        "cashier",
+        "user"
+      ],
+      "default": "user",
+      "description": "Role used to group payroll and summaries"
+    },
+    "department": {
+      "type": "string"
+    },
+    "employment_type": {
+      "type": "string",
+      "enum": [
+        "full_time",
+        "part_time",
+        "contract",
+        "intern"
+      ],
+      "default": "full_time"
+    },
+    "hire_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "base_salary": {
+      "type": "number",
+      "default": 0,
+      "description": "Monthly basic pay"
+    },
+    "allowances": {
+      "type": "number",
+      "default": 0,
+      "description": "Monthly allowances paid on top of basic pay"
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "Payroll tax rate in percent of gross"
+    },
+    "other_deductions": {
+      "type": "number",
+      "default": 0,
+      "description": "Fixed monthly deductions (pension, loans, etc.)"
+    },
+    "bank_name": {
+      "type": "string"
+    },
+    "bank_account_number": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "company_id",
+    "full_name"
+  ],
+  "rls": {
+    "create": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "supervisor"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

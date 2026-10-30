@@ -1,0 +1,226 @@
+{
+  "name": "PayrollRun",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Branch this payroll run belongs to"
+    },
+    "branch_name": {
+      "type": "string"
+    },
+    "period": {
+      "type": "string",
+      "description": "Pay period in YYYY-MM form"
+    },
+    "period_label": {
+      "type": "string",
+      "description": "Readable period, e.g. October 2026"
+    },
+    "payroll_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the payroll is booked on"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "paid"
+      ],
+      "default": "draft"
+    },
+    "lines": {
+      "type": "array",
+      "description": "One line per employee",
+      "items": {
+        "type": "object",
+        "properties": {
+          "staff_id": {
+            "type": "string"
+          },
+          "employee_number": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "role_level": {
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "base_salary": {
+            "type": "number"
+          },
+          "allowances": {
+            "type": "number"
+          },
+          "gross": {
+            "type": "number"
+          },
+          "tax": {
+            "type": "number"
+          },
+          "other_deductions": {
+            "type": "number"
+          },
+          "net_pay": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "description": "Run totals: gross, tax, other_deductions, net, headcount"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "processed_by": {
+      "type": "string",
+      "description": "Name of the user who generated the run"
+    }
+  },
+  "required": [
+    "company_id",
+    "period",
+    "period_label",
+    "lines"
+  ],
+  "rls": {
+    "create": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "supervisor"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

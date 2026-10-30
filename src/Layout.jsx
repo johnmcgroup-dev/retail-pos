@@ -35,7 +35,9 @@ import {
   PackagePlus,
   ClipboardList,
   Wallet,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Calculator,
+  Banknote
 } from "lucide-react";
 import {
   Sidebar,
@@ -195,6 +197,18 @@ const navigationItems = [
     title: "Expenses",
     url: createPageUrl("Expenses"),
     icon: Receipt,
+  },
+  {
+    title: "Accounting",
+    url: "/Accounting",
+    icon: Calculator,
+    adminOnly: true
+  },
+  {
+    title: "Payroll",
+    url: "/Payroll",
+    icon: Banknote,
+    adminOnly: true
   },
   {
     title: "Reports",
