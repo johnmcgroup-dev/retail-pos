@@ -74,14 +74,28 @@ export default function UserManagement() {
     }
   }, [companies, selectedCompanyId, currentUser]);
 
-  const company = companies.find(c => c.id === selectedCompanyId) || companies[0];
+  // The signed-in user's own company — owners and admins are pinned to it and
+  // can never switch to another tenant's group of users.
+  const myCompanyId = currentUser?.company_id || currentUser?.tenant_id || null;
+  const myCompany = companies.find(c => c.id === myCompanyId)
+    || companies.find(c => c.created_by_id === currentUser?.id)
+    || null;
 
-  // Super Admin oversees every tenant; every other role sees only their own company
+  // Super Admin oversees every tenant; owners and admins see their own company only
+  const company = isSuperAdmin
+    ? companies.find(c => c.id === selectedCompanyId) || companies[0]
+    : myCompany;
+  const groupCompanyId = isSuperAdmin ? null : myCompanyId || myCompany?.id || null;
+
+  // Everyone assigned to that company. Invited users carry company_id and/or
+  // tenant_id, so both are matched, and the signed-in user's own record is always
+  // included so an owner never loses sight of themselves.
   const companyUsers = isSuperAdmin
     ? users
-    : company
-      ? users.filter(u => u.tenant_id === company.id || u.company_id === company.id)
-      : users;
+    : users.filter(u =>
+        (groupCompanyId && (u.company_id === groupCompanyId || u.tenant_id === groupCompanyId)) ||
+        u.id === currentUser?.id
+      );
 
   const tenantNameOf = (u) =>
     companies.find(c => c.id === (u.tenant_id || u.company_id))?.name || "—";
@@ -207,7 +221,7 @@ export default function UserManagement() {
       </div>
 
       {/* Tenant Info */}
-      {company && (
+      {(company || myCompanyId) && (
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <CardContent className="p-4 flex items-center gap-3">
             <Building2 className="w-6 h-6 text-blue-600 flex-shrink-0" />
@@ -215,19 +229,11 @@ export default function UserManagement() {
               <p className="text-xs text-slate-500">{isSuperAdmin ? "Tenants" : "Tenant / Company"}</p>
               {isSuperAdmin ? (
                 <p className="font-bold text-slate-900">All tenants ({companies.length})</p>
-              ) : companies.length > 1 ? (
-                <DrawerSelect
-                  value={selectedCompanyId}
-                  onValueChange={setSelectedCompanyId}
-                  options={companies.map(c => ({ value: c.id, label: c.name }))}
-                  triggerClassName="w-full h-8 text-sm font-bold text-slate-900 border-blue-200 bg-white rounded-md border px-3"
-                  label="Select Company"
-                />
               ) : (
-                <p className="font-bold text-slate-900">{company.name}</p>
+                <p className="font-bold text-slate-900">{company?.name || "Your company"}</p>
               )}
               {!isSuperAdmin && (
-                <p className="text-xs text-slate-500">ID: <code className="bg-slate-100 px-1 rounded">{company.id}</code></p>
+                <p className="text-xs text-slate-500">ID: <code className="bg-slate-100 px-1 rounded">{company?.id || myCompanyId}</code></p>
               )}
             </div>
             <Badge className="ml-auto bg-blue-100 text-blue-700 flex-shrink-0">
@@ -325,7 +331,7 @@ export default function UserManagement() {
             {companyUsers.length === 0 && (
               <div className="text-center py-12 text-slate-500">
                 <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                <p>No users found</p>
+                <p>No team members found for this company</p>
               </div>
             )}
           </div>
