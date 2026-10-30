@@ -34,7 +34,8 @@ import {
   Upload,
   PackagePlus,
   ClipboardList,
-  Wallet
+  Wallet,
+  ArrowLeftRight
 } from "lucide-react";
 import {
   Sidebar,
@@ -66,6 +67,7 @@ import OfflineIndicator from "@/components/shared/OfflineIndicator";
 import InstallPrompt from "@/components/shared/InstallPrompt";
 import LowStockAlertWatcher from "@/components/shared/LowStockAlertWatcher";
 import RealtimeSync from "@/components/shared/RealtimeSync";
+import BranchSwitcher from "@/components/branches/BranchSwitcher";
 import { useAuth } from "@/lib/AuthContext";
 
 const DEVELOPER_EMAIL = "johnmcgroup@gmail.com";
@@ -117,6 +119,11 @@ const navigationItems = [
     title: "Branches",
     url: createPageUrl("Warehouses"),
     icon: Building2,
+  },
+  {
+    title: "Stock Transfers",
+    url: createPageUrl("StockTransfers"),
+    icon: ArrowLeftRight,
   },
   {
     title: "Stocking",
@@ -490,6 +497,8 @@ export default function Layout({ children, currentPageName }) {
                   </h1>
                 </div>
               </div>
+
+              <BranchSwitcher className="mr-1 flex-shrink-0" />
 
               <Button
                 variant="ghost"

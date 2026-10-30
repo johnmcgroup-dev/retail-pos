@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,11 +15,17 @@ import { ArrowRight, ArrowLeftRight, Loader2, Package, Plus, Search, Trash2 } fr
 // Stock only ever moves between two different branches of the same company: the
 // source must hold enough stock and the destination is topped up in the same step.
 export default function StockTransfers() {
-  const { activeBranchId, allowedBranches } = useBranch();
+  const { activeBranchId, allowedBranches, reloadBranches } = useBranch();
+
+  // The branch list can change while the app is open (a branch was just added)
+  useEffect(() => { reloadBranches(); }, []);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [fromBranchId, setFromBranchId] = useState(activeBranchId || allowedBranches[0]?.id || "");
+  const [pickedFromId, setFromBranchId] = useState("");
+  // Until one is chosen, the source follows the branch the app is working in —
+  // derived, so it also settles while the branch list is still loading.
+  const fromBranchId = pickedFromId || activeBranchId || allowedBranches[0]?.id || "";
   const [toBranchId, setToBranchId] = useState("");
   const [search, setSearch] = useState("");
   const [lines, setLines] = useState([]);
@@ -28,23 +34,44 @@ export default function StockTransfers() {
   const [saving, setSaving] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me() });
-  const { data: products = [] } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => base44.entities.Product.list(),
-  });
   const { data: sourceStock = [], isLoading: loadingStock } = useQuery({
     queryKey: ["transfer-stock", fromBranchId],
-    queryFn: () => base44.entities.Inventory.filter({ branch_id: fromBranchId }),
+    queryFn: async () => {
+      const result = await base44.entities.Inventory.filter({ branch_id: fromBranchId }, "-created_date", 400);
+      return result.items || (Array.isArray(result) ? result : []);
+    },
     enabled: !!fromBranchId,
+  });
+
+  // Only the products this branch actually holds are needed for the picker
+  const stockProductIds = useMemo(
+    () => [...new Set(sourceStock.map((row) => row.product_id).filter(Boolean))],
+    [sourceStock]
+  );
+
+  const { data: stockProducts = [] } = useQuery({
+    queryKey: ["transfer-products", fromBranchId, stockProductIds.length],
+    queryFn: async () => {
+      const chunks = [];
+      for (let i = 0; i < stockProductIds.length; i += 60) chunks.push(stockProductIds.slice(i, i + 60));
+      const pages = await Promise.all(
+        chunks.map((ids) => base44.entities.Product.filter({ id: { $in: ids } }, "-created_date", 200))
+      );
+      return pages.flatMap((page) => page.items || (Array.isArray(page) ? page : []));
+    },
+    enabled: stockProductIds.length > 0,
   });
   const { data: transfers = [] } = useQuery({
     queryKey: ["stock-transfers"],
-    queryFn: () => base44.entities.StockTransfer.list("-transfer_date", 30),
+    queryFn: async () => {
+      const result = await base44.entities.StockTransfer.list("-transfer_date", 30);
+      return result.items || (Array.isArray(result) ? result : []);
+    },
   });
 
   const productMap = useMemo(
-    () => Object.fromEntries(products.map((p) => [p.id, p])),
-    [products]
+    () => Object.fromEntries(stockProducts.map((p) => [p.id, p])),
+    [stockProducts]
   );
 
   // Products that actually have stock in the source branch.
@@ -69,14 +96,26 @@ export default function StockTransfers() {
 
   const fromBranch = allowedBranches.find((b) => b.id === fromBranchId);
   const toBranch = allowedBranches.find((b) => b.id === toBranchId);
-  const destinationOptions = allowedBranches.filter((b) => b.id !== fromBranchId);
+  // A transfer stays inside one company: only sibling branches can receive stock
+  const destinationOptions = allowedBranches.filter(
+    (b) => b.id !== fromBranchId && b.company_id === fromBranch?.company_id
+  );
 
   const addLine = (row) => {
     setError("");
     setLines((current) => {
       const existing = current.find((line) => line.product_id === row.product_id);
       if (existing) return current;
-      return [...current, { product_id: row.product_id, product_name: row.name, quantity: 1, available: row.quantity }];
+      return [
+        ...current,
+        {
+          product_id: row.product_id,
+          product_name: row.name,
+          quantity: 1,
+          available: row.quantity,
+          company_id: row.company_id,
+        },
+      ];
     });
   };
 
@@ -92,13 +131,15 @@ export default function StockTransfers() {
     setError("");
     if (!fromBranch || !toBranch) return setError("Choose the branch sending stock and the branch receiving it.");
     if (fromBranch.id === toBranch.id) return setError("A transfer has to be between two different branches.");
+    if (fromBranch.company_id !== toBranch.company_id) return setError("Stock can only move between branches of the same company.");
     const valid = lines.filter((line) => Number(line.quantity) > 0);
     if (!valid.length) return setError("Add at least one product to transfer.");
 
     setSaving(true);
     try {
       const now = new Date().toISOString();
-      const fresh = await base44.entities.Inventory.filter({ branch_id: fromBranch.id });
+      const freshPage = await base44.entities.Inventory.filter({ branch_id: fromBranch.id }, "-created_date", 400);
+      const fresh = freshPage.items || (Array.isArray(freshPage) ? freshPage : []);
 
       for (const line of valid) {
         const rows = fresh.filter((row) => row.product_id === line.product_id);
@@ -107,11 +148,17 @@ export default function StockTransfers() {
           throw new Error(`Only ${inStock} × ${line.product_name} left in ${fromBranch.name}.`);
         }
 
+        const companyId = line.company_id || rows[0]?.company_id || "";
+        if (!companyId) throw new Error(`Cannot transfer ${line.product_name}: it has no company on record.`);
+
+        // Take the stock out of the source branch, remembering what to put back
+        const taken = [];
         let remaining = Number(line.quantity);
         for (const row of rows) {
           if (remaining <= 0) break;
           const take = Math.min(row.quantity || 0, remaining);
           if (take <= 0) continue;
+          taken.push({ id: row.id, before: row.quantity || 0, take });
           await base44.entities.Inventory.update(row.id, {
             quantity: (row.quantity || 0) - take,
             last_updated: now,
@@ -119,28 +166,38 @@ export default function StockTransfers() {
           remaining -= take;
         }
 
-        const destinationRows = await base44.entities.Inventory.filter({
+        const destinationPage = await base44.entities.Inventory.filter({
           branch_id: toBranch.id,
           product_id: line.product_id,
         });
-        if (destinationRows.length) {
-          await base44.entities.Inventory.update(destinationRows[0].id, {
-            quantity: (destinationRows[0].quantity || 0) + Number(line.quantity),
-            last_updated: now,
-          });
-        } else {
-          await base44.entities.Inventory.create({
-            company_id: line.company_id,
-            branch_id: toBranch.id,
-            warehouse_id: toBranch.id,
-            product_id: line.product_id,
-            quantity: Number(line.quantity),
-            last_updated: now,
-          });
+        const destinationRows = destinationPage.items || (Array.isArray(destinationPage) ? destinationPage : []);
+
+        try {
+          if (destinationRows.length) {
+            await base44.entities.Inventory.update(destinationRows[0].id, {
+              quantity: (destinationRows[0].quantity || 0) + Number(line.quantity),
+              last_updated: now,
+            });
+          } else {
+            await base44.entities.Inventory.create({
+              company_id: companyId,
+              branch_id: toBranch.id,
+              warehouse_id: toBranch.id,
+              product_id: line.product_id,
+              quantity: Number(line.quantity),
+              last_updated: now,
+            });
+          }
+        } catch (destError) {
+          // Never leave the stock in limbo: put it back where it came from
+          for (const item of taken) {
+            await base44.entities.Inventory.update(item.id, { quantity: item.before, last_updated: now });
+          }
+          throw destError;
         }
 
         await base44.entities.InventoryAdjustmentLog.create({
-          company_id: line.company_id,
+          company_id: companyId,
           branch_id: fromBranch.id,
           product_id: line.product_id,
           product_name: line.product_name,
@@ -154,7 +211,7 @@ export default function StockTransfers() {
           adjustment_date: now,
         });
         await base44.entities.InventoryAdjustmentLog.create({
-          company_id: line.company_id,
+          company_id: companyId,
           branch_id: toBranch.id,
           product_id: line.product_id,
           product_name: line.product_name,
@@ -235,14 +292,20 @@ export default function StockTransfers() {
               </div>
               <div>
                 <Label className="text-xs">To branch</Label>
-                <DrawerSelect
-                  value={toBranchId}
-                  onValueChange={setToBranchId}
-                  options={destinationOptions.map((b) => ({ value: b.id, label: b.name }))}
-                  label="To branch"
-                  placeholder={destinationOptions.length ? "Select branch" : "Add another branch first"}
-                  triggerClassName="w-full h-9 border border-input bg-background rounded-md px-3 text-sm mt-1"
-                />
+                {destinationOptions.length === 0 ? (
+                  <div className="mt-1 flex h-9 items-center rounded-md border border-dashed border-slate-300 px-3 text-xs text-slate-500">
+                    Add a second branch first
+                  </div>
+                ) : (
+                  <DrawerSelect
+                    value={toBranchId}
+                    onValueChange={setToBranchId}
+                    options={destinationOptions.map((b) => ({ value: b.id, label: b.name }))}
+                    label="To branch"
+                    placeholder="Select branch"
+                    triggerClassName="w-full h-9 border border-input bg-background rounded-md px-3 text-sm mt-1"
+                  />
+                )}
               </div>
             </div>
 

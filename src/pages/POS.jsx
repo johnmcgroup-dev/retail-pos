@@ -33,6 +33,7 @@ import VoiceOrderingButton from "../components/pos/VoiceOrderingButton";
 import PinnedItems from "../components/pos/PinnedItems";
 import QuickCalculator from "../components/pos/QuickCalculator";
 import AddStockDialog from "../components/pos/AddStockDialog";
+import CustomerPaymentDialog from "../components/pos/CustomerPaymentDialog";
 import { logActivity } from "@/lib/logActivity";
 import {
   getVarietyPrice,
@@ -58,6 +59,7 @@ export default function POS() {
   const [usingCachedData, setUsingCachedData] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [mobileTab, setMobileTab] = useState("products");
+  const [showPayments, setShowPayments] = useState(false);
   const [orderDiscount, setOrderDiscount] = useState({ type: "percentage", value: 0 });
   const [loyaltyRedeem, setLoyaltyRedeem] = useState({ enabled: false, points: 0 });
   const [saleCompleted, setSaleCompleted] = useState(null);
@@ -1059,7 +1061,15 @@ export default function POS() {
                 </div>
               )}
             </div>
-            <div className="mt-2 flex justify-end">
+            <div className="mt-2 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPayments(true)}
+                className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+              >
+                Receive Payment
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -1261,6 +1271,8 @@ export default function POS() {
       )}
 
       <QuickCalculator open={showCalculator} onClose={() => setShowCalculator(false)} />
+
+      <CustomerPaymentDialog open={showPayments} onOpenChange={setShowPayments} />
 
       <AddStockDialog
         open={showAddStock}

@@ -21,20 +21,36 @@ export function BranchProvider({ children }) {
 
   const roleLevel = user?.role_level || user?.role || "user";
   const canViewAll = FULL_ACCESS_ROLES.includes(roleLevel);
+  // The platform admin works across tenants, so every branch is available to them
+  const isPlatformAdmin = roleLevel === "super_admin";
   const companyId = user?.company_id || user?.tenant_id || null;
 
   const { data: branches = [], isLoading } = useQuery({
-    queryKey: ["branches", companyId],
-    queryFn: () => base44.entities.Warehouse.filter({ company_id: companyId }, "name"),
+    queryKey: ["branches", companyId, isPlatformAdmin],
+    queryFn: async () => {
+      const page = await base44.entities.Warehouse.filter(
+        isPlatformAdmin ? {} : { company_id: companyId },
+        "name",
+        200
+      );
+      return page.items || (Array.isArray(page) ? page : []);
+    },
     enabled: !!user && !!companyId,
     staleTime: 60 * 1000,
   });
 
   const activeBranches = useMemo(() => branches.filter((b) => b.is_active !== false), [branches]);
-  const defaultBranch = useMemo(
-    () => activeBranches.find((b) => b.is_default) || activeBranches[0] || null,
-    [activeBranches]
-  );
+  const defaultBranch = useMemo(() => {
+    // Prefer the user's own company, then the tenant's flagged default
+    const own = activeBranches.filter((b) => b.company_id === companyId);
+    return (
+      own.find((b) => b.is_default) ||
+      own[0] ||
+      activeBranches.find((b) => b.is_default) ||
+      activeBranches[0] ||
+      null
+    );
+  }, [activeBranches, companyId]);
 
   // The branches this user may open.
   const allowedBranches = useMemo(() => {

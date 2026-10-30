@@ -4,8 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle, History, Keyboard } from "lucide-react";
+import { Search, ShoppingCart, Package, Plus, Minus, Trash2, LogOut, CheckCircle, History, Keyboard, Wallet } from "lucide-react";
 import SaleHistoryDialog from "@/components/pos/SaleHistoryDialog";
+import CustomerPaymentDialog from "@/components/pos/CustomerPaymentDialog";
 import PinnedItems from "@/components/pos/PinnedItems";
 import { offlineCache, CACHE_KEYS } from "@/components/utils";
 import { useOnlineStatus } from "@/components/shared/useOnlineStatus";
@@ -32,6 +33,7 @@ export default function StaffPOS() {
   const [companyLoading, setCompanyLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [scanWarning, setScanWarning] = useState("");
   const lastScanRef = useRef({ productId: null, time: 0 });
@@ -571,6 +573,12 @@ export default function StaffPOS() {
                 <button onClick={() => setCart([])} className="text-xs text-white/70 hover:text-white">Clear</button>
               )}
             </div>
+            <button
+              onClick={() => setPaymentsOpen(true)}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg bg-white/15 hover:bg-white/25 py-1.5 text-xs font-semibold"
+            >
+              <Wallet className="w-3.5 h-3.5" /> Receive Payment
+            </button>
           </div>
 
           <div className="flex-1 overflow-auto min-h-0">
@@ -681,6 +689,8 @@ export default function StaffPOS() {
       />
 
       {/* Keyboard shortcuts help */}
+      <CustomerPaymentDialog open={paymentsOpen} onOpenChange={setPaymentsOpen} />
+
       <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

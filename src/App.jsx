@@ -9,6 +9,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import { setupIframeMessaging } from './lib/iframe-messaging';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { BranchProvider } from '@/lib/BranchContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import TenantSetup from '@/pages/TenantSetup';
 import TrialExpired from '@/components/shared/TrialExpired';
@@ -28,6 +29,7 @@ import Categories from '@/pages/Categories';
 import ActivityLog from '@/pages/ActivityLog';
 import InventoryDashboard from '@/pages/InventoryDashboard';
 import SalesOverview from '@/pages/SalesOverview';
+import StockTransfers from '@/pages/StockTransfers';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { decryptTenantId } from '@/lib/tenantToken';
@@ -180,6 +182,7 @@ const AuthenticatedApp = () => {
         <Route path="/ActivityLog" element={<LayoutWrapper currentPageName="ActivityLog"><ActivityLog /></LayoutWrapper>} />
         <Route path="/InventoryDashboard" element={<LayoutWrapper currentPageName="InventoryDashboard"><InventoryDashboard /></LayoutWrapper>} />
         <Route path="/SalesOverview" element={<LayoutWrapper currentPageName="Sales Overview"><SalesOverview /></LayoutWrapper>} />
+        <Route path="/StockTransfers" element={<LayoutWrapper currentPageName="Stock Transfers"><StockTransfers /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route
@@ -201,12 +204,14 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-        <VisualEditAgent />
+        <BranchProvider>
+          <Router>
+            <NavigationTracker />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+          <VisualEditAgent />
+        </BranchProvider>
       </QueryClientProvider>
     </AuthProvider>
   )

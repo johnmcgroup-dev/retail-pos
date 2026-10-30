@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import DrawerSelect from "@/components/shared/DrawerSelect";
-import { Building2, Plus, Edit2, Trash2, MapPin, Phone, X, Loader2 } from "lucide-react";
+import { Building2, Plus, Edit2, Trash2, MapPin, Phone, X, Loader2, CopyPlus, Power, Star } from "lucide-react";
 
 export default function Warehouses() {
   const queryClient = useQueryClient();
@@ -27,11 +27,21 @@ export default function Warehouses() {
     notes: "",
   });
 
+  // Branch whose details were copied into the open form
+  const [copiedFrom, setCopiedFrom] = useState("");
+
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: () => base44.entities.Company.list(),
   });
-  const company = companies[0];
+  // Always the signed-in user's own company, never whichever company happens to be first
+  const myCompanyId = me?.company_id || me?.tenant_id;
+  const company = (myCompanyId && companies.find(c => c.id === myCompanyId)) || companies[0];
 
   const { data: warehouses = [], isLoading } = useQuery({
     queryKey: ["warehouses"],
@@ -42,6 +52,7 @@ export default function Warehouses() {
   const resetForm = () => {
     setForm({ name: "", code: "", address: "", city: "", state: "", phone: "", manager_name: "", manager_email: "", warehouse_type: "main", notes: "" });
     setEditing(null);
+    setCopiedFrom("");
     setShowForm(false);
   };
 
@@ -51,17 +62,22 @@ export default function Warehouses() {
       if (editing) {
         return base44.entities.Warehouse.update(editing.id, data);
       }
-      return base44.entities.Warehouse.create(data);
+      // The very first branch becomes the company's default automatically
+      return base44.entities.Warehouse.create({ ...data, is_active: true, is_default: warehouses.length === 0 });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
       resetForm();
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Warehouse.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["warehouses"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+    },
   });
 
   const handleSubmit = (e) => {
@@ -85,6 +101,42 @@ export default function Warehouses() {
       notes: wh.notes || "",
     });
     setShowForm(true);
+  };
+
+  // Start a new branch using an existing one as the template
+  const startNewFromBranch = (wh) => {
+    setEditing(null);
+    setCopiedFrom(wh.name);
+    setForm({
+      name: "",
+      code: "",
+      address: wh.address || "",
+      city: wh.city || "",
+      state: wh.state || "",
+      phone: wh.phone || "",
+      manager_name: "",
+      manager_email: "",
+      warehouse_type: wh.warehouse_type === "main" ? "branch" : wh.warehouse_type || "branch",
+      notes: wh.notes || "",
+    });
+    setShowForm(true);
+  };
+
+  const makeDefault = async (wh) => {
+    await Promise.all(
+      warehouses
+        .filter(w => w.is_default && w.id !== wh.id)
+        .map(w => base44.entities.Warehouse.update(w.id, { is_default: false }))
+    );
+    await base44.entities.Warehouse.update(wh.id, { is_default: true });
+    queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+    queryClient.invalidateQueries({ queryKey: ["branches"] });
+  };
+
+  const toggleActive = async (wh) => {
+    await base44.entities.Warehouse.update(wh.id, { is_active: wh.is_active === false });
+    queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+    queryClient.invalidateQueries({ queryKey: ["branches"] });
   };
 
   const typeLabels = {
@@ -130,7 +182,12 @@ export default function Warehouses() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-slate-900">{editing ? "Edit Branch" : "Add New Branch"}</h2>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{editing ? "Edit Branch" : "Add New Branch"}</h2>
+                {copiedFrom && !editing && (
+                  <p className="text-xs text-slate-500">Details copied from {copiedFrom} — give the new branch its own name.</p>
+                )}
+              </div>
               <Button variant="ghost" size="icon" onClick={resetForm}><X className="w-4 h-4" /></Button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,9 +293,13 @@ export default function Warehouses() {
                     </div>
                     {wh.code && <span className="text-xs text-slate-400 font-mono">{wh.code}</span>}
                   </div>
-                  <Badge className={`text-xs ${typeColors[wh.warehouse_type] || "bg-slate-100 text-slate-700"}`}>
-                    {typeLabels[wh.warehouse_type] || wh.warehouse_type}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge className={`text-xs ${typeColors[wh.warehouse_type] || "bg-slate-100 text-slate-700"}`}>
+                      {typeLabels[wh.warehouse_type] || wh.warehouse_type}
+                    </Badge>
+                    {wh.is_default && <Badge className="text-[10px] bg-amber-100 text-amber-700">Default</Badge>}
+                    {wh.is_active === false && <Badge className="text-[10px] bg-slate-200 text-slate-600">Inactive</Badge>}
+                  </div>
                 </div>
 
                 {(wh.address || wh.city || wh.state) && (
@@ -266,6 +327,15 @@ export default function Warehouses() {
                     <Edit2 className="w-3.5 h-3.5" /> Edit
                   </Button>
                   <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    title="Create a new branch from this one"
+                    onClick={() => startNewFromBranch(wh)}
+                  >
+                    <CopyPlus className="w-3.5 h-3.5" /> New
+                  </Button>
+                  <Button
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:bg-red-50"
@@ -274,6 +344,26 @@ export default function Warehouses() {
                     }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {!wh.is_default && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-amber-700 hover:bg-amber-50"
+                      onClick={() => makeDefault(wh)}
+                    >
+                      <Star className="w-3.5 h-3.5" /> Make default
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 gap-1.5 text-slate-600 hover:bg-slate-50"
+                    onClick={() => toggleActive(wh)}
+                  >
+                    <Power className="w-3.5 h-3.5" /> {wh.is_active === false ? "Activate" : "Deactivate"}
                   </Button>
                 </div>
               </CardContent>
