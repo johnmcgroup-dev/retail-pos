@@ -1,0 +1,184 @@
+{
+  "name": "StockTransfer",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "transfer_number": {
+      "type": "string",
+      "description": "Unique transfer reference"
+    },
+    "from_branch_id": {
+      "type": "string",
+      "description": "Branch the stock leaves"
+    },
+    "from_branch_name": {
+      "type": "string"
+    },
+    "to_branch_id": {
+      "type": "string",
+      "description": "Branch the stock arrives at"
+    },
+    "to_branch_name": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "total_quantity": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "cancelled"
+      ],
+      "default": "completed"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "transferred_by": {
+      "type": "string",
+      "description": "Name of the user who moved the stock"
+    },
+    "transfer_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "company_id",
+    "transfer_number",
+    "from_branch_id",
+    "to_branch_id",
+    "transfer_date"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
+    },
+    "read": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "super_admin"
+              }
+            },
+            {
+              "data.from_branch_id": {
+                "$in": "{{user.data.branch_ids}}"
+              }
+            },
+            {
+              "data.to_branch_id": {
+                "$in": "{{user.data.branch_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$and": [
+        {
+          "$or": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "data.company_id": "{{user.data.tenant_id}}"
+            }
+          ]
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,10 +1,14 @@
 // Per-user POS cart persistence.
 // An in-progress sale survives page refreshes, navigation and session timeouts.
 // The saved copy is only removed by an explicit Clear or a completed sale.
+// Carts are kept per branch, so switching outlet never brings another branch's
+// items (or its stock) into the sale.
+
+import { getActiveBranchId } from "@/lib/branchScope";
 
 const KEY_PREFIX = "pos_cart_v1_";
 
-const storageKey = (owner) => `${KEY_PREFIX}${owner}`;
+const storageKey = (owner) => `${KEY_PREFIX}${getActiveBranchId() || "all"}_${owner}`;
 
 export function loadCart(owner) {
   if (!owner) return null;
