@@ -24,6 +24,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import PublishCatalogCard from "@/components/storefront/PublishCatalogCard";
 
 export default function OnlineStore() {
   const queryClient = useQueryClient();
@@ -206,6 +207,10 @@ export default function OnlineStore() {
             </div>
           </AlertDescription>
         </Alert>
+      )}
+
+      {store && (
+        <PublishCatalogCard companyId={store.company_id} storeSlug={store.store_url} />
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

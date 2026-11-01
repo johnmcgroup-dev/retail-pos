@@ -1,0 +1,132 @@
+{
+  "name": "StorefrontListing",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Company that owns this listing"
+    },
+    "store_slug": {
+      "type": "string",
+      "description": "OnlineStore slug this listing is published to"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Product this listing was published from"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "in_stock": {
+      "type": "number",
+      "description": "Units available when the catalogue was last published"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "company_id",
+    "store_slug",
+    "name",
+    "price"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "$and": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$and": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$and": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "manager"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

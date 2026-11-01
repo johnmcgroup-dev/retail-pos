@@ -1,52 +1,63 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Search, Package, ShoppingCart, Phone, Mail } from "lucide-react";
-import { formatCurrency } from "@/components/utils";
+import { Package, Phone, Mail, MessageCircle, MapPin } from "lucide-react";
+import StorefrontSearchBar from "@/components/storefront/StorefrontSearchBar";
+import StorefrontProductCard from "@/components/storefront/StorefrontProductCard";
 
+/**
+ * A tenant's public shop page: advertises the products the store has published,
+ * with a live search, and points shoppers to the store to buy.
+ */
 export default function Storefront() {
   const { slug } = useParams();
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [category, setCategory] = useState("all");
 
   const { data: stores = [], isLoading: storeLoading } = useQuery({
     queryKey: ["publicStore", slug],
     queryFn: () => base44.entities.OnlineStore.filter({ store_url: slug, is_active: true }),
   });
-
   const store = stores[0];
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["publicProducts", store?.company_id],
-    queryFn: () => base44.entities.Product.filter({ company_id: store.company_id, status: "active" }),
-    enabled: !!store?.company_id,
+  const { data: listings = [], isLoading: listingsLoading } = useQuery({
+    queryKey: ["storefrontListings", slug],
+    // Reads the whole published catalogue page by page, so the search can see
+    // every product however large the shop is.
+    queryFn: async () => {
+      let all = [];
+      let cursor;
+      for (let i = 0; i < 8; i += 1) {
+        const page = await base44.entities.StorefrontListing.filter(
+          { store_slug: slug, is_active: true },
+          { sort: "name", limit: 300, cursor }
+        );
+        all = all.concat(page.items ?? []);
+        if (!page.has_more || !page.next_cursor) break;
+        cursor = page.next_cursor;
+      }
+      return all;
+    },
+    enabled: !!slug,
   });
 
-  const { data: inventory = [] } = useQuery({
-    queryKey: ["publicInventory", store?.company_id],
-    queryFn: () => base44.entities.Inventory.filter({ company_id: store.company_id }),
-    enabled: !!store?.company_id,
-  });
-
-  const stockByProduct = inventory.reduce((acc, inv) => {
-    if (inv.quantity > 0) acc[inv.product_id] = (acc[inv.product_id] || 0) + inv.quantity;
-    return acc;
-  }, {});
-
+  const accent = store?.theme_color || "#3b82f6";
   const currency = store?.currency || "NGN";
 
-  const categories = ["all", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+  const categories = useMemo(
+    () => ["all", ...Array.from(new Set(listings.map((l) => l.category).filter(Boolean)))],
+    [listings]
+  );
 
-  const filtered = products.filter(p => {
-    if ((stockByProduct[p.id] || 0) <= 0) return false;
-    if (selectedCategory !== "all" && p.category !== selectedCategory) return false;
-    const term = search.toLowerCase().trim();
-    if (!term) return true;
-    return p.name?.toLowerCase().includes(term) || p.category?.toLowerCase().includes(term);
-  });
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return listings.filter((l) => {
+      if (category !== "all" && l.category !== category) return false;
+      if (!term) return true;
+      return [l.name, l.category, l.description].some((v) => (v || "").toLowerCase().includes(term));
+    });
+  }, [listings, search, category]);
 
   if (storeLoading) {
     return (
@@ -58,143 +69,170 @@ export default function Storefront() {
 
   if (!store) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
         <div className="text-center">
           <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-700">Store Not Found</h2>
-          <p className="text-slate-500 mt-1">This store is unavailable or inactive.</p>
+          <p className="text-slate-500 mt-1">This shop is unavailable or inactive.</p>
         </div>
       </div>
     );
   }
 
+  const whatsapp = (store.contact_phone || "").replace(/[^\d]/g, "");
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
+    <div className="min-h-screen bg-slate-50 pb-10">
+      {/* Hero */}
       <header
-        className="text-white py-5 px-4 shadow-lg safe-area-top"
-        style={{ background: `linear-gradient(135deg, ${store.theme_color || '#3b82f6'}, ${store.theme_color || '#3b82f6'}cc)` }}
+        className="text-white px-4 pt-7 pb-6 safe-area-top"
+        style={{ background: `linear-gradient(140deg, ${accent}, ${accent}cc)` }}
       >
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold">{store.store_name}</h1>
+        <div className="max-w-5xl mx-auto flex items-start gap-3">
+          {store.logo_url ? (
+            <img
+              src={store.logo_url}
+              alt={store.store_name}
+              className="w-14 h-14 rounded-xl object-cover bg-white/20 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <Package className="w-7 h-7 text-white" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-3xl font-bold leading-tight">{store.store_name}</h1>
             {store.description && (
-              <p className="text-sm opacity-80 mt-0.5 line-clamp-1">{store.description}</p>
+              <p className="text-sm opacity-90 mt-1 line-clamp-2">{store.description}</p>
             )}
-          </div>
-          <div className="flex items-center gap-2 opacity-90">
-            <ShoppingCart className="w-6 h-6" />
-            <span className="text-sm font-semibold hidden md:block">Browse & Order In-Store</span>
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {store.contact_phone && (
+                <a
+                  href={`tel:${store.contact_phone}`}
+                  className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 text-xs font-semibold"
+                >
+                  <Phone className="w-3.5 h-3.5" /> Call
+                </a>
+              )}
+              {whatsapp && (
+                <a
+                  href={`https://wa.me/${whatsapp}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 text-xs font-semibold"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                </a>
+              )}
+              {store.contact_email && (
+                <a
+                  href={`mailto:${store.contact_email}`}
+                  className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 text-xs font-semibold"
+                >
+                  <Mail className="w-3.5 h-3.5" /> Email
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Notice banner */}
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">
-        <p className="text-amber-800 text-sm font-medium">
-          📋 Browse our available products — visit us in-store or call to place your order.
-        </p>
-      </div>
-
-      {/* Search + filter */}
-      <div className="max-w-5xl mx-auto px-4 pt-5 pb-3 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-11 text-base bg-white shadow-sm"
-          />
-        </div>
-
-        {/* Category pills */}
+      {/* Search + categories */}
+      <div className="max-w-5xl mx-auto px-4 pt-4 pb-3 space-y-3 sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
+        <StorefrontSearchBar
+          value={search}
+          onChange={setSearch}
+          resultCount={filtered.length}
+          totalCount={listings.length}
+        />
         {categories.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {categories.map(cat => (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-all touch-manipulation
-                  ${selectedCategory === cat
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
-                  }`}
+                onClick={() => setCategory(cat)}
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  category === cat
+                    ? "text-white border-transparent shadow-sm"
+                    : "bg-white text-slate-600 border-slate-200"
+                }`}
+                style={category === cat ? { backgroundColor: accent } : undefined}
               >
-                {cat === "all" ? "All Products" : cat}
+                {cat === "all" ? "All products" : cat}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Product Grid */}
-      <div className="max-w-5xl mx-auto px-4 pb-10">
-        {productsLoading ? (
+      {/* Products */}
+      <div className="max-w-5xl mx-auto px-4">
+        {listingsLoading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        ) : listings.length === 0 ? (
+          <div className="text-center py-16">
+            <Package className="w-14 h-14 text-slate-200 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">This shop hasn't published its products yet.</p>
+            <p className="text-slate-400 text-sm mt-1">Please check back soon.</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <Package className="w-14 h-14 text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">No products found</p>
+            <p className="text-slate-500 font-medium">No products match “{search.trim()}”</p>
+            <button
+              onClick={() => {
+                setSearch("");
+                setCategory("all");
+              }}
+              className="mt-3 text-sm font-semibold underline"
+              style={{ color: accent }}
+            >
+              Show all products
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {filtered.map(product => {
-              const stock = stockByProduct[product.id] || 0;
-              const isLow = stock <= 5;
-              return (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden"
-                >
-                  <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
-                    {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="w-10 h-10 text-slate-300" />
-                    )}
-                  </div>
-                  <div className="p-2.5">
-                    <p className="font-semibold text-slate-900 text-sm line-clamp-2 leading-tight min-h-[2.5em]">
-                      {product.name}
-                    </p>
-                    {product.category && (
-                      <span className="inline-block text-[10px] bg-slate-100 text-slate-500 rounded px-1.5 py-0.5 mt-1 truncate max-w-full">
-                        {product.category}
-                      </span>
-                    )}
-                    <p className={`text-[10px] font-medium mt-1 ${isLow ? 'text-orange-500' : 'text-slate-400'}`}>
-                      {isLow ? `⚠️ Only ${stock} left` : `In stock: ${stock}`}
-                    </p>
-                    <p className="text-base font-bold text-blue-600 mt-1">
-                      {formatCurrency(product.selling_price || 0, currency)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+            {filtered.map((listing) => (
+              <StorefrontProductCard
+                key={listing.id}
+                listing={listing}
+                currency={currency}
+                accent={accent}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 px-4 text-center text-slate-500 text-sm">
-        <p className="font-semibold text-slate-700 mb-2">{store.store_name}</p>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          {store.contact_phone && (
-            <a href={`tel:${store.contact_phone}`} className="flex items-center gap-1 hover:text-blue-600">
-              <Phone className="w-3.5 h-3.5" /> {store.contact_phone}
-            </a>
-          )}
-          {store.contact_email && (
-            <a href={`mailto:${store.contact_email}`} className="flex items-center gap-1 hover:text-blue-600">
-              <Mail className="w-3.5 h-3.5" /> {store.contact_email}
-            </a>
-          )}
+      {/* How to order */}
+      <div className="max-w-5xl mx-auto px-4 mt-8">
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="font-semibold text-slate-900 flex items-center gap-2">
+            <MapPin className="w-4 h-4" style={{ color: accent }} />
+            How to order
+          </p>
+          <p className="text-sm text-slate-600 mt-1">
+            Visit {store.store_name}
+            {store.contact_phone ? ` or call ${store.contact_phone}` : ""} to place your order. Prices shown are
+            in-store prices and stock changes daily.
+          </p>
         </div>
-        <p className="mt-3 text-xs text-slate-400">To purchase, please visit us in-store or contact us directly.</p>
+      </div>
+
+      {store.return_policy && (
+        <div className="max-w-5xl mx-auto px-4 mt-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="font-semibold text-slate-900">Returns</p>
+            <p className="text-sm text-slate-600 mt-1 whitespace-pre-line">{store.return_policy}</p>
+          </div>
+        </div>
+      )}
+
+      <footer className="mt-8 text-center text-xs text-slate-400 px-4">
+        <p className="font-semibold text-slate-600">{store.store_name}</p>
+        {store.contact_phone && <p className="mt-1">{store.contact_phone}</p>}
       </footer>
     </div>
   );

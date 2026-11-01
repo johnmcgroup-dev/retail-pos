@@ -20,21 +20,13 @@ export default function BranchSwitcher({ className = "" }) {
   if (!allowedBranches.length) return null;
 
   const label = isAllBranches ? "All branches" : activeBranch?.name || "Select branch";
-  const canSwitch = canViewAll || allowedBranches.length > 1;
 
   const icon = isAllBranches
     ? <Layers className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
     : <Building2 className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />;
 
-  if (!canSwitch) {
-    return (
-      <div className={`flex items-center gap-1.5 text-xs font-medium text-slate-600 ${className}`}>
-        {icon}
-        <span className="truncate max-w-[130px]">{label}</span>
-      </div>
-    );
-  }
-
+  // Always a menu — tapping the branch chip opens the list straight away, even
+  // for someone who only has one branch.
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

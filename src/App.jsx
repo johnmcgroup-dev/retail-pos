@@ -131,7 +131,17 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Show landing page instead of immediately redirecting
+      // A tenant's public shop page is open to anyone with the link; every other
+      // route shows the landing page instead of immediately redirecting.
+      const isPublicStore = window.location.pathname.startsWith('/store/');
+      if (isPublicStore) {
+        return (
+          <Routes>
+            <Route path="/store/:slug" element={<Storefront />} />
+            <Route path="*" element={<Landing />} />
+          </Routes>
+        );
+      }
       return (
         <Routes>
           <Route path="*" element={<Landing />} />
