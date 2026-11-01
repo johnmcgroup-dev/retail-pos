@@ -86,6 +86,19 @@ const AuthenticatedApp = () => {
       .catch(console.error);
   }, [isAuthenticated, user]);
 
+  // Invited staff carry a tenant_id but not always a company_id, and every
+  // company-scoped read (products, stock, sales) depends on that field — so keep
+  // the two in step for the account to see its own tenant's records.
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    if (!user.company_id && user.tenant_id) {
+      base44.auth
+        .updateMe({ company_id: user.tenant_id })
+        .then(() => queryClient.invalidateQueries({ queryKey: ["me"] }))
+        .catch(console.error);
+    }
+  }, [isAuthenticated, user, queryClient]);
+
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
     queryKey: ["companies_check", user?.id],
     queryFn: async () => {

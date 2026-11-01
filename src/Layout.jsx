@@ -71,6 +71,7 @@ import LowStockAlertWatcher from "@/components/shared/LowStockAlertWatcher";
 import RealtimeSync from "@/components/shared/RealtimeSync";
 import BranchSwitcher from "@/components/branches/BranchSwitcher";
 import { useAuth } from "@/lib/AuthContext";
+import { canAccessPath, roleOf } from "@/lib/posAccess";
 
 const DEVELOPER_EMAIL = "johnmcgroup@gmail.com";
 
@@ -362,14 +363,11 @@ export default function Layout({ children, currentPageName }) {
   const filteredNavItems = navigationItems.filter(item => {
     // Developer-only pages stay hidden from every other user, whatever their role
     if (DEVELOPER_ONLY_TITLES.includes(item.title) && !isDeveloper) return false;
-    if (item.roles) {
-      return item.roles.includes(user?.role_level || user?.role || 'user');
-    }
-    if (item.adminOnly) {
-      const role = user?.role;
-      return role === 'admin' || role === 'owner' || role === 'super_admin';
-    }
-    return true;
+    // One role matrix drives the sidebar: staff see the POS and sales history,
+    // cashiers their finance screens, managers their branch's operations, and
+    // admins/owners the whole company. The super admin sees every tenant.
+    if (!user) return !item.adminOnly;
+    return canAccessPath(user, item.url);
   });
 
   const unreadAlerts = alerts.filter(a => !a.is_read).length;
@@ -378,8 +376,9 @@ export default function Layout({ children, currentPageName }) {
   const MAIN_TAB_ROUTES = ['/Dashboard', '/POS', '/Products', '/Settings'];
   const isSubPage = !MAIN_TAB_ROUTES.includes(location.pathname);
 
-  // Minimal shell for "user" (staff) role — no sidebar, just header + content
-  if (authUser?.role === 'user') {
+  // Minimal shell for a plain staff account — no sidebar, just the POS and
+  // sales history. Cashiers, managers and everyone above get the sidebar.
+  if (roleOf(authUser) === "user") {
     return (
       <div className="h-[100dvh] flex flex-col bg-slate-50">
         <header className="bg-white border-b border-slate-200 px-4 py-3 shadow-sm sticky top-0 z-10 safe-area-top">
@@ -394,16 +393,13 @@ export default function Layout({ children, currentPageName }) {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
-          {/* Staff nav: Dashboard + the full POS/cart screen + quick checkout */}
+          {/* Staff nav: the POS and the tenant's sales history, nothing else */}
           <div className="flex gap-2 py-2 border-t border-slate-100">
-            <Link to="/StaffDashboard" className={`flex-1 text-center text-xs font-medium py-1.5 rounded-lg transition-colors ${location.pathname === '/StaffDashboard' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-              My Dashboard
-            </Link>
             <Link to="/POS" className={`flex-1 text-center text-xs font-medium py-1.5 rounded-lg transition-colors ${location.pathname === '/POS' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
               POS / Cart
             </Link>
-            <Link to="/StaffPOS" className={`flex-1 text-center text-xs font-medium py-1.5 rounded-lg transition-colors ${location.pathname === '/StaffPOS' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-              Quick Checkout
+            <Link to="/Sales" className={`flex-1 text-center text-xs font-medium py-1.5 rounded-lg transition-colors ${location.pathname === '/Sales' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              Sales History
             </Link>
           </div>
         </header>

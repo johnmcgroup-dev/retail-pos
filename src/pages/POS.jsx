@@ -89,7 +89,9 @@ export default function POS() {
   });
 
   const currency = selectedCompany?.currency || companies[0]?.currency || 'NGN';
-  const posCompanyId = selectedCompany?.id || companies[0]?.id;
+  // Staff accounts are scoped to the company on their own profile, which is what
+  // keeps each tenant's products, stock and sales visible to its own people.
+  const posCompanyId = selectedCompany?.id || companies[0]?.id || user?.company_id || user?.tenant_id;
 
   // Products query: always try online first, fall back to cache
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -1102,6 +1104,28 @@ export default function POS() {
 
         {/* Cart Panel */}
         <div className={`w-full md:w-[500px] lg:w-[620px] xl:w-[700px] bg-white border-l border-slate-200 flex flex-col shrink-0 ${mobileTab === "products" ? "hidden md:flex" : "flex"}`}>
+          {/* Pinned to the top of the cart column — the top-right corner of the
+              screen on desktop — so the cart total and Complete Sale can never be
+              pushed out of view by a long cart, whatever the account's role. */}
+          <div className="shrink-0 flex items-center justify-between gap-2 border-b border-green-200 bg-green-50 px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-green-700">
+                Cart total · {cart.length} item{cart.length === 1 ? "" : "s"}
+              </p>
+              <p className="text-lg font-bold leading-tight text-slate-900">
+                {formatCurrency(totals.total, currency)}
+              </p>
+            </div>
+            <Button
+              className="h-10 flex-shrink-0 bg-gradient-to-r from-green-600 to-emerald-600 px-3 text-sm shadow-md hover:from-green-700 hover:to-emerald-700"
+              disabled={cart.length === 0}
+              onClick={() => setShowCheckout(true)}
+            >
+              <DollarSign className="w-4 h-4 mr-1.5" />
+              Complete Sale
+            </Button>
+          </div>
+
           <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 shrink-0">
             <div className="flex items-center justify-between text-white">
               <div>

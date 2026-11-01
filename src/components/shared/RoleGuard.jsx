@@ -1,22 +1,19 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { canUsePOS, STAFF_PATHS } from "@/lib/posAccess";
+import { canAccessPath, roleHome } from "@/lib/posAccess";
 
 /**
- * Wraps the entire app layout.
- * - role === "user" → the staff screens plus the POS/cart screen, as long as the
- *   account is still authorised for sales; anything else redirects to their dashboard
- * - All other roles → full access
- *
- * The Sale entity itself has no role-based restriction (only company scoping),
- * so every user in the same company can create/read/update/delete sales.
+ * Wraps the entire app layout and enforces the role matrix in posAccess:
+ * staff only reach the POS and sales history, cashiers their finance screens,
+ * managers their branch's operational screens, while admins/owners cover the
+ * whole company and the super admin every tenant. A blocked screen redirects
+ * to the role's home rather than rendering.
  */
 export default function RoleGuard({ user, children }) {
   const location = useLocation();
 
-  const allowedStaffPaths = canUsePOS(user) ? STAFF_PATHS : ["/StaffPOS", "/StaffDashboard"];
-  if (user?.role === "user" && !allowedStaffPaths.includes(location.pathname)) {
-    return <Navigate to="/StaffDashboard" replace />;
+  if (user && !canAccessPath(user, location.pathname)) {
+    return <Navigate to={roleHome(user)} replace />;
   }
 
   return <>{children}</>;
