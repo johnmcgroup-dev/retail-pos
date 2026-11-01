@@ -25,6 +25,7 @@ import { useToast } from "@/components/ui/use-toast";
 import UserRow from "@/components/users/UserRow";
 import UserBranchesDialog from "@/components/users/UserBranchesDialog";
 import UserEditDialog from "@/components/users/UserEditDialog";
+import UserFilters from "@/components/users/UserFilters";
 
 const ROLE_CONFIG = {
   super_admin: { label: "Super Admin", color: "bg-yellow-100 text-yellow-800 border border-yellow-300", icon: Crown },
@@ -61,6 +62,7 @@ export default function UserManagement() {
   const [branchUser, setBranchUser] = useState(null);
   const [editUser, setEditUser] = useState(null);
   const [removeTarget, setRemoveTarget] = useState(null);
+  const [filters, setFilters] = useState({ search: "", role: "all", status: "all", branch: "all" });
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -141,13 +143,38 @@ export default function UserManagement() {
 
   const tenantNameOf = (u) => companies.find(c => c.id === (u.tenant_id || u.company_id))?.name || "—";
 
+  // Filters: one search box (name / email / branch) plus role, access status and branch
+  const filtersActive =
+    !!filters.search.trim() || filters.role !== "all" || filters.status !== "all" || filters.branch !== "all";
+
+  const matchesFilters = (u) => {
+    const role = u.role_level || u.role || "user";
+    if (filters.role !== "all" && role !== filters.role) return false;
+    const isActive = u.is_active !== false;
+    if (filters.status === "active" && !isActive) return false;
+    if (filters.status === "inactive" && isActive) return false;
+    if (filters.branch !== "all") {
+      const ids = [...(u.branch_ids || []), u.warehouse_id].filter(Boolean);
+      if (filters.branch === "none" ? ids.length > 0 : !ids.includes(filters.branch)) return false;
+    }
+    const term = filters.search.trim().toLowerCase();
+    if (!term) return true;
+    return [u.full_name, u.email, ...branchNamesOf(u)]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(term);
+  };
+
+  const matchedUsers = companyUsers.filter(matchesFilters);
+
   // Super Admin sees the team grouped per tenant; everyone else sees one company.
   const groups = useMemo(() => {
     if (!isSuperAdmin) {
-      return [{ id: groupCompanyId || "mine", name: company?.name || "Your company", members: companyUsers }];
+      return [{ id: groupCompanyId || "mine", name: company?.name || "Your company", members: matchedUsers }];
     }
     const map = new Map();
-    companyUsers.forEach((u) => {
+    matchedUsers.forEach((u) => {
       const tid = u.tenant_id || u.company_id || "unassigned";
       if (!map.has(tid)) {
         map.set(tid, {
@@ -159,7 +186,7 @@ export default function UserManagement() {
       map.get(tid).members.push(u);
     });
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [isSuperAdmin, companyUsers, companies, company, groupCompanyId]);
+  }, [isSuperAdmin, matchedUsers, companies, company, groupCompanyId]);
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { role_level: role }),
@@ -354,8 +381,36 @@ export default function UserManagement() {
         ))}
       </div>
 
+      {/* Search + filters */}
+      <UserFilters
+        filters={filters}
+        onChange={setFilters}
+        roleOptions={[
+          { value: "all", label: "All roles" },
+          ...Object.keys(ROLE_CONFIG).map((r) => ({ value: r, label: ROLE_CONFIG[r].label })),
+        ]}
+        branchOptions={[
+          { value: "all", label: "All branches" },
+          ...allBranches.map((b) => ({ value: b.id, label: b.name })),
+          { value: "none", label: "No branch" },
+        ]}
+        resultCount={matchedUsers.length}
+        totalCount={companyUsers.length}
+        onClear={() => setFilters({ search: "", role: "all", status: "all", branch: "all" })}
+      />
+
+      {/* Nothing to show — either the tenant is empty or the filters found no one */}
+      {matchedUsers.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center text-slate-500">
+            <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+            <p>{filtersActive ? "No team members match these filters" : "No team members yet"}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Users, grouped per tenant */}
-      {groups.map((group) => (
+      {matchedUsers.length > 0 && groups.map((group) => (
         <Card key={group.id}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -386,7 +441,7 @@ export default function UserManagement() {
               {group.members.length === 0 && (
                 <div className="text-center py-12 text-slate-500">
                   <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>No team members in this tenant</p>
+                  <p>{filtersActive ? "No team members match these filters" : "No team members in this tenant"}</p>
                 </div>
               )}
             </div>
