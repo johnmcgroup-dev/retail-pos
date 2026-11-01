@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DrawerSelect from "@/components/shared/DrawerSelect";
-import { Mail, Building2, Ban, CheckCircle2, Trash2, GitBranch } from "lucide-react";
+import { Mail, Building2, Ban, CheckCircle2, Trash2, GitBranch, Pencil } from "lucide-react";
 
 const ROLE_COLORS = {
   super_admin: "bg-gradient-to-br from-yellow-400 to-orange-500",
@@ -27,6 +27,7 @@ export default function UserRow({
   onToggleActive,
   onEditBranches,
   onRemove,
+  onEdit,
 }) {
   const role = user.role_level || user.role || "user";
   const suspended = user.is_active === false;
@@ -71,6 +72,10 @@ export default function UserRow({
               triggerClassName="w-36 h-9 text-sm rounded-md border px-3"
               label="Assign Role"
             />
+            <Button variant="outline" size="sm" className="h-9 gap-1 text-xs" onClick={onEdit}>
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </Button>
             <Button variant="outline" size="sm" className="h-9 gap-1 text-xs" onClick={onEditBranches}>
               Branches
             </Button>

@@ -952,17 +952,13 @@ export default function POS() {
               never displace the search box or squeeze the product grid. */}
           <div className="order-2 p-3 bg-white border-b border-slate-200 shrink-0 max-h-[30vh] overflow-y-auto">
             <ConnectionStatus usingCache={usingCachedData && isOnline} />
+            {/* Out-of-stock notices stay in Inventory — at the till they took up
+                room without helping the sale, so only critical non-stock alerts show. */}
             <AlertBanner
-              alerts={alerts.filter(a => a.severity === 'critical')}
+              alerts={alerts.filter(a => a.severity === 'critical' && a.type !== 'out_of_stock')}
               onDismiss={(id) => dismissAlertMutation.mutate(id)}
               onViewAll={() => {}}
             />
-            {stockWarning && (
-              <div className="mt-2 flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="font-medium">{stockWarning}</span>
-              </div>
-            )}
             {pendingSyncCount > 0 && (
               <Alert className="mb-2 bg-yellow-50 border-yellow-300">
                 <AlertCircle className="h-4 w-4 text-yellow-600" />

@@ -24,6 +24,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import UserRow from "@/components/users/UserRow";
 import UserBranchesDialog from "@/components/users/UserBranchesDialog";
+import UserEditDialog from "@/components/users/UserEditDialog";
 
 const ROLE_CONFIG = {
   super_admin: { label: "Super Admin", color: "bg-yellow-100 text-yellow-800 border border-yellow-300", icon: Crown },
@@ -58,6 +59,7 @@ export default function UserManagement() {
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
   const [inviteResult, setInviteResult] = useState(null);
   const [branchUser, setBranchUser] = useState(null);
+  const [editUser, setEditUser] = useState(null);
   const [removeTarget, setRemoveTarget] = useState(null);
 
   useEffect(() => {
@@ -112,21 +114,29 @@ export default function UserManagement() {
 
   // The branches of the company on screen, so each member's store can be shown
   // and changed without leaving this page.
-  const { data: branches = [] } = useQuery({
-    queryKey: ["warehouses", company?.id],
+  // The Super Admin works across tenants, so they need every tenant's branches;
+  // owners and admins only ever get their own company's.
+  const { data: allBranches = [] } = useQuery({
+    queryKey: ["warehouses", isSuperAdmin ? "all" : company?.id],
     queryFn: async () => {
-      const page = await base44.entities.Warehouse.filter({ company_id: company.id, is_active: true }, "name", 200);
+      const query = isSuperAdmin ? {} : { company_id: company.id, is_active: true };
+      const page = await base44.entities.Warehouse.filter(query, "name", 300);
       return page.items || page || [];
     },
-    enabled: !!company?.id,
+    enabled: isSuperAdmin || !!company?.id,
   });
+
+  const branchesOf = (u) => {
+    const tid = u?.company_id || u?.tenant_id;
+    return allBranches.filter((b) => b.company_id === tid);
+  };
 
   const branchNamesOf = (user) => {
     // Owners and admins aren't tied to one store — they cover the whole company.
     const role = user.role_level || user.role || "user";
     if (["super_admin", "owner", "admin"].includes(role)) return ["All branches"];
     const ids = [...(user.branch_ids || []), user.warehouse_id].filter(Boolean);
-    return [...new Set(ids)].map(id => branches.find(b => b.id === id)?.name).filter(Boolean);
+    return [...new Set(ids)].map(id => allBranches.find(b => b.id === id)?.name).filter(Boolean);
   };
 
   const tenantNameOf = (u) => companies.find(c => c.id === (u.tenant_id || u.company_id))?.name || "—";
@@ -177,6 +187,26 @@ export default function UserManagement() {
       toast({ title: "Branches updated" });
     },
     onError: (error) => toast({ variant: "destructive", title: "Could not update branches", description: error.message }),
+  });
+
+  const editUserMutation = useMutation({
+    mutationFn: ({ userId, data }) => base44.entities.User.update(userId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setEditUser(null);
+      toast({ title: "User updated" });
+    },
+    onError: (error) => toast({ variant: "destructive", title: "Could not update user", description: error.message }),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: ({ userId }) => base44.entities.User.delete(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setEditUser(null);
+      toast({ title: "User deleted" });
+    },
+    onError: (error) => toast({ variant: "destructive", title: "Could not delete user", description: error.message }),
   });
 
   const removeUserMutation = useMutation({
@@ -348,6 +378,7 @@ export default function UserManagement() {
                   roleOptions={roleOptions}
                   onRoleChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
                   onToggleActive={() => accessMutation.mutate({ userId: user.id, isActive: user.is_active === false })}
+                  onEdit={() => setEditUser(user)}
                   onEditBranches={() => setBranchUser(user)}
                   onRemove={() => setRemoveTarget(user)}
                 />
@@ -368,9 +399,23 @@ export default function UserManagement() {
         open={!!branchUser}
         onOpenChange={(open) => { if (!open) setBranchUser(null); }}
         user={branchUser}
-        branches={branches}
+        branches={branchesOf(branchUser)}
         saving={branchesMutation.isPending}
         onSave={(branchIds) => branchesMutation.mutate({ userId: branchUser.id, branchIds })}
+      />
+
+      {/* View / edit / suspend / delete one team member */}
+      <UserEditDialog
+        open={!!editUser}
+        onOpenChange={(open) => { if (!open) setEditUser(null); }}
+        user={editUser}
+        branches={branchesOf(editUser)}
+        roleOptions={roleOptions}
+        tenantName={editUser ? tenantNameOf(editUser) : ""}
+        canEdit={editUser ? canEditUser(editUser) : false}
+        saving={editUserMutation.isPending || deleteUserMutation.isPending}
+        onSave={(data) => editUserMutation.mutate({ userId: editUser.id, data })}
+        onDelete={() => deleteUserMutation.mutate({ userId: editUser.id })}
       />
 
       {/* Remove confirmation */}
