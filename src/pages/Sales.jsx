@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useBranch } from "@/lib/BranchContext";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PullToRefresh from "@/components/shared/PullToRefresh";
@@ -13,13 +14,9 @@ import SaleHistoryDialog from "@/components/pos/SaleHistoryDialog";
 
 export default function Sales() {
   const queryClient = useQueryClient();
+  const { activeBranchId, activeBranch, isAllBranches } = useBranch();
   const [searchTerm, setSearchTerm] = useState("");
   const [receiptSale, setReceiptSale] = useState(null);
-
-  const { data: sales = [] } = useQuery({
-    queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date"),
-  });
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({
@@ -28,25 +25,61 @@ export default function Sales() {
   });
 
   const company = (user && companies.find(c => c.id === (user.company_id || user.tenant_id))) || companies[0];
+  const companyId = company?.id;
   const currency = company?.currency || 'USD';
+  const branchLabel = activeBranch?.name || (isAllBranches ? "All branches" : "Your branch");
+
+  const scope = useMemo(() => {
+    const query = companyId ? { company_id: companyId } : {};
+    if (activeBranchId) query.branch_id = activeBranchId;
+    return query;
+  }, [companyId, activeBranchId]);
+
+  // The transactions listed on screen…
+  const { data: salesPage, isLoading } = useQuery({
+    queryKey: ["sales", companyId, activeBranchId],
+    queryFn: () => base44.entities.Sale.filter(scope, { sort: "-sale_date", limit: 300 }),
+    enabled: !!companyId,
+  });
+  const sales = salesPage?.items || [];
+
+  // …and the true totals straight from the database, covering every sale in the
+  // company (or the selected branch) rather than just the rows rendered below.
+  const { data: totals = {} } = useQuery({
+    queryKey: ["sales-totals", companyId, activeBranchId],
+    queryFn: async () => {
+      const result = await base44.entities.Sale.aggregate({
+        query: scope,
+        sum: ["total_amount", "amount_paid", "amount_due"],
+      });
+      return result.rows?.[0] || {};
+    },
+    enabled: !!companyId,
+  });
+
+  const totalRevenue = totals.sum_total_amount || 0;
+  const totalTransactions = totals.count || 0;
+  const totalCollected = totals.sum_amount_paid || 0;
+  const totalOutstanding = totals.sum_amount_due || 0;
+  const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
   const filteredSales = sales.filter(sale =>
     sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const totalRevenue = sales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
-  const totalTransactions = sales.length;
-  const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-
-  const paidSales = sales.filter(s => s.payment_status === 'paid');
-  const unpaidSales = sales.filter(s => s.payment_status === 'unpaid');
+  const listedTotal = filteredSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
 
   return (
-    <PullToRefresh onRefresh={async () => { await queryClient.invalidateQueries(["sales"]); }} className="p-6 md:p-8 space-y-6">
+    <PullToRefresh
+      onRefresh={async () => {
+        await queryClient.invalidateQueries({ queryKey: ["sales"] });
+        await queryClient.invalidateQueries({ queryKey: ["sales-totals"] });
+      }}
+      className="p-6 md:p-8 space-y-6"
+    >
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Sales History</h1>
-        <p className="text-slate-500 mt-1">View and manage all transactions</p>
+        <p className="text-slate-500 mt-1">Every transaction and its total · {branchLabel}</p>
       </div>
 
       {/* Stats */}
@@ -55,8 +88,9 @@ export default function Sales() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Total Revenue</p>
+                <p className="text-sm opacity-90">Total Sales</p>
                 <p className="text-2xl font-bold">{formatCurrency(totalRevenue, currency)}</p>
+                <p className="text-xs opacity-80 mt-1">{totalTransactions} transactions</p>
               </div>
               <DollarSign className="w-10 h-10 opacity-80" />
             </div>
@@ -67,10 +101,10 @@ export default function Sales() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">Transactions</p>
-                <p className="text-2xl font-bold text-slate-900">{totalTransactions}</p>
+                <p className="text-sm text-slate-600">Collected</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalCollected, currency)}</p>
               </div>
-              <FileText className="w-10 h-10 text-blue-500" />
+              <TrendingUp className="w-10 h-10 text-emerald-500" />
             </div>
           </CardContent>
         </Card>
@@ -82,7 +116,7 @@ export default function Sales() {
                 <p className="text-sm text-slate-600">Avg Transaction</p>
                 <p className="text-2xl font-bold text-slate-900">{formatCurrency(averageTransaction, currency)}</p>
               </div>
-              <TrendingUp className="w-10 h-10 text-purple-500" />
+              <FileText className="w-10 h-10 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -91,8 +125,8 @@ export default function Sales() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-red-700">Unpaid</p>
-                <p className="text-2xl font-bold text-red-900">{unpaidSales.length}</p>
+                <p className="text-sm text-red-700">Outstanding</p>
+                <p className="text-2xl font-bold text-red-900">{formatCurrency(totalOutstanding, currency)}</p>
               </div>
               <Calendar className="w-10 h-10 text-red-500" />
             </div>
@@ -182,6 +216,19 @@ export default function Sales() {
                   </tr>
                 ))}
               </tbody>
+              {filteredSales.length > 0 && (
+                <tfoot className="bg-slate-50 border-t font-semibold">
+                  <tr>
+                    <td className="p-4 text-slate-700" colSpan={4}>
+                      Total of {filteredSales.length} listed sale{filteredSales.length === 1 ? "" : "s"}
+                    </td>
+                    <td className="p-4 text-right tabular-nums text-slate-900">
+                      {formatCurrency(listedTotal, currency)}
+                    </td>
+                    <td colSpan={4} />
+                  </tr>
+                </tfoot>
+              )}
             </table>
             {filteredSales.length === 0 && (
               <div className="text-center py-12">

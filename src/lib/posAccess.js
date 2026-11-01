@@ -40,17 +40,19 @@ export function canUsePOS(user) {
 // on purpose — they are allowed everywhere.
 export const ROLE_PATHS = {
   user: ["/POS", "/Sales", "/StaffPOS", "/StaffDashboard"],
+  // Cashier: takes payments, and keeps the finance side — accounting, payroll/HR
   cashier: [
     "/POS",
     "/Sales",
     "/Accounting",
     "/Payroll",
+    "/Ledger",
     "/StaffPOS",
     "/StaffDashboard",
   ],
+  // Manager: the operational screens of the branch they belong to
   manager: [
     "/Dashboard",
-    "/SalesOverview",
     "/POS",
     "/Products",
     "/Categories",
@@ -59,16 +61,9 @@ export const ROLE_PATHS = {
     "/StockingReport",
     "/StockTransfers",
     "/Sales",
-    "/Returns",
-    "/Customers",
-    "/Accounting",
-    "/Payroll",
-    "/Reports",
-    "/InventoryDashboard",
-    "/StaffSales",
     "/SalesReport",
-    "/StaffDashboard",
-    "/StaffPOS",
+    "/Accounting",
+    "/Ledger",
   ],
 };
 

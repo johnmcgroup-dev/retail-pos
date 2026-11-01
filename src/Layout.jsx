@@ -37,7 +37,8 @@ import {
   Wallet,
   ArrowLeftRight,
   Calculator,
-  Banknote
+  Banknote,
+  BookOpen
 } from "lucide-react";
 import {
   Sidebar,
@@ -203,6 +204,12 @@ const navigationItems = [
     title: "Accounting",
     url: "/Accounting",
     icon: Calculator,
+    adminOnly: true
+  },
+  {
+    title: "Ledger",
+    url: "/Ledger",
+    icon: BookOpen,
     adminOnly: true
   },
   {

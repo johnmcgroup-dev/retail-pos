@@ -31,6 +31,7 @@ import InventoryDashboard from '@/pages/InventoryDashboard';
 import SalesOverview from '@/pages/SalesOverview';
 import StockTransfers from '@/pages/StockTransfers';
 import Accounting from '@/pages/Accounting';
+import Ledger from '@/pages/Ledger';
 import Payroll from '@/pages/Payroll';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -199,6 +200,7 @@ const AuthenticatedApp = () => {
         <Route path="/SalesOverview" element={<LayoutWrapper currentPageName="Sales Overview"><SalesOverview /></LayoutWrapper>} />
         <Route path="/StockTransfers" element={<LayoutWrapper currentPageName="Stock Transfers"><StockTransfers /></LayoutWrapper>} />
         <Route path="/Accounting" element={<LayoutWrapper currentPageName="Accounting"><Accounting /></LayoutWrapper>} />
+        <Route path="/Ledger" element={<LayoutWrapper currentPageName="Ledger"><Ledger /></LayoutWrapper>} />
         <Route path="/Payroll" element={<LayoutWrapper currentPageName="Payroll"><Payroll /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (

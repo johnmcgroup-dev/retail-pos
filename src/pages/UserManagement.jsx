@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,10 +9,21 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import DrawerSelect from "@/components/shared/DrawerSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Users, UserPlus, Mail, Shield, Building2, Crown, Star, Trash2, CheckCircle2, Copy } from "lucide-react";
+import { Users, UserPlus, Mail, Shield, Building2, Crown, Star, CheckCircle2, Copy } from "lucide-react";
 import { encryptTenantId } from "@/lib/tenantToken";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
+import UserRow from "@/components/users/UserRow";
+import UserBranchesDialog from "@/components/users/UserBranchesDialog";
 
 const ROLE_CONFIG = {
   super_admin: { label: "Super Admin", color: "bg-yellow-100 text-yellow-800 border border-yellow-300", icon: Crown },
@@ -46,6 +57,8 @@ export default function UserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
   const [inviteResult, setInviteResult] = useState(null);
+  const [branchUser, setBranchUser] = useState(null);
+  const [removeTarget, setRemoveTarget] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -97,21 +110,81 @@ export default function UserManagement() {
         u.id === currentUser?.id
       );
 
-  const tenantNameOf = (u) =>
-    companies.find(c => c.id === (u.tenant_id || u.company_id))?.name || "—";
+  // The branches of the company on screen, so each member's store can be shown
+  // and changed without leaving this page.
+  const { data: branches = [] } = useQuery({
+    queryKey: ["warehouses", company?.id],
+    queryFn: async () => {
+      const page = await base44.entities.Warehouse.filter({ company_id: company.id, is_active: true }, "name", 200);
+      return page.items || page || [];
+    },
+    enabled: !!company?.id,
+  });
+
+  const branchNamesOf = (user) => {
+    // Owners and admins aren't tied to one store — they cover the whole company.
+    const role = user.role_level || user.role || "user";
+    if (["super_admin", "owner", "admin"].includes(role)) return ["All branches"];
+    const ids = [...(user.branch_ids || []), user.warehouse_id].filter(Boolean);
+    return [...new Set(ids)].map(id => branches.find(b => b.id === id)?.name).filter(Boolean);
+  };
+
+  const tenantNameOf = (u) => companies.find(c => c.id === (u.tenant_id || u.company_id))?.name || "—";
+
+  // Super Admin sees the team grouped per tenant; everyone else sees one company.
+  const groups = useMemo(() => {
+    if (!isSuperAdmin) {
+      return [{ id: groupCompanyId || "mine", name: company?.name || "Your company", members: companyUsers }];
+    }
+    const map = new Map();
+    companyUsers.forEach((u) => {
+      const tid = u.tenant_id || u.company_id || "unassigned";
+      if (!map.has(tid)) {
+        map.set(tid, {
+          id: tid,
+          name: companies.find(c => c.id === tid)?.name || "Not attached to a tenant",
+          members: [],
+        });
+      }
+      map.get(tid).members.push(u);
+    });
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [isSuperAdmin, companyUsers, companies, company, groupCompanyId]);
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { role_level: role }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["users"]);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast({ title: "Role updated successfully" });
     },
   });
 
-  const removeUserMutation = useMutation({
-    mutationFn: ({ userId }) => base44.entities.User.update(userId, { tenant_id: null, company_id: null, role: "user" }),
+  const accessMutation = useMutation({
+    mutationFn: ({ userId, isActive }) => base44.entities.User.update(userId, { is_active: isActive }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({ title: vars.isActive ? "Access restored" : "Access suspended" });
+    },
+    onError: (error) => toast({ variant: "destructive", title: "Could not change access", description: error.message }),
+  });
+
+  const branchesMutation = useMutation({
+    mutationFn: ({ userId, branchIds }) =>
+      base44.entities.User.update(userId, { branch_ids: branchIds, warehouse_id: branchIds[0] || null }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["users"]);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setBranchUser(null);
+      toast({ title: "Branches updated" });
+    },
+    onError: (error) => toast({ variant: "destructive", title: "Could not update branches", description: error.message }),
+  });
+
+  const removeUserMutation = useMutation({
+    mutationFn: ({ userId }) =>
+      base44.entities.User.update(userId, { tenant_id: null, company_id: null, role: "user", branch_ids: [] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setRemoveTarget(null);
       toast({ title: "User removed from tenant" });
     },
   });
@@ -165,7 +238,7 @@ export default function UserManagement() {
         description: `${inviteForm.email} will auto-join ${company.name} on first login.`,
       });
       setInviteForm({ email: "", role: "user" });
-      queryClient.invalidateQueries(["users"]);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -178,11 +251,12 @@ export default function UserManagement() {
 
   // Roles that current user can assign (can only assign roles below their own)
   const assignableRoles = ROLE_ORDER.filter((r, idx) => idx < myRoleLevel).reverse();
+  const roleOptions = assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }));
 
   // Can edit another user's role only if their current role is strictly below mine
   const canEditUser = (targetUser) => {
     if (targetUser.id === currentUser?.id) return false;
-    const targetLevel = ROLE_ORDER.indexOf(targetUser.role || "user");
+    const targetLevel = ROLE_ORDER.indexOf(targetUser.role_level || targetUser.role || "user");
     return myRoleLevel > targetLevel && canManage;
   };
 
@@ -210,7 +284,7 @@ export default function UserManagement() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">User Management</h1>
-          <p className="text-slate-500 mt-1">Manage team members, roles and tenant access</p>
+          <p className="text-slate-500 mt-1">Every team member, their tenant, their branch and their access</p>
         </div>
         {canManage && (
           <Button onClick={() => setShowInviteDialog(true)} className="bg-blue-600 hover:bg-blue-700 gap-2">
@@ -250,93 +324,75 @@ export default function UserManagement() {
         ))}
       </div>
 
-      {/* Users List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="w-5 h-5" />
-            Team Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y">
-            {companyUsers.map((user) => (
-              <div key={user.id} className="p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm text-white
-                    ${(user.role_level || user.role) === "super_admin" ? "bg-gradient-to-br from-yellow-400 to-orange-500" :
-                      (user.role_level || user.role) === "owner" ? "bg-gradient-to-br from-red-500 to-pink-600" :
-                      "bg-gradient-to-br from-purple-500 to-indigo-600"}`}>
-                    {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900 truncate text-sm">{user.full_name || "—"}</p>
-                      {user.id === currentUser?.id && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">You</Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 truncate flex items-center gap-1">
-                      <Mail className="w-3 h-3 flex-shrink-0" /> {user.email}
-                    </p>
-                    {company && (
-                      <p className="text-[10px] text-slate-400 truncate">
-                        Tenant: {isSuperAdmin ? tenantNameOf(user) : company.name}
-                      </p>
-                    )}
-                  </div>
+      {/* Users, grouped per tenant */}
+      {groups.map((group) => (
+        <Card key={group.id}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="w-5 h-5" />
+              {group.name}
+              <Badge variant="secondary" className="ml-1 text-xs">{group.members.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {group.members.map((user) => (
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  branchNames={branchNamesOf(user)}
+                  tenantName={isSuperAdmin ? group.name : company?.name}
+                  isSelf={user.id === currentUser?.id}
+                  canEdit={canEditUser(user)}
+                  roleLabel={ROLE_CONFIG[user.role_level || user.role || "user"]?.label || "User"}
+                  roleOptions={roleOptions}
+                  onRoleChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
+                  onToggleActive={() => accessMutation.mutate({ userId: user.id, isActive: user.is_active === false })}
+                  onEditBranches={() => setBranchUser(user)}
+                  onRemove={() => setRemoveTarget(user)}
+                />
+              ))}
+              {group.members.length === 0 && (
+                <div className="text-center py-12 text-slate-500">
+                  <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                  <p>No team members in this tenant</p>
                 </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {canEditUser(user) ? (
-                    <>
-                      <DrawerSelect
-                        value={user.role_level || user.role || "user"}
-                        onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
-                        options={assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }))}
-                        triggerClassName="w-36 h-9 text-sm rounded-md border px-3"
-                        label="Assign Role"
-                      />
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50 hover:text-red-600">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remove User</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Remove <strong>{user.full_name || user.email}</strong> from this tenant? They will lose access to the app.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-red-600 hover:bg-red-700"
-                              onClick={() => removeUserMutation.mutate({ userId: user.id })}
-                            >
-                              Remove
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </>
-                  ) : (
-                    <RoleBadge role={user.role_level || user.role || "user"} />
-                  )}
-                </div>
-              </div>
-            ))}
-            {companyUsers.length === 0 && (
-              <div className="text-center py-12 text-slate-500">
-                <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                <p>No team members found for this company</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Branch assignment */}
+      <UserBranchesDialog
+        open={!!branchUser}
+        onOpenChange={(open) => { if (!open) setBranchUser(null); }}
+        user={branchUser}
+        branches={branches}
+        saving={branchesMutation.isPending}
+        onSave={(branchIds) => branchesMutation.mutate({ userId: branchUser.id, branchIds })}
+      />
+
+      {/* Remove confirmation */}
+      <AlertDialog open={!!removeTarget} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <strong>{removeTarget?.full_name || removeTarget?.email}</strong> from this tenant? They will lose access to the app.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => removeUserMutation.mutate({ userId: removeTarget.id })}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={(open) => { setShowInviteDialog(open); if (!open) setInviteResult(null); }}>
@@ -404,7 +460,7 @@ export default function UserManagement() {
                   <DrawerSelect
                     value={inviteForm.role}
                     onValueChange={(role) => setInviteForm({ ...inviteForm, role })}
-                    options={assignableRoles.map(r => ({ value: r, label: ROLE_CONFIG[r]?.label || r }))}
+                    options={roleOptions}
                     triggerClassName="w-full h-9 text-sm rounded-md border px-3"
                     label="Assign Role"
                   />
