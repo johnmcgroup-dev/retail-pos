@@ -14,6 +14,7 @@ import RunPayrollDialog from "@/components/payroll/RunPayrollDialog";
 import PayrollRunCard from "@/components/payroll/PayrollRunCard";
 import RoleSummary from "@/components/payroll/RoleSummary";
 import { payrollLine } from "@/lib/payroll";
+import { postPayrollRun, removePayrollPosting } from "@/lib/accounting";
 
 export default function Payroll() {
   const { toast } = useToast();
@@ -94,7 +95,25 @@ export default function Payroll() {
     try {
       await base44.entities.PayrollRun.update(run.id, { status });
       refreshRuns();
-      toast({ title: `Payroll marked ${status}` });
+      if (status === "draft") {
+        toast({ title: `Payroll marked ${status}` });
+        return;
+      }
+      // Finalising (approve / mark paid) writes the books straight away: salaries
+      // debited, tax and net pay credited, once per run however often it changes.
+      const posted = await postPayrollRun({
+        run: { ...run, status },
+        companyId,
+        branchName: run.branch_name || allowedBranches.find((b) => b.id === run.branch_id)?.name || "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["ledger-book"] });
+      queryClient.invalidateQueries({ queryKey: ["journal"] });
+      toast({
+        title: `Payroll ${status}`,
+        description: posted
+          ? `Booked to the ledger: ${money(run.totals?.gross)} gross, tax and net pay.`
+          : "This run was already booked to the ledger.",
+      });
     } catch (err) {
       toast({ variant: "destructive", title: "Could not update", description: err?.message });
     }
@@ -104,7 +123,11 @@ export default function Payroll() {
     if (!confirm(`Delete the payroll run for ${run.period_label || run.period}?`)) return;
     try {
       await base44.entities.PayrollRun.delete(run.id);
+      // Drop the run's journal entry too, so the ledger never keeps a payroll
+      // record for a run that no longer exists.
+      await removePayrollPosting({ companyId, runId: run.id });
       refreshRuns();
+      queryClient.invalidateQueries({ queryKey: ["ledger-book"] });
       toast({ title: "Payroll run deleted" });
     } catch (err) {
       toast({ variant: "destructive", title: "Could not delete", description: err?.message });
@@ -193,7 +216,7 @@ export default function Payroll() {
             ) : (
               <>
                 <p className="text-xs text-slate-500">
-                  Approved runs are posted to your books from Accounting → Post transactions.
+                  Approving a run posts it to the Ledger automatically — salaries, tax and net pay.
                 </p>
                 {runs.map((run) => (
                   <PayrollRunCard

@@ -9,6 +9,7 @@ import { useBranch } from "@/lib/BranchContext";
 import PeriodSelector from "@/components/accounting/PeriodSelector";
 import LedgerSummaryCards from "@/components/ledger/LedgerSummaryCards";
 import LedgerTable from "@/components/ledger/LedgerTable";
+import RangePresets from "@/components/ledger/RangePresets";
 import { buildPostings, entryTotal } from "@/lib/accounting";
 
 const TYPE_FILTERS = [
@@ -116,18 +117,28 @@ export default function Ledger() {
       </div>
 
       <Card>
-        <CardContent className="p-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <PeriodSelector from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
-          <Select value={type} onValueChange={setType}>
-            <SelectTrigger className="w-full md:w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TYPE_FILTERS.map((filter) => (
-                <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <CardContent className="p-4 space-y-3">
+          <RangePresets
+            from={from}
+            to={to}
+            onChange={(nextFrom, nextTo) => {
+              setFrom(nextFrom);
+              setTo(nextTo);
+            }}
+          />
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <PeriodSelector from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger className="w-full md:w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TYPE_FILTERS.map((filter) => (
+                  <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 

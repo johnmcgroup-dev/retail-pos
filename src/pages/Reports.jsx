@@ -12,39 +12,54 @@ import StaffSalesBreakdown from "../components/reports/StaffSalesBreakdown";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ClickableCard from "@/components/details/ClickableCard";
 import CardDetailDialog from "@/components/details/CardDetailDialog";
+import { useBranch } from "@/lib/BranchContext";
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState("month");
   const [detail, setDetail] = useState(null);
 
-  const { data: sales = [], isLoading: salesLoading } = useQuery({
-    queryKey: ["sales"],
-    queryFn: () => base44.entities.Sale.list("-sale_date"),
-  });
-
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: () => base44.entities.Expense.list("-date"),
-  });
-
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => base44.entities.Product.list(),
-  });
-
-  const { data: inventory = [], isLoading: inventoryLoading } = useQuery({
-    queryKey: ["inventory"],
-    queryFn: () => base44.entities.Inventory.list(),
-  });
-
-  const { data: purchases = [] } = useQuery({
-    queryKey: ["purchases"],
-    queryFn: () => base44.entities.Purchase.list("-purchase_date"),
-  });
+  const { activeBranchId, activeBranch } = useBranch();
+  const itemsOf = (page) => page?.items || (Array.isArray(page) ? page : []);
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: () => base44.auth.me(), staleTime: 5 * 60 * 1000 });
   const { data: companies = [] } = useQuery({ queryKey: ["companies_list"], queryFn: () => base44.entities.Company.list() });
   const company = companies.find((c) => c.id === (user?.company_id || user?.tenant_id)) || companies[0];
+  const companyId = company?.id;
+
+  // Every financial query follows the branch picked in the header, so all the
+  // charts, KPIs and tables below only ever count that store's figures.
+  const scope = { company_id: companyId, ...(activeBranchId ? { branch_id: activeBranchId } : {}) };
+  const branchKey = activeBranchId || "all";
+
+  const { data: sales = [], isLoading: salesLoading } = useQuery({
+    queryKey: ["reports-sales", companyId, branchKey],
+    queryFn: async () => itemsOf(await base44.entities.Sale.filter(scope, "-sale_date", 3000)),
+    enabled: !!companyId,
+  });
+
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ["reports-expenses", companyId, branchKey],
+    queryFn: async () => itemsOf(await base44.entities.Expense.filter(scope, "-date", 2000)),
+    enabled: !!companyId,
+  });
+
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ["reports-products", companyId],
+    queryFn: async () => itemsOf(await base44.entities.Product.filter({ company_id: companyId }, "name", 2000)),
+    enabled: !!companyId,
+  });
+
+  const { data: inventory = [], isLoading: inventoryLoading } = useQuery({
+    queryKey: ["reports-inventory", companyId, branchKey],
+    queryFn: async () => itemsOf(await base44.entities.Inventory.filter(scope, "-created_date", 2000)),
+    enabled: !!companyId,
+  });
+
+  const { data: purchases = [] } = useQuery({
+    queryKey: ["reports-purchases", companyId, branchKey],
+    queryFn: async () => itemsOf(await base44.entities.Purchase.filter(scope, "-purchase_date", 2000)),
+    enabled: !!companyId,
+  });
 
   const isLoading = salesLoading || expensesLoading || productsLoading || inventoryLoading;
 
@@ -101,7 +116,9 @@ export default function Reports() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Reports & Analytics</h1>
-          <p className="text-slate-500 mt-1">Comprehensive business insights and performance metrics</p>
+          <p className="text-slate-500 mt-1">
+            Insights and performance metrics · {activeBranch?.name || "All branches"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-slate-500" />

@@ -314,6 +314,38 @@ export async function postTransactions({ companyId, branchNameFor = () => "" }) 
   return { posted: fresh.length, total: candidates.length };
 }
 
+/* ------------------------------------------------------------------ *
+ * Finalising a payroll run books it to the journal immediately
+ * ------------------------------------------------------------------ */
+
+export async function postPayrollRun({ run, companyId, branchName = "" }) {
+  if (!companyId) return false;
+  const [posting] = buildPostings({ payrollRuns: [run] });
+  if (!posting) return false;
+  const existing = await base44.entities.JournalEntry.filter(
+    { company_id: companyId, source_id: posting.source_id },
+    "-created_date",
+    1
+  );
+  if ((existing?.items || existing || []).length) return false;
+  await base44.entities.JournalEntry.create({
+    ...posting,
+    company_id: companyId,
+    branch_name: branchName,
+    debit_total: round(posting.lines.reduce((sum, line) => sum + line.debit, 0)),
+    credit_total: round(posting.lines.reduce((sum, line) => sum + line.credit, 0)),
+  });
+  return true;
+}
+
+export async function removePayrollPosting({ companyId, runId }) {
+  if (!companyId || !runId) return;
+  await base44.entities.JournalEntry.deleteMany({
+    company_id: companyId,
+    source_id: `payroll:${runId}`,
+  });
+}
+
 export async function createDefaultAccounts(companyId) {
   const existing = await base44.entities.LedgerAccount.filter({ company_id: companyId }, "code", 500);
   const codes = new Set((existing.items || existing || []).map((a) => a.code));
