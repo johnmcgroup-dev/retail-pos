@@ -74,15 +74,17 @@ export default function BillingPanel({ company }) {
               <p className="text-slate-600">Billing cycle</p>
               <p className="font-semibold text-slate-900 capitalize">{cycle}</p>
             </div>
-            <div>
-              <p className="text-slate-600">Activation fee</p>
-              <p className="font-semibold text-slate-900">
-                {money(activationFee(company, config))}{" "}
-                <span className={company.activation_paid ? "text-green-600" : "text-amber-600"}>
-                  {company.activation_paid ? "paid" : "unpaid"}
-                </span>
-              </p>
-            </div>
+            {activationFee(company, config) > 0 && (
+              <div>
+                <p className="text-slate-600">Activation fee</p>
+                <p className="font-semibold text-slate-900">
+                  {money(activationFee(company, config))}{" "}
+                  <span className={company.activation_paid ? "text-green-600" : "text-amber-600"}>
+                    {company.activation_paid ? "paid" : "unpaid"}
+                  </span>
+                </p>
+              </div>
+            )}
             <div>
               <p className="text-slate-600">Cycle amount</p>
               <p className="font-semibold text-slate-900">

@@ -63,8 +63,8 @@ export default function TenantSetup({ onComplete }) {
         name: form.name || storeName,
         store_name: storeName,
         store_slug: slug,
-        // No free trial: the store opens once the activation fee and first
-        // subscription cycle are confirmed.
+        // No free trial and no setup fee: the store opens once the tenant's
+        // chosen subscription cycle (annual or monthly) is confirmed.
         status: "pending_payment",
         billing_status: "pending_activation",
         billing_cycle: "annual",
@@ -261,9 +261,8 @@ export default function TenantSetup({ onComplete }) {
               </Button>
 
               <p className="text-center text-xs text-slate-500 mt-2">
-                {money(BILLING_DEFAULTS.activation_fee)} one-off activation, then{" "}
-                {money(priceFor("annual"))}/year or {money(priceFor("monthly"))}/month. No free trial —
-                you choose your plan on the next screen.
+                No setup fee — pay only {money(priceFor("annual"))}/year or{" "}
+                {money(priceFor("monthly"))}/month. You choose your billing plan on the next screen.
               </p>
             </form>
           </CardContent>

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import PlanPicker from "@/components/billing/PlanPicker";
-import { BILLING_DEFAULTS, billingState, money, priceFor, activationFee } from "@/lib/billing";
+import { BILLING_DEFAULTS, billingState, money, priceFor } from "@/lib/billing";
 import { CheckCircle2, Clock, CreditCard, Loader2, LogOut, MapPin, Store } from "lucide-react";
 
 const HEADLINES = {
@@ -23,9 +23,8 @@ export default function BillingGate({ company, canManage = true }) {
   const [requested, setRequested] = useState(Boolean(company?.payment_requested_at));
 
   const state = billingState(company);
-  const setupFee = company?.activation_paid ? 0 : activationFee(company, config);
   const planPrice = priceFor(cycle, config);
-  const total = setupFee + planPrice;
+  const total = planPrice;
   const reference = `MYR-${String(company?.id || "").slice(-6).toUpperCase()}`;
   const storeName = company?.store_name || company?.name || "your store";
 
@@ -121,19 +120,13 @@ export default function BillingGate({ company, canManage = true }) {
           ) : (
             <>
               <p className="text-sm text-slate-600">
-                Your store runs on a paid subscription — no free trial. Pay the one-off
-                activation fee, then choose how you want to be billed.
+                Your store runs on a paid subscription — no free trial and no setup fee.
+                Choose how you want to be billed and you're ready to go.
               </p>
 
               <PlanPicker cycle={cycle} onChange={setCycle} config={config} />
 
               <div className="space-y-2 text-sm border-t pt-4">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">
-                    One-off activation fee {company?.activation_paid && <span className="text-green-600">(paid)</span>}
-                  </span>
-                  <span className="font-semibold text-slate-900">{money(setupFee)}</span>
-                </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">
                     {cycle === "monthly" ? "Monthly subscription" : "Annual subscription"}

@@ -1,14 +1,15 @@
 /**
  * Subscription billing rules.
  *
- * Every store pays a one-off activation fee, then either an annual or a monthly
- * subscription. There is no free trial: a store is only open while its billing
- * status is active, complimentary, or the developer has granted manual access.
+ * A store pays either an annual or a monthly subscription from day one — there
+ * is no free trial and no one-off activation fee (the fee stays configurable and
+ * is simply 0 by default). A store is only open while its billing status is
+ * active, complimentary, or the developer has granted manual access.
  * The developer can change every number here from Company Setup → Subscription.
  */
 
 export const BILLING_DEFAULTS = {
-  activation_fee: 1,
+  activation_fee: 0,
   annual_price: 69.9,
   monthly_price: 9.9,
   trials_enabled: false,

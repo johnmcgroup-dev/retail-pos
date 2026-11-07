@@ -159,9 +159,9 @@ const AuthenticatedApp = () => {
   const tidInUrl = new URLSearchParams(window.location.search).has('tid')
     || new URLSearchParams(window.location.search).has('inv');
 
-  // Subscription gate — there is no free trial: a store opens only once its
-  // one-off activation fee and first billing cycle are confirmed. The developer
-  // can waive or change billing for any store in Company Setup → Subscription.
+  // Subscription gate — there is no free trial and no setup fee: a store opens
+  // only once its chosen annual or monthly subscription is confirmed. The
+  // developer can waive or change billing for any store in Company Setup → Subscription.
   if (isAuthenticated && companies.length > 0 && !tidInUrl) {
     const myCompanyId = user?.company_id || user?.tenant_id;
     const activeCompany = (myCompanyId && companies.find(c => c.id === myCompanyId)) || companies[0];
