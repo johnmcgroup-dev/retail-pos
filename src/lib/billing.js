@@ -10,8 +10,8 @@
 
 export const BILLING_DEFAULTS = {
   activation_fee: 0,
-  annual_price: 69.9,
-  monthly_price: 9.9,
+  annual_price: 95000,
+  monthly_price: 13500,
   trials_enabled: false,
   trial_days: 0,
   payment_instructions: "",
@@ -28,7 +28,11 @@ const STATUS_LABELS = {
 };
 
 export function money(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
+  const amount = Number(value || 0);
+  return `₦${amount.toLocaleString("en-NG", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  })}`;
 }
 
 export function withDefaults(config) {

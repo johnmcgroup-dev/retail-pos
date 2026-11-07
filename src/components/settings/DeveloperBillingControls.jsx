@@ -115,7 +115,7 @@ export default function DeveloperBillingControls({ company }) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <Label className="text-sm font-semibold text-slate-700">Activation fee ($)</Label>
+              <Label className="text-sm font-semibold text-slate-700">Activation fee (₦)</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -126,7 +126,7 @@ export default function DeveloperBillingControls({ company }) {
               <p className="text-xs text-slate-500 mt-1">Charged once when a store signs up</p>
             </div>
             <div>
-              <Label className="text-sm font-semibold text-slate-700">Annual price ($)</Label>
+              <Label className="text-sm font-semibold text-slate-700">Annual price (₦)</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -136,7 +136,7 @@ export default function DeveloperBillingControls({ company }) {
               />
             </div>
             <div>
-              <Label className="text-sm font-semibold text-slate-700">Monthly price ($)</Label>
+              <Label className="text-sm font-semibold text-slate-700">Monthly price (₦)</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -242,7 +242,7 @@ export default function DeveloperBillingControls({ company }) {
                 />
               </div>
               <div>
-                <Label className="text-sm font-semibold text-slate-700">Activation fee for this store ($)</Label>
+                <Label className="text-sm font-semibold text-slate-700">Activation fee for this store (₦)</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -252,7 +252,7 @@ export default function DeveloperBillingControls({ company }) {
                 />
               </div>
               <div>
-                <Label className="text-sm font-semibold text-slate-700">Amount charged per cycle ($)</Label>
+                <Label className="text-sm font-semibold text-slate-700">Amount charged per cycle (₦)</Label>
                 <Input
                   type="number"
                   step="0.01"
