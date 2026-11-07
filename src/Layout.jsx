@@ -38,7 +38,8 @@ import {
   ArrowLeftRight,
   Calculator,
   Banknote,
-  BookOpen
+  BookOpen,
+  CreditCard
 } from "lucide-react";
 import {
   Sidebar,
@@ -262,6 +263,12 @@ const navigationItems = [
     title: "Activity Log",
     url: createPageUrl("ActivityLog"),
     icon: ClipboardList,
+    adminOnly: true
+  },
+  {
+    title: "My Subscription",
+    url: "/Subscription",
+    icon: CreditCard,
     adminOnly: true
   },
   {

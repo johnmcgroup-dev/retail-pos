@@ -113,7 +113,7 @@ export default function Landing() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-white text-base">Start a New Business</p>
-              <p className="text-blue-200 text-xs mt-0.5">Register &amp; set up your company — 14-day free trial</p>
+              <p className="text-blue-200 text-xs mt-0.5">Register your own store — $1 activation, then $69.90/year or $9.90/month</p>
             </div>
             <ArrowRight className="w-5 h-5 text-blue-300 group-hover:translate-x-1 transition-transform" />
           </div>

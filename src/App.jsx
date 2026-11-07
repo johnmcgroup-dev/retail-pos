@@ -12,7 +12,9 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { BranchProvider } from '@/lib/BranchContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import TenantSetup from '@/pages/TenantSetup';
-import TrialExpired from '@/components/shared/TrialExpired';
+import BillingGate from '@/pages/BillingGate';
+import { billingState } from '@/lib/billing';
+import { isSuperAdmin, roleOf } from '@/lib/posAccess';
 import { useEffect } from 'react';
 import RoleGuard from '@/components/shared/RoleGuard';
 import DeveloperOnlyRoute from '@/components/shared/DeveloperOnlyRoute';
@@ -33,6 +35,7 @@ import StockTransfers from '@/pages/StockTransfers';
 import Accounting from '@/pages/Accounting';
 import Ledger from '@/pages/Ledger';
 import Payroll from '@/pages/Payroll';
+import Subscription from '@/pages/Subscription';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { decryptTenantId } from '@/lib/tenantToken';
@@ -156,28 +159,15 @@ const AuthenticatedApp = () => {
   const tidInUrl = new URLSearchParams(window.location.search).has('tid')
     || new URLSearchParams(window.location.search).has('inv');
 
-  // Subscription / trial gate — restricts the app (incl. checkout) once trial or subscription expires
+  // Subscription gate — there is no free trial: a store opens only once its
+  // one-off activation fee and first billing cycle are confirmed. The developer
+  // can waive or change billing for any store in Company Setup → Subscription.
   if (isAuthenticated && companies.length > 0 && !tidInUrl) {
-    const company = companies[0];
-    const now = new Date();
-    const bypassPayment = user?.email === 'onyironkeoma@gmail.com';
-    let expired = false;
-    const isTrial = company.status === 'trial' || !company.status;
-    if (isTrial) {
-      const createdDate = new Date(company.created_date);
-      const trialDuration = 14 * 24 * 60 * 60 * 1000;
-      const fallbackEnd = new Date(createdDate.getTime() + trialDuration);
-      const trialEnd = company.trial_ends_at
-        ? new Date(Math.max(new Date(company.trial_ends_at).getTime(), fallbackEnd.getTime()))
-        : fallbackEnd;
-      if (now > trialEnd) expired = true;
-    } else if (company.status === 'active' && company.subscription_end_date) {
-      if (now > new Date(company.subscription_end_date)) expired = true;
-    } else if (company.status === 'expired' || company.status === 'suspended') {
-      expired = true;
-    }
-    if (!bypassPayment && expired) {
-      return <TrialExpired company={company} />;
+    const myCompanyId = user?.company_id || user?.tenant_id;
+    const activeCompany = (myCompanyId && companies.find(c => c.id === myCompanyId)) || companies[0];
+    if (!isSuperAdmin(user) && billingState(activeCompany).locked) {
+      const canManage = ["admin", "owner"].includes(roleOf(user));
+      return <BillingGate company={activeCompany} canManage={canManage} />;
     }
   }
 
@@ -212,6 +202,7 @@ const AuthenticatedApp = () => {
         <Route path="/Accounting" element={<LayoutWrapper currentPageName="Accounting"><Accounting /></LayoutWrapper>} />
         <Route path="/Ledger" element={<LayoutWrapper currentPageName="Ledger"><Ledger /></LayoutWrapper>} />
         <Route path="/Payroll" element={<LayoutWrapper currentPageName="Payroll"><Payroll /></LayoutWrapper>} />
+        <Route path="/Subscription" element={<LayoutWrapper currentPageName="My Subscription"><Subscription /></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route

@@ -6,18 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, ArrowRight, Store, Package, CheckCircle2, Loader2 } from "lucide-react";
+import { BILLING_DEFAULTS, money, priceFor } from "@/lib/billing";
 
 const SEED_STEPS = [
-  "Creating your business...",
+  "Creating your store...",
   "Preparing your workspace...",
   "Almost done...",
 ];
 
+const slugify = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 export default function TenantSetup({ onComplete }) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
+    store_name: "",
+    store_address: "",
     type: "retail_store",
     phone: "",
     email: "",
@@ -25,18 +36,41 @@ export default function TenantSetup({ onComplete }) {
     currency: "NGN",
   });
 
+  const storeName = (form.store_name || form.name).trim();
+  const slug = slugify(storeName);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
     setStep(0);
 
     try {
-      // Step 1: create company
+      // Store names are unique across the platform — the public store link is
+      // built from this name, so no two tenants may share it.
+      const clash = await base44.entities.Company.filter({ store_slug: slug });
+      if (clash && clash.length > 0) {
+        setError("That store name is already taken — please choose another.");
+        setLoading(false);
+        return;
+      }
+
+      const configs = await base44.entities.BillingConfig.list();
+      const config = { ...BILLING_DEFAULTS, ...(configs[0] || {}) };
+
       const company = await base44.entities.Company.create({
         ...form,
-        status: "trial",
-        subscription_plan: "trial",
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        name: form.name || storeName,
+        store_name: storeName,
+        store_slug: slug,
+        // No free trial: the store opens once the activation fee and first
+        // subscription cycle are confirmed.
+        status: "pending_payment",
+        billing_status: "pending_activation",
+        billing_cycle: "annual",
+        activation_fee: config.activation_fee,
+        activation_paid: false,
+        subscription_plan: "none",
       });
 
       // Persist company_id on the user so RLS can authorize Sale creation
@@ -51,6 +85,7 @@ export default function TenantSetup({ onComplete }) {
       onComplete?.();
     } catch (err) {
       console.error(err);
+      setError("Could not create your store. Please check the details and try again.");
       setLoading(false);
       setStep(0);
     }
@@ -101,7 +136,7 @@ export default function TenantSetup({ onComplete }) {
             <Store className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Welcome to My Retailer Pro</h1>
-          <p className="text-slate-500 mt-2 text-sm">Let's set up your business to get started</p>
+          <p className="text-slate-500 mt-2 text-sm">Create your own store so we can get you started</p>
           <div className="mt-3 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1 text-xs text-green-700">
             <Package className="w-3 h-3" />
             Your store starts empty — add your own products anytime
@@ -112,16 +147,42 @@ export default function TenantSetup({ onComplete }) {
           <CardHeader className="pb-4 border-b">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="w-5 h-5 text-blue-500" />
-              Business Information
+              Store & Business Information
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="name" className="text-sm font-medium">Business Name *</Label>
+                <Label htmlFor="store_name" className="text-sm font-medium">Store Name *</Label>
+                <Input
+                  id="store_name"
+                  placeholder="e.g. Ace Supermarket Lekki"
+                  value={form.store_name}
+                  onChange={e => setForm({ ...form, store_name: e.target.value })}
+                  required
+                  className="mt-1"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Unique to this store and shown to customers{slug ? ` · ${slug}` : ""}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="store_address" className="text-sm font-medium">Store Address</Label>
+                <Input
+                  id="store_address"
+                  placeholder="123 Main Street, Lagos"
+                  value={form.store_address}
+                  onChange={e => setForm({ ...form, store_address: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium">Business / Owner Name *</Label>
                 <Input
                   id="name"
-                  placeholder="e.g. Ace Supermarket"
+                  placeholder="e.g. Ace Holdings Ltd"
                   value={form.name}
                   onChange={e => setForm({ ...form, name: e.target.value })}
                   required
@@ -186,28 +247,23 @@ export default function TenantSetup({ onComplete }) {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="address" className="text-sm font-medium">Address</Label>
-                <Input
-                  id="address"
-                  placeholder="123 Main Street, Lagos"
-                  value={form.address}
-                  onChange={e => setForm({ ...form, address: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">{error}</p>
+              )}
 
               <Button
                 type="submit"
-                disabled={!form.name || loading}
+                disabled={!storeName || !form.name || loading}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 mt-2"
               >
-                Get Started — 14-Day Free Trial
+                Create Store & Continue
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
 
-              <p className="text-center text-xs text-slate-400 mt-2">
-                No credit card required. Full access for 14 days.
+              <p className="text-center text-xs text-slate-500 mt-2">
+                {money(BILLING_DEFAULTS.activation_fee)} one-off activation, then{" "}
+                {money(priceFor("annual"))}/year or {money(priceFor("monthly"))}/month. No free trial —
+                you choose your plan on the next screen.
               </p>
             </form>
           </CardContent>

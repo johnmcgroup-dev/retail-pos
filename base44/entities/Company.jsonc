@@ -4,7 +4,19 @@
   "properties": {
     "name": {
       "type": "string",
-      "description": "Company/Tenant name"
+      "description": "Company/Tenant trading name"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Unique store name shown to customers and used for the public store link"
+    },
+    "store_slug": {
+      "type": "string",
+      "description": "URL-safe version of the store name, unique per tenant"
+    },
+    "store_address": {
+      "type": "string",
+      "description": "Store address printed on receipts and shown on the store page"
     },
     "type": {
       "type": "string",
@@ -46,15 +58,71 @@
       "description": "Footer message on receipts/invoices",
       "default": "Thank you for your business!"
     },
+    "billing_status": {
+      "type": "string",
+      "enum": [
+        "pending_activation",
+        "active",
+        "past_due",
+        "suspended",
+        "comped"
+      ],
+      "default": "pending_activation",
+      "description": "Subscription state that decides whether the store opens"
+    },
+    "billing_cycle": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "annual"
+      ],
+      "default": "annual",
+      "description": "Chosen recurring billing cycle"
+    },
+    "activation_fee": {
+      "type": "number",
+      "default": 1,
+      "description": "One-off sign-up fee for this store"
+    },
+    "activation_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set once the one-off sign-up fee has been received"
+    },
+    "subscription_amount": {
+      "type": "number",
+      "description": "Amount charged for the current billing cycle"
+    },
+    "next_billing_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date access is paid through \u2014 the store locks after it until renewed"
+    },
+    "payment_requested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the owner asked to activate or renew the store"
+    },
+    "billing_override": {
+      "type": "boolean",
+      "default": false,
+      "description": "Developer granted manual access \u2014 billing does not lock this store"
+    },
+    "billing_notes": {
+      "type": "string",
+      "description": "Developer notes about this store's billing"
+    },
     "subscription_plan": {
       "type": "string",
       "enum": [
+        "none",
         "trial",
         "monthly",
         "yearly",
+        "annual",
         "one_time"
       ],
-      "default": "trial"
+      "default": "none"
     },
     "subscription_start_date": {
       "type": "string",
@@ -67,7 +135,7 @@
     "trial_ends_at": {
       "type": "string",
       "format": "date",
-      "description": "14 days trial end date"
+      "description": "Only used when the developer turns trials back on"
     },
     "payment_gateway": {
       "type": "string",
@@ -84,23 +152,19 @@
     },
     "monthly_price": {
       "type": "number",
-      "default": 6,
-      "description": "Monthly recurring subscription price"
+      "description": "Legacy monthly price override"
     },
     "yearly_price": {
       "type": "number",
-      "default": 56,
-      "description": "Yearly recurring subscription price"
+      "description": "Legacy yearly price override"
     },
     "first_month_price": {
       "type": "number",
-      "default": 0,
-      "description": "Free 14-day trial price (no charge)"
+      "description": "Legacy first-month price"
     },
     "one_time_price": {
       "type": "number",
-      "default": 360,
-      "description": "One-time lifetime payment"
+      "description": "Legacy one-time price"
     },
     "status": {
       "type": "string",
@@ -108,9 +172,10 @@
         "active",
         "suspended",
         "trial",
-        "expired"
+        "expired",
+        "pending_payment"
       ],
-      "default": "trial"
+      "default": "pending_payment"
     }
   },
   "required": [

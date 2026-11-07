@@ -6,10 +6,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon, Building2, Users, CreditCard, Bell, Database, Trash2, AlertCircle, DollarSign, CheckCircle, Lock } from "lucide-react";
-import { format } from "date-fns";
 import { offlineCache } from "@/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import PasswordChangeDialog from "../components/settings/PasswordChangeDialog";
+import BillingPanel from "@/components/settings/BillingPanel";
+import DeveloperBillingControls from "@/components/settings/DeveloperBillingControls";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -184,7 +184,9 @@ export default function Settings() {
     tax_id: "",
     currency: "USD",
     show_currency_symbol: false,
-    goodwill_message: "Thank you for your business!"
+    goodwill_message: "Thank you for your business!",
+    store_name: "",
+    store_address: ""
   });
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
 
@@ -248,7 +250,9 @@ export default function Settings() {
         tax_id: company.tax_id || "",
         currency: company.currency || "USD",
         show_currency_symbol: company.show_currency_symbol || false,
-        goodwill_message: company.goodwill_message || "Thank you for your business!"
+        goodwill_message: company.goodwill_message || "Thank you for your business!",
+        store_name: company.store_name || "",
+        store_address: company.store_address || ""
       });
     }
   }, [company]);
@@ -262,10 +266,6 @@ export default function Settings() {
   };
 
   const isSuperAdmin = user?.email === 'johnmcgroup@gmail.com';
-  const isTrialExpired = company?.trial_ends_at && new Date(company.trial_ends_at) < new Date();
-  const daysLeftInTrial = company?.trial_ends_at 
-    ? Math.ceil((new Date(company.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
-    : 0;
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
@@ -352,6 +352,25 @@ export default function Settings() {
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Store Name</label>
+                    <Input
+                      value={companyForm.store_name}
+                      onChange={(e) => setCompanyForm({ ...companyForm, store_name: e.target.value })}
+                      className="mt-1"
+                      placeholder="Name shown to customers"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Unique to this store</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700">Store Address</label>
+                    <Input
+                      value={companyForm.store_address}
+                      onChange={(e) => setCompanyForm({ ...companyForm, store_address: e.target.value })}
+                      className="mt-1"
+                      placeholder="Street, City, State"
+                    />
+                  </div>
                   <div>
                     <label className="text-sm font-semibold text-slate-700">Company Name *</label>
                     <Input
@@ -573,152 +592,18 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="subscription">
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {company ? (
-                <div className="space-y-6">
-                  {company.status === 'trial' && (
-                    <Alert className={isTrialExpired ? "bg-red-50 border-red-300" : "bg-blue-50 border-blue-300"}>
-                      <AlertCircle className={`h-4 w-4 ${isTrialExpired ? "text-red-600" : "text-blue-600"}`} />
-                      <AlertDescription className={isTrialExpired ? "text-red-800" : "text-blue-800"}>
-                        {isTrialExpired ? (
-                          <span><strong>Trial Expired!</strong> Please subscribe to continue using RetailPro.</span>
-                        ) : (
-                          <span><strong>{daysLeftInTrial} days</strong> left in your 14-day free trial.</span>
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-sm text-slate-600">Current Plan</p>
-                        <p className="text-2xl font-bold text-slate-900 capitalize">
-                          {company.subscription_plan?.replace(/_/g, ' ')}
-                        </p>
-                      </div>
-                      <Badge
-                        variant={company.status === 'active' ? 'success' : 'destructive'}
-                        className={company.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
-                      >
-                        {company.status}
-                      </Badge>
-                    </div>
-                    {company.subscription_start_date && (
-                      <div className="grid md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-slate-600">Start Date</p>
-                          <p className="font-semibold text-slate-900">
-                            {format(new Date(company.subscription_start_date), "MMM d, yyyy")}
-                          </p>
-                        </div>
-                        {company.subscription_end_date && (
-                          <div>
-                            <p className="text-slate-600">End Date</p>
-                            <p className="font-semibold text-slate-900">
-                              {format(new Date(company.subscription_end_date), "MMM d, yyyy")}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Pricing Plans */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <Card className="border-2 hover:border-blue-500 transition-colors">
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>Monthly Plan</span>
-                          <Badge>Popular</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-center mb-6">
-                          <p className="text-4xl font-bold text-slate-900">₦15,000</p>
-                          <p className="text-slate-600">/month</p>
-                        </div>
-                        <ul className="space-y-2 text-sm mb-6">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Unlimited products
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Multi-warehouse support
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Offline mode
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Email support
-                          </li>
-                        </ul>
-                        <Button className="w-full" disabled={company.subscription_plan === 'monthly'}>
-                          {company.subscription_plan === 'monthly' ? 'Current Plan' : 'Subscribe Monthly'}
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-green-500 relative overflow-hidden">
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-green-500">Save 17%</Badge>
-                      </div>
-                      <CardHeader>
-                        <CardTitle>Yearly Plan</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-center mb-6">
-                          <p className="text-4xl font-bold text-slate-900">₦128,000</p>
-                          <p className="text-slate-600">/year</p>
-                          <p className="text-xs text-green-600 mt-1">Save ₦52,000 vs monthly</p>
-                        </div>
-                        <ul className="space-y-2 text-sm mb-6">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Everything in Monthly
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Priority support
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            Advanced analytics
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            API access
-                          </li>
-                        </ul>
-                        <Button className="w-full bg-green-600 hover:bg-green-700" disabled={company.subscription_plan === 'yearly'}>
-                          {company.subscription_plan === 'yearly' ? 'Current Plan' : 'Subscribe Yearly'}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="p-4 bg-slate-50 border rounded-lg text-sm">
-                    <p className="font-semibold text-slate-900 mb-2">Payment Methods Accepted:</p>
-                    <div className="flex gap-4 flex-wrap">
-                      <Badge variant="outline">PayPal</Badge>
-                      <Badge variant="outline">Mainstack</Badge>
-                      <Badge variant="outline">Credit/Debit Cards</Badge>
-                      <Badge variant="outline">Bank Transfer</Badge>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-slate-500">No subscription information available</p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {company ? (
+              <>
+                <BillingPanel company={company} />
+                {isSuperAdmin && <DeveloperBillingControls company={company} />}
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-slate-500">No subscription information available</CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="users">

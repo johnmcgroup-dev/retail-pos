@@ -1,0 +1,62 @@
+import React from "react";
+import { Check, Sparkles } from "lucide-react";
+import { money, priceFor, annualSaving } from "@/lib/billing";
+
+/**
+ * The two subscription choices on the activation screen: annual (highlighted,
+ * cheaper per month) and monthly.
+ */
+export default function PlanPicker({ cycle, onChange, config }) {
+  const plans = [
+    {
+      id: "annual",
+      name: "Annual",
+      price: money(priceFor("annual", config)),
+      period: "per year",
+      note: `Save ${money(annualSaving(config))} vs monthly`,
+      highlight: true,
+    },
+    {
+      id: "monthly",
+      name: "Monthly",
+      price: money(priceFor("monthly", config)),
+      period: "per month",
+      note: "Cancel anytime",
+      highlight: false,
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {plans.map((plan) => {
+        const active = cycle === plan.id;
+        return (
+          <button
+            key={plan.id}
+            type="button"
+            onClick={() => onChange(plan.id)}
+            className={`relative rounded-xl p-4 text-left transition-all ${
+              active
+                ? "border-2 border-blue-600 bg-blue-50"
+                : "border-2 border-slate-200 hover:border-slate-400 bg-white"
+            }`}
+          >
+            {plan.highlight && (
+              <span className="absolute -top-2.5 right-3 inline-flex items-center gap-1 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                <Sparkles className="w-2.5 h-2.5" />
+                Best value
+              </span>
+            )}
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-700">{plan.name}</p>
+              {active && <Check className="w-4 h-4 text-blue-600" />}
+            </div>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{plan.price}</p>
+            <p className="text-xs text-slate-500">{plan.period}</p>
+            <p className="text-xs text-slate-400 mt-1">{plan.note}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
