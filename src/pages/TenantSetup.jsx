@@ -73,8 +73,10 @@ export default function TenantSetup({ onComplete }) {
         subscription_plan: "none",
       });
 
-      // Persist company_id on the user so RLS can authorize Sale creation
-      await base44.auth.updateMe({ company_id: company.id });
+      // Persist company_id on the user so RLS can authorize Sale creation.
+      // Whoever creates a store owns it — without this the sign-up account stays
+      // a plain 'user' and never gets to the billing plan picker.
+      await base44.auth.updateMe({ company_id: company.id, role_level: "owner" });
 
       setStep(1);
       await new Promise(r => setTimeout(r, 500));
