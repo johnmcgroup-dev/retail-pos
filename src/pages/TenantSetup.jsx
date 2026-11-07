@@ -64,10 +64,11 @@ export default function TenantSetup({ onComplete }) {
         store_name: storeName,
         store_slug: slug,
         // No free trial and no setup fee: the store opens once the tenant's
-        // chosen subscription cycle (annual or monthly) is confirmed.
+        // subscription is confirmed. The ₦1,500 first month is preselected so a
+        // brand-new store starts on the cheap intro plan and renews monthly.
         status: "pending_payment",
         billing_status: "pending_activation",
-        billing_cycle: "annual",
+        billing_cycle: "first_month",
         activation_fee: config.activation_fee,
         activation_paid: false,
         subscription_plan: "none",
@@ -263,8 +264,9 @@ export default function TenantSetup({ onComplete }) {
               </Button>
 
               <p className="text-center text-xs text-slate-500 mt-2">
-                No setup fee — pay only {money(priceFor("annual"))}/year or{" "}
-                {money(priceFor("monthly"))}/month. You choose your billing plan on the next screen.
+                No setup fee — start with your first month for {money(priceFor("first_month"))}, then{" "}
+                {money(priceFor("monthly"))}/month or {money(priceFor("annual"))}/year. You choose your
+                plan on the next screen.
               </p>
             </form>
           </CardContent>
