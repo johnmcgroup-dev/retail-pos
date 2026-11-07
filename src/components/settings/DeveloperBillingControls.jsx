@@ -21,6 +21,7 @@ const STATUS_OPTIONS = [
 const CYCLE_OPTIONS = [
   { value: "annual", label: "Annual" },
   { value: "monthly", label: "Monthly" },
+  { value: "first_month", label: "First month" },
 ];
 
 /**
@@ -63,6 +64,7 @@ export default function DeveloperBillingControls({ company }) {
     mutationFn: () => {
       const payload = {
         activation_fee: Number(rules.activation_fee) || 0,
+        first_month_price: Number(rules.first_month_price) || 0,
         annual_price: Number(rules.annual_price) || 0,
         monthly_price: Number(rules.monthly_price) || 0,
         trials_enabled: !!rules.trials_enabled,
@@ -70,6 +72,7 @@ export default function DeveloperBillingControls({ company }) {
         payment_instructions: rules.payment_instructions || "",
         checkout_url_annual: (rules.checkout_url_annual || "").trim(),
         checkout_url_monthly: (rules.checkout_url_monthly || "").trim(),
+        checkout_url_first_month: (rules.checkout_url_first_month || "").trim(),
       };
       return storedConfig
         ? base44.entities.BillingConfig.update(storedConfig.id, payload)
@@ -113,7 +116,7 @@ export default function DeveloperBillingControls({ company }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <Label className="text-sm font-semibold text-slate-700">Activation fee (₦)</Label>
               <Input
@@ -144,6 +147,17 @@ export default function DeveloperBillingControls({ company }) {
                 value={rules.monthly_price}
                 onChange={(e) => setRules({ ...rules, monthly_price: e.target.value })}
               />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold text-slate-700">First month price (₦)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                className="mt-1"
+                value={rules.first_month_price}
+                onChange={(e) => setRules({ ...rules, first_month_price: e.target.value })}
+              />
+              <p className="text-xs text-slate-500 mt-1">Intro month before the monthly price</p>
             </div>
           </div>
 
@@ -198,6 +212,15 @@ export default function DeveloperBillingControls({ company }) {
                 placeholder="https://paystack.com/pay/… or buy.stripe.com/…"
                 value={rules.checkout_url_monthly || ""}
                 onChange={(e) => setRules({ ...rules, checkout_url_monthly: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold text-slate-700">First month checkout link (₦1,500)</Label>
+              <Input
+                className="mt-1"
+                placeholder="https://paystack.shop/pay/…"
+                value={rules.checkout_url_first_month || ""}
+                onChange={(e) => setRules({ ...rules, checkout_url_first_month: e.target.value })}
               />
             </div>
             <p className="text-xs text-slate-500 sm:col-span-2">

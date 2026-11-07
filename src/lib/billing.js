@@ -10,6 +10,7 @@
 
 export const BILLING_DEFAULTS = {
   activation_fee: 0,
+  first_month_price: 1500,
   annual_price: 95000,
   monthly_price: 13500,
   trials_enabled: false,
@@ -17,7 +18,19 @@ export const BILLING_DEFAULTS = {
   payment_instructions: "",
   checkout_url_annual: "",
   checkout_url_monthly: "",
+  checkout_url_first_month: "",
 };
+
+/** Readable name of each plan, used wherever a cycle is shown to a tenant. */
+export const PLAN_LABELS = {
+  first_month: "First month",
+  monthly: "Monthly",
+  annual: "Annual",
+};
+
+export function planLabel(cycle) {
+  return PLAN_LABELS[cycle] || PLAN_LABELS.annual;
+}
 
 const STATUS_LABELS = {
   pending_activation: "Awaiting activation",
@@ -41,6 +54,7 @@ export function withDefaults(config) {
 
 export function priceFor(cycle, config) {
   const cfg = withDefaults(config);
+  if (cycle === "first_month") return cfg.first_month_price;
   return cycle === "monthly" ? cfg.monthly_price : cfg.annual_price;
 }
 
@@ -50,7 +64,12 @@ export function priceFor(cycle, config) {
  */
 export function checkoutLinkFor(cycle, config, reference) {
   const cfg = withDefaults(config);
-  const link = (cycle === "monthly" ? cfg.checkout_url_monthly : cfg.checkout_url_annual) || "";
+  const link =
+    (cycle === "first_month"
+      ? cfg.checkout_url_first_month
+      : cycle === "monthly"
+      ? cfg.checkout_url_monthly
+      : cfg.checkout_url_annual) || "";
   if (!link) return "";
   try {
     const url = new URL(link);
@@ -74,7 +93,7 @@ export function activationFee(company, config) {
 /** Date the next cycle falls due, one cycle after `from`. */
 export function addCycle(from, cycle) {
   const date = new Date(from || Date.now());
-  if (cycle === "monthly") date.setMonth(date.getMonth() + 1);
+  if (cycle === "monthly" || cycle === "first_month") date.setMonth(date.getMonth() + 1);
   else date.setFullYear(date.getFullYear() + 1);
   return date.toISOString().split("T")[0];
 }

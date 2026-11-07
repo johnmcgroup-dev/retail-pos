@@ -7,14 +7,19 @@
       "default": 0,
       "description": "One-off fee charged when a store signs up"
     },
+    "first_month_price": {
+      "type": "number",
+      "default": 1500,
+      "description": "Introductory price for a store's first month (\u20a61,500). Later months are charged at the monthly price."
+    },
     "annual_price": {
       "type": "number",
-      "default": 69.9,
+      "default": 95000,
       "description": "Yearly subscription price"
     },
     "monthly_price": {
       "type": "number",
-      "default": 9.9,
+      "default": 13500,
       "description": "Monthly subscription price"
     },
     "trials_enabled": {
@@ -37,7 +42,11 @@
     },
     "checkout_url_monthly": {
       "type": "string",
-      "description": "Hosted checkout page for the monthly plan. Tenants choosing monthly are sent straight here."
+      "description": "Hosted checkout page for the monthly plan. Tenants choosing monthly \u2014 or adding extra months \u2014 are sent straight here."
+    },
+    "checkout_url_first_month": {
+      "type": "string",
+      "description": "Hosted checkout page for the \u20a61,500 first-month plan. Tenants choosing the first month are sent straight here."
     },
     "updated_by": {
       "type": "string",

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import PlanPicker from "@/components/billing/PlanPicker";
-import { BILLING_DEFAULTS, billingState, checkoutLinkFor, money, priceFor } from "@/lib/billing";
+import { BILLING_DEFAULTS, billingState, checkoutLinkFor, money, priceFor, planLabel } from "@/lib/billing";
 import { CheckCircle2, Clock, CreditCard, Loader2, LogOut, MapPin, Store } from "lucide-react";
 
 const HEADLINES = {
@@ -98,8 +98,8 @@ export default function BillingGate({ company, canManage = true }) {
                 <div>
                   <p className="text-sm font-semibold text-green-900">Activation requested</p>
                   <p className="text-xs text-green-800 mt-0.5">
-                    Your {cycle === "monthly" ? "monthly" : "annual"} plan is being confirmed. The store opens
-                    as soon as your payment is received.
+                    Your {planLabel(cycle).toLowerCase()} plan is being confirmed. The store opens as soon as
+                    your payment is received.
                   </p>
                 </div>
               </div>
@@ -140,15 +140,25 @@ export default function BillingGate({ company, canManage = true }) {
 
               <div className="space-y-2 text-sm border-t pt-4">
                 <div className="flex justify-between">
-                  <span className="text-slate-600">
-                    {cycle === "monthly" ? "Monthly subscription" : "Annual subscription"}
-                  </span>
+                  <span className="text-slate-600">{planLabel(cycle)} subscription</span>
                   <span className="font-semibold text-slate-900">{money(planPrice)}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2">
                   <span className="font-semibold text-slate-900">Due today</span>
                   <span className="text-lg font-bold text-blue-700">{money(total)}</span>
                 </div>
+                {cycle === "first_month" && (
+                  <div className="flex justify-between text-xs text-slate-500">
+                    <span>From the second month</span>
+                    <span>{money(config.monthly_price)} per month</span>
+                  </div>
+                )}
+                {cycle === "first_month" && (
+                  <p className="text-[11px] text-slate-400">
+                    Want more than one month up front? Choose Monthly to pay {money(config.monthly_price)} per
+                    extra month, or Annual for a full year.
+                  </p>
+                )}
               </div>
 
               {request.isError && (

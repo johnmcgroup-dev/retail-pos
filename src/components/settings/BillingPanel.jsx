@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BILLING_DEFAULTS, billingState, money, priceFor, activationFee } from "@/lib/billing";
+import { BILLING_DEFAULTS, billingState, money, priceFor, activationFee, planLabel } from "@/lib/billing";
 import { format } from "date-fns";
 import { CalendarClock, CreditCard, Info } from "lucide-react";
 
@@ -71,8 +71,8 @@ export default function BillingPanel({ company }) {
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-slate-600">Billing cycle</p>
-              <p className="font-semibold text-slate-900 capitalize">{cycle}</p>
+              <p className="text-slate-600">Billing plan</p>
+              <p className="font-semibold text-slate-900">{planLabel(cycle)}</p>
             </div>
             {activationFee(company, config) > 0 && (
               <div>

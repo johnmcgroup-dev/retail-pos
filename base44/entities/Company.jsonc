@@ -67,21 +67,34 @@
         "suspended",
         "comped"
       ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red",
+        "red",
+        "blue"
+      ],
       "default": "pending_activation",
       "description": "Subscription state that decides whether the store opens"
     },
     "billing_cycle": {
       "type": "string",
       "enum": [
+        "first_month",
         "monthly",
         "annual"
       ],
+      "enumColors": [
+        "green",
+        "blue",
+        "purple"
+      ],
       "default": "annual",
-      "description": "Chosen recurring billing cycle"
+      "description": "Chosen billing plan: the \u20a61,500 first month, monthly, or annual"
     },
     "activation_fee": {
       "type": "number",
-      "default": 1,
+      "default": 0,
       "description": "One-off sign-up fee for this store"
     },
     "activation_paid": {
@@ -117,6 +130,7 @@
       "enum": [
         "none",
         "trial",
+        "first_month",
         "monthly",
         "yearly",
         "annual",
