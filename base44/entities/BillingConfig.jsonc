@@ -4,7 +4,7 @@
   "properties": {
     "activation_fee": {
       "type": "number",
-      "default": 1,
+      "default": 0,
       "description": "One-off fee charged when a store signs up"
     },
     "annual_price": {
@@ -30,6 +30,14 @@
     "payment_instructions": {
       "type": "string",
       "description": "How tenants pay (bank details, link) shown on the activation screen"
+    },
+    "checkout_url_annual": {
+      "type": "string",
+      "description": "Hosted checkout page for the annual plan (Stripe Payment Link, Paystack payment page, Mainstack checkout). Tenants choosing annual are sent straight here."
+    },
+    "checkout_url_monthly": {
+      "type": "string",
+      "description": "Hosted checkout page for the monthly plan. Tenants choosing monthly are sent straight here."
     },
     "updated_by": {
       "type": "string",

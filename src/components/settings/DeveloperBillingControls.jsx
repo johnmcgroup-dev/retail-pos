@@ -68,6 +68,8 @@ export default function DeveloperBillingControls({ company }) {
         trials_enabled: !!rules.trials_enabled,
         trial_days: Number(rules.trial_days) || 0,
         payment_instructions: rules.payment_instructions || "",
+        checkout_url_annual: (rules.checkout_url_annual || "").trim(),
+        checkout_url_monthly: (rules.checkout_url_monthly || "").trim(),
       };
       return storedConfig
         ? base44.entities.BillingConfig.update(storedConfig.id, payload)
@@ -177,6 +179,31 @@ export default function DeveloperBillingControls({ company }) {
               value={rules.payment_instructions || ""}
               onChange={(e) => setRules({ ...rules, payment_instructions: e.target.value })}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-semibold text-slate-700">Annual checkout link</Label>
+              <Input
+                className="mt-1"
+                placeholder="https://paystack.com/pay/… or buy.stripe.com/…"
+                value={rules.checkout_url_annual || ""}
+                onChange={(e) => setRules({ ...rules, checkout_url_annual: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold text-slate-700">Monthly checkout link</Label>
+              <Input
+                className="mt-1"
+                placeholder="https://paystack.com/pay/… or buy.stripe.com/…"
+                value={rules.checkout_url_monthly || ""}
+                onChange={(e) => setRules({ ...rules, checkout_url_monthly: e.target.value })}
+              />
+            </div>
+            <p className="text-xs text-slate-500 sm:col-span-2">
+              Paste the hosted payment page for each plan — a tenant who selects a plan is sent straight
+              to it with their store reference attached.
+            </p>
           </div>
 
           <Button onClick={() => saveRules.mutate()} disabled={saveRules.isPending}>

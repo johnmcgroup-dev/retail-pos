@@ -15,6 +15,8 @@ export const BILLING_DEFAULTS = {
   trials_enabled: false,
   trial_days: 0,
   payment_instructions: "",
+  checkout_url_annual: "",
+  checkout_url_monthly: "",
 };
 
 const STATUS_LABELS = {
@@ -36,6 +38,23 @@ export function withDefaults(config) {
 export function priceFor(cycle, config) {
   const cfg = withDefaults(config);
   return cycle === "monthly" ? cfg.monthly_price : cfg.annual_price;
+}
+
+/**
+ * The hosted checkout page a tenant is sent to for the plan they picked.
+ * The reference is attached so the payment can be matched to the store.
+ */
+export function checkoutLinkFor(cycle, config, reference) {
+  const cfg = withDefaults(config);
+  const link = (cycle === "monthly" ? cfg.checkout_url_monthly : cfg.checkout_url_annual) || "";
+  if (!link) return "";
+  try {
+    const url = new URL(link);
+    if (reference) url.searchParams.set("client_reference_id", reference);
+    return url.toString();
+  } catch (_) {
+    return link;
+  }
 }
 
 export function annualSaving(config) {

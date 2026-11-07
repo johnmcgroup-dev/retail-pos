@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import PlanPicker from "@/components/billing/PlanPicker";
-import { BILLING_DEFAULTS, billingState, money, priceFor } from "@/lib/billing";
+import { BILLING_DEFAULTS, billingState, checkoutLinkFor, money, priceFor } from "@/lib/billing";
 import { CheckCircle2, Clock, CreditCard, Loader2, LogOut, MapPin, Store } from "lucide-react";
 
 const HEADLINES = {
@@ -38,6 +38,18 @@ export default function BillingGate({ company, canManage = true }) {
       }),
     onSuccess: () => setRequested(true),
   });
+
+  // The hosted checkout page for the plan they picked, opened as soon as they proceed.
+  const checkoutLink = checkoutLinkFor(cycle, config, reference);
+
+  const proceed = () => {
+    // Record the request first so the store shows "activation requested" when the
+    // tenant comes back, then hand them straight to the payment processor.
+    request.mutate();
+    if (!checkoutLink) return;
+    const win = window.open(checkoutLink, "_blank", "noopener,noreferrer");
+    if (!win) window.location.href = checkoutLink;
+  };
 
   // Staff accounts cannot pay for the store — they see why it is closed instead.
   if (!canManage) {
@@ -146,16 +158,22 @@ export default function BillingGate({ company, canManage = true }) {
               )}
 
               <Button
-                onClick={() => request.mutate()}
+                onClick={proceed}
                 disabled={request.isPending || !company?.id}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-base py-6"
               >
                 {request.isPending ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sending...</>
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Opening checkout...</>
                 ) : (
-                  <><CreditCard className="w-5 h-5 mr-2" /> Continue to payment — {money(total)}</>
+                  <><CreditCard className="w-5 h-5 mr-2" /> Pay {money(total)} — go to checkout</>
                 )}
               </Button>
+
+              {!checkoutLink && (
+                <p className="text-center text-xs text-amber-600">
+                  Online checkout is not linked yet — use the payment details below to complete activation.
+                </p>
+              )}
 
               <p className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1">
                 <Clock className="w-3 h-3" />
