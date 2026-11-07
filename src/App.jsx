@@ -166,7 +166,10 @@ const AuthenticatedApp = () => {
     const myCompanyId = user?.company_id || user?.tenant_id;
     const activeCompany = (myCompanyId && companies.find(c => c.id === myCompanyId)) || companies[0];
     if (!isSuperAdmin(user) && billingState(activeCompany).locked) {
-      const canManage = ["admin", "owner"].includes(roleOf(user));
+      // The account that created the store is its owner even when its role was
+      // never set — it must always get the plan picker, never the staff notice.
+      const canManage =
+        ["admin", "owner"].includes(roleOf(user)) || activeCompany.created_by_id === user?.id;
       return <BillingGate company={activeCompany} canManage={canManage} />;
     }
   }
