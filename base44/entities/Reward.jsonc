@@ -3,7 +3,8 @@
   "type": "object",
   "properties": {
     "company_id": {
-      "type": "string"
+      "type": "string",
+      "description": "Store/tenant that offers this reward"
     },
     "name": {
       "type": "string",
@@ -21,18 +22,32 @@
       "enum": [
         "discount_percentage",
         "discount_amount",
-        "free_product",
-        "special_offer"
+        "free_product"
       ],
-      "default": "discount_percentage"
+      "enumColors": [
+        "blue",
+        "purple",
+        "green"
+      ],
+      "default": "discount_percentage",
+      "description": "Percentage discount, fixed amount discount, or a free item"
     },
     "discount_value": {
       "type": "number",
-      "description": "Percentage (e.g., 10 for 10%) or fixed amount"
+      "description": "Percentage (e.g. 10 for 10%) or fixed amount off"
     },
     "product_id": {
       "type": "string",
-      "description": "For free_product type"
+      "description": "Product given away for free_product rewards"
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Name of the free item shown to the customer"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1,
+      "description": "Units of the free item handed over"
     },
     "image_url": {
       "type": "string"
@@ -50,6 +65,7 @@
     },
     "max_redemptions": {
       "type": "number",
+      "default": 0,
       "description": "Maximum times this can be redeemed (0 = unlimited)"
     },
     "redemptions_count": {
@@ -62,6 +78,11 @@
         "active",
         "inactive",
         "expired"
+      ],
+      "enumColors": [
+        "green",
+        "gray",
+        "red"
       ],
       "default": "active"
     }
@@ -100,7 +121,14 @@
       ]
     },
     "read": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
     },
     "update": {
       "$and": [

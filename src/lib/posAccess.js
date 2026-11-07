@@ -13,6 +13,22 @@
 
 export const DEVELOPER_EMAIL = "johnmcgroup@gmail.com";
 
+// Store-platform screens that belong to the super admin alone: the online
+// store, its orders, e-commerce sync, CRM and tenant management.
+export const DEVELOPER_ONLY_PATHS = [
+  "/OnlineStore",
+  "/OnlineOrders",
+  "/EcommerceSync",
+  "/TenantManagement",
+  "/CRM",
+  "/Settings",
+];
+
+export function isDeveloperOnlyPath(pathname) {
+  const path = String(pathname || "/").split("?")[0].replace(/\/+$/, "");
+  return DEVELOPER_ONLY_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+}
+
 export function roleOf(user) {
   return String(user?.role_level || user?.role || "user").toLowerCase();
 }
@@ -79,6 +95,9 @@ export function roleHome(user) {
 
 export function canAccessPath(user, pathname) {
   if (!user) return false;
+  // Developer-only screens are closed to every account but the super admin,
+  // whatever its role — hiding the menu link is not enough on its own.
+  if (isDeveloperOnlyPath(pathname)) return isSuperAdmin(user);
   if (isSuperAdmin(user)) return true;
 
   const role = roleOf(user);

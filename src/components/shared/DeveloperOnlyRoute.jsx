@@ -3,18 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
-
-export const DEVELOPER_EMAIL = "johnmcgroup@gmail.com";
-
-// Pages that only the developer account may open, by URL.
-const DEVELOPER_ONLY_PATHS = [
-  "/OnlineStore",
-  "/OnlineOrders",
-  "/EcommerceSync",
-  "/TenantManagement",
-  "/CRM",
-  "/Settings",
-];
+import { DEVELOPER_ONLY_PATHS, DEVELOPER_EMAIL } from "@/lib/posAccess";
 
 /**
  * Blocks direct URL access to the developer-only pages for every other user,
@@ -29,7 +18,9 @@ export default function DeveloperOnlyRoute({ children }) {
   );
   if (!isRestricted) return <>{children}</>;
 
-  const isDeveloper = (user?.email || "").toLowerCase() === DEVELOPER_EMAIL;
+  const isDeveloper =
+    (user?.email || "").toLowerCase() === DEVELOPER_EMAIL ||
+    String(user?.role || "").toLowerCase() === "super_admin";
   if (isDeveloper) return <>{children}</>;
 
   return (
@@ -38,7 +29,7 @@ export default function DeveloperOnlyRoute({ children }) {
         <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-slate-900">Access denied</h2>
         <p className="text-sm text-slate-500 mt-2">
-          This page is restricted to the app owner.
+          This page is restricted to the platform owner.
         </p>
         <Button asChild className="mt-5">
           <Link to="/Dashboard">Back to Dashboard</Link>

@@ -35,6 +35,7 @@ import QuickCalculator from "../components/pos/QuickCalculator";
 import AddStockDialog from "../components/pos/AddStockDialog";
 import CustomerPaymentDialog from "../components/pos/CustomerPaymentDialog";
 import { logActivity } from "@/lib/logActivity";
+import { pointsForSale } from "@/lib/loyalty";
 import {
   getVarietyPrice,
   getVarietyQuantity,
@@ -692,9 +693,10 @@ export default function POS() {
 
         if (loyaltyPrograms.length > 0) {
           const program = loyaltyPrograms[0];
-          const pointsEarned = Math.floor(saleData.total_amount * program.points_per_dollar);
           const redeem = loyaltyRedeemRef.current;
           const customer = customers.find(c => c.id === saleData.customer_id);
+          // Owner-set rate, lifted by the tier the customer is currently in.
+          const pointsEarned = pointsForSale(program, saleData.total_amount, customer?.loyalty_points || 0);
           const pointsRedeemed = (redeem?.enabled && redeem.points > 0 && customer)
             ? Math.min(redeem.points, customer.loyalty_points || 0)
             : 0;
@@ -1159,7 +1161,7 @@ export default function POS() {
               </div>
               {totals.total > 0 && (
                 <span className="text-purple-600 font-medium">
-                  +{Math.floor(totals.total * (loyaltyProgram.points_per_dollar || 0))} pts this sale
+                  +{pointsForSale(loyaltyProgram, totals.total, selectedCustomer?.loyalty_points || 0)} pts this sale
                 </span>
               )}
             </div>

@@ -72,19 +72,7 @@ import LowStockAlertWatcher from "@/components/shared/LowStockAlertWatcher";
 import RealtimeSync from "@/components/shared/RealtimeSync";
 import BranchSwitcher from "@/components/branches/BranchSwitcher";
 import { useAuth } from "@/lib/AuthContext";
-import { canAccessPath, roleOf } from "@/lib/posAccess";
-
-const DEVELOPER_EMAIL = "johnmcgroup@gmail.com";
-
-// Pages restricted to the developer account only, regardless of role
-const DEVELOPER_ONLY_TITLES = [
-  "Online Store",
-  "Online Orders",
-  "E-commerce Sync",
-  "Tenant Management",
-  "CRM",
-  "Company Setup",
-];
+import { canAccessPath, roleOf, isSuperAdmin, isDeveloperOnlyPath } from "@/lib/posAccess";
 
 const navigationItems = [
   {
@@ -229,7 +217,7 @@ const navigationItems = [
     icon: Award,
   },
   {
-    title: "Loyalty Manager",
+    title: "Loyalty Program",
     url: createPageUrl("LoyaltyManagement"),
     icon: Gift,
     adminOnly: true
@@ -365,11 +353,11 @@ export default function Layout({ children, currentPageName }) {
     base44.auth.logout();
   };
 
-  const isDeveloper = ((user?.email || authUser?.email || "")).toLowerCase() === DEVELOPER_EMAIL;
+  const isDeveloper = isSuperAdmin(user || authUser);
 
   const filteredNavItems = navigationItems.filter(item => {
-    // Developer-only pages stay hidden from every other user, whatever their role
-    if (DEVELOPER_ONLY_TITLES.includes(item.title) && !isDeveloper) return false;
+    // Developer-only stores pages stay hidden from every other user, whatever their role
+    if (isDeveloperOnlyPath(item.url) && !isDeveloper) return false;
     // One role matrix drives the sidebar: staff see the POS and sales history,
     // cashiers their finance screens, managers their branch's operations, and
     // admins/owners the whole company. The super admin sees every tenant.

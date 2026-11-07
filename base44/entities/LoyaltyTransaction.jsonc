@@ -4,11 +4,11 @@
   "properties": {
     "company_id": {
       "type": "string",
-      "description": "Reference to Company"
+      "description": "Store/tenant the points belong to"
     },
     "customer_id": {
       "type": "string",
-      "description": "Reference to Customer"
+      "description": "Customer whose points changed"
     },
     "transaction_type": {
       "type": "string",
@@ -17,6 +17,12 @@
         "redeemed",
         "expired",
         "adjusted"
+      ],
+      "enumColors": [
+        "green",
+        "purple",
+        "gray",
+        "blue"
       ],
       "description": "Type of loyalty transaction"
     },
@@ -60,10 +66,24 @@
   ],
   "rls": {
     "create": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
     },
     "read": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
     },
     "update": {
       "$and": [

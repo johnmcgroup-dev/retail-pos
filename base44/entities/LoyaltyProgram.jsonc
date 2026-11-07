@@ -3,30 +3,60 @@
   "type": "object",
   "properties": {
     "company_id": {
-      "type": "string"
+      "type": "string",
+      "description": "Store/tenant that owns this loyalty programme"
     },
     "name": {
-      "type": "string"
+      "type": "string",
+      "description": "Programme name shown to customers, e.g. Reward Club"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short pitch shown at the top of the customer's loyalty account"
     },
     "points_per_dollar": {
       "type": "number",
-      "description": "How many points per dollar spent"
+      "default": 1,
+      "description": "Points awarded for every 1 unit of currency spent"
     },
     "redemption_value": {
       "type": "number",
-      "description": "Dollar value of each point"
+      "default": 0.01,
+      "description": "Currency value of one point when redeemed as a discount"
     },
     "minimum_purchase": {
       "type": "number",
-      "description": "Minimum purchase to earn points"
+      "default": 0,
+      "description": "Sale total below which no points are earned"
     },
-    "expiry_months": {
-      "type": "number",
-      "description": "Points expiry in months (0 = never)"
+    "tiers": {
+      "type": "array",
+      "description": "Spend tiers the customer progresses through as points accumulate",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "min_points": {
+            "type": "number",
+            "description": "Points needed to reach this tier"
+          },
+          "earn_multiplier": {
+            "type": "number",
+            "description": "Earning multiplier applied while the customer is in this tier"
+          },
+          "perk": {
+            "type": "string",
+            "description": "What the tier unlocks, shown to the customer"
+          }
+        }
+      }
     },
     "active": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "When off, the POS stops awarding points"
     }
   },
   "required": [
@@ -51,18 +81,20 @@
               "user_condition": {
                 "role": "owner"
               }
-            },
-            {
-              "user_condition": {
-                "role": "manager"
-              }
             }
           ]
         }
       ]
     },
     "read": {
-      "data.company_id": "{{user.data.company_id}}"
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        }
+      ]
     },
     "update": {
       "$and": [
@@ -79,11 +111,6 @@
             {
               "user_condition": {
                 "role": "owner"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "manager"
               }
             }
           ]
