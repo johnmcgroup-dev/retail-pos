@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, ArrowRight, Store, Package, CheckCircle2, Loader2 } from "lucide-react";
 import { BILLING_DEFAULTS, money, priceFor } from "@/lib/billing";
+import SetupWalkthrough from "@/components/billing/SetupWalkthrough";
 
 const SEED_STEPS = [
   "Creating your store...",
@@ -64,11 +65,11 @@ export default function TenantSetup({ onComplete }) {
         store_name: storeName,
         store_slug: slug,
         // No free trial and no setup fee: the store opens once the tenant's
-        // subscription is confirmed. The ₦1,500 first month is preselected so a
-        // brand-new store starts on the cheap intro plan and renews monthly.
+        // subscription is confirmed. Only the monthly and annual plans are sold,
+        // so a new store starts on the monthly plan.
         status: "pending_payment",
         billing_status: "pending_activation",
-        billing_cycle: "first_month",
+        billing_cycle: "monthly",
         activation_fee: config.activation_fee,
         activation_paid: false,
         subscription_plan: "none",
@@ -144,6 +145,10 @@ export default function TenantSetup({ onComplete }) {
             <Package className="w-3 h-3" />
             Your store starts empty — add your own products anytime
           </div>
+        </div>
+
+        <div className="mb-4">
+          <SetupWalkthrough stage={1} compact />
         </div>
 
         <Card className="shadow-2xl border-0">
@@ -264,9 +269,8 @@ export default function TenantSetup({ onComplete }) {
               </Button>
 
               <p className="text-center text-xs text-slate-500 mt-2">
-                No setup fee — start with your first month for {money(priceFor("first_month"))}, then{" "}
-                {money(priceFor("monthly"))}/month or {money(priceFor("annual"))}/year. You choose your
-                plan on the next screen.
+                No setup fee — {money(priceFor("monthly"))}/month or {money(priceFor("annual"))}/year.
+                You choose your plan on the next screen.
               </p>
             </form>
           </CardContent>

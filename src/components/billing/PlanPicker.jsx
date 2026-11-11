@@ -1,23 +1,16 @@
 import React from "react";
-import { Check, Rocket, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { money, priceFor, annualSaving, withDefaults } from "@/lib/billing";
 
 /**
- * The three subscription choices on the activation screen: the ₦1,500 first
- * month, the regular monthly plan, and the annual plan (cheapest per month).
+ * The two subscription choices on the activation screen: the monthly plan and
+ * the annual plan (cheapest over a year). The old ₦1,500 first-month plan is no
+ * longer offered to new stores.
  */
 export default function PlanPicker({ cycle, onChange, config }) {
   const cfg = withDefaults(config);
 
   const plans = [
-    {
-      id: "first_month",
-      name: "First month",
-      price: money(priceFor("first_month", cfg)),
-      period: "for your first month",
-      note: `Then ${money(cfg.monthly_price)} per month — add more months any time`,
-      tag: { label: "Start here", icon: Rocket, tone: "bg-emerald-600" },
-    },
     {
       id: "monthly",
       name: "Monthly",
@@ -37,7 +30,7 @@ export default function PlanPicker({ cycle, onChange, config }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {plans.map((plan) => {
         const active = cycle === plan.id;
         return (

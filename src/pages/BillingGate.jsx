@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import PlanPicker from "@/components/billing/PlanPicker";
+import SetupWalkthrough from "@/components/billing/SetupWalkthrough";
 import { BILLING_DEFAULTS, billingState, checkoutLinkFor, money, priceFor, planLabel } from "@/lib/billing";
 import { CheckCircle2, Clock, CreditCard, Loader2, LogOut, MapPin, Store } from "lucide-react";
 
@@ -19,7 +20,12 @@ export default function BillingGate({ company, canManage = true }) {
   });
   const config = { ...BILLING_DEFAULTS, ...(configs[0] || {}) };
 
-  const [cycle, setCycle] = useState(company?.billing_cycle || "annual");
+  // Only the monthly and annual plans are sold now — a store that was created on
+  // the old ₦1,500 first-month plan starts on monthly instead.
+  const startingCycle = ["monthly", "annual"].includes(company?.billing_cycle)
+    ? company.billing_cycle
+    : "monthly";
+  const [cycle, setCycle] = useState(startingCycle);
   const [requested, setRequested] = useState(Boolean(company?.payment_requested_at));
 
   const state = billingState(company);
@@ -125,15 +131,26 @@ export default function BillingGate({ company, canManage = true }) {
                 </p>
               )}
 
+              {checkoutLink && (
+                <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+                  <a href={checkoutLink} target="_blank" rel="noopener noreferrer">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Open the payment page
+                  </a>
+                </Button>
+              )}
+
               <Button variant="outline" className="w-full" onClick={() => setRequested(false)}>
                 Change my plan
               </Button>
             </>
           ) : (
             <>
+              <SetupWalkthrough stage={2} config={config} />
+
               <p className="text-sm text-slate-600">
                 Your store runs on a paid subscription — no free trial and no setup fee.
-                Choose how you want to be billed and you're ready to go.
+                Choose how you want to be billed and your payment page opens straight away.
               </p>
 
               <PlanPicker cycle={cycle} onChange={setCycle} config={config} />
@@ -147,16 +164,10 @@ export default function BillingGate({ company, canManage = true }) {
                   <span className="font-semibold text-slate-900">Due today</span>
                   <span className="text-lg font-bold text-blue-700">{money(total)}</span>
                 </div>
-                {cycle === "first_month" && (
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>From the second month</span>
-                    <span>{money(config.monthly_price)} per month</span>
-                  </div>
-                )}
-                {cycle === "first_month" && (
+                {cycle === "annual" && (
                   <p className="text-[11px] text-slate-400">
-                    Want more than one month up front? Choose Monthly to pay {money(config.monthly_price)} per
-                    extra month, or Annual for a full year.
+                    One payment covers a full year — {money(Math.round(config.annual_price / 12))} per month
+                    over twelve months.
                   </p>
                 )}
               </div>
