@@ -8,6 +8,7 @@ const PREVIEW_STORE = {
   name: "Ace Holdings Ltd",
   store_name: "Ace Supermarket Lekki",
   store_address: "12 Admiralty Way, Lekki, Lagos",
+  email: "owner@acesupermarket.ng",
   billing_status: "pending_activation",
   billing_cycle: "monthly",
   created_by_id: "preview-owner",

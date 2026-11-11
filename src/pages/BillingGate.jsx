@@ -122,7 +122,7 @@ export default function BillingGate({ company, canManage = true, preview = false
                   <span className="font-bold text-slate-900">{money(total)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Payment reference</span>
+                  <span className="text-slate-600">Store code</span>
                   <span className="font-mono font-semibold text-slate-900">{reference}</span>
                 </div>
               </div>
@@ -133,7 +133,8 @@ export default function BillingGate({ company, canManage = true, preview = false
                 </div>
               ) : (
                 <p className="text-xs text-slate-500">
-                  Quote reference {reference} when you send your payment — your store is unlocked once it is confirmed.
+                  Pay with your business email{company?.email ? ` (${company.email})` : ""} so we can match the
+                  payment to {storeName} — your store is unlocked once it is confirmed.
                 </p>
               )}
 
@@ -204,7 +205,7 @@ export default function BillingGate({ company, canManage = true, preview = false
 
               <p className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1">
                 <Clock className="w-3 h-3" />
-                Reference {reference} · access opens once payment is confirmed
+                Store code {reference} · pay with your business email · access opens once payment is confirmed
               </p>
             </>
           )}
