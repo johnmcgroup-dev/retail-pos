@@ -22,7 +22,7 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-export default function TenantSetup({ onComplete }) {
+export default function TenantSetup({ onComplete, preview = false }) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
@@ -45,6 +45,17 @@ export default function TenantSetup({ onComplete }) {
     setError("");
     setLoading(true);
     setStep(0);
+
+    // Preview mode walks the same screens without creating anything.
+    if (preview) {
+      await new Promise(r => setTimeout(r, 700));
+      setStep(1);
+      await new Promise(r => setTimeout(r, 600));
+      setStep(2);
+      await new Promise(r => setTimeout(r, 500));
+      setLoading(false);
+      return;
+    }
 
     try {
       // Store names are unique across the platform — the public store link is

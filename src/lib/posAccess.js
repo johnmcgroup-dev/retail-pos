@@ -22,6 +22,7 @@ export const DEVELOPER_ONLY_PATHS = [
   "/TenantManagement",
   "/CRM",
   "/Settings",
+  "/RegistrationPreview",
 ];
 
 export function isDeveloperOnlyPath(pathname) {

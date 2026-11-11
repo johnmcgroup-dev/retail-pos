@@ -36,6 +36,7 @@ import Accounting from '@/pages/Accounting';
 import Ledger from '@/pages/Ledger';
 import Payroll from '@/pages/Payroll';
 import Subscription from '@/pages/Subscription';
+import RegistrationPreview from '@/pages/RegistrationPreview';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { decryptTenantId } from '@/lib/tenantToken';
@@ -206,6 +207,7 @@ const AuthenticatedApp = () => {
         <Route path="/Ledger" element={<LayoutWrapper currentPageName="Ledger"><Ledger /></LayoutWrapper>} />
         <Route path="/Payroll" element={<LayoutWrapper currentPageName="Payroll"><Payroll /></LayoutWrapper>} />
         <Route path="/Subscription" element={<LayoutWrapper currentPageName="My Subscription"><Subscription /></LayoutWrapper>} />
+        <Route path="/RegistrationPreview" element={<LayoutWrapper currentPageName="Registration Preview"><DeveloperOnlyRoute><RegistrationPreview /></DeveloperOnlyRoute></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route

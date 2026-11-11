@@ -13,7 +13,7 @@ const HEADLINES = {
   suspended: "Your store is suspended",
 };
 
-export default function BillingGate({ company, canManage = true }) {
+export default function BillingGate({ company, canManage = true, preview = false }) {
   const { data: configs = [] } = useQuery({
     queryKey: ["billingConfig"],
     queryFn: () => base44.entities.BillingConfig.list(),
@@ -49,6 +49,12 @@ export default function BillingGate({ company, canManage = true }) {
   const checkoutLink = checkoutLinkFor(cycle, config, reference);
 
   const proceed = () => {
+    // In preview mode we only move to the payment screen — nothing is saved and
+    // no checkout window is opened.
+    if (preview) {
+      setRequested(true);
+      return;
+    }
     // Record the request first so the store shows "activation requested" when the
     // tenant comes back, then hand them straight to the payment processor.
     request.mutate();

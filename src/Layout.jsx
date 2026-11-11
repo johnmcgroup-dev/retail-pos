@@ -39,7 +39,8 @@ import {
   Calculator,
   Banknote,
   BookOpen,
-  CreditCard
+  CreditCard,
+  UserPlus
 } from "lucide-react";
 import {
   Sidebar,
@@ -275,6 +276,12 @@ const navigationItems = [
     title: "Company Setup",
     url: createPageUrl("Settings"),
     icon: Settings,
+    adminOnly: true
+  },
+  {
+    title: "Registration Preview",
+    url: "/RegistrationPreview",
+    icon: UserPlus,
     adminOnly: true
   },
 ];
