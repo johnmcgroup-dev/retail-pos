@@ -1,0 +1,210 @@
+{
+  "name": "ProductAd",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "description": "Tenant whose product is being advertised"
+    },
+    "company_name": {
+      "type": "string",
+      "description": "Tenant name at the time of the request"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Product being promoted"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "headline": {
+      "type": "string",
+      "description": "Short selling line shown with the promotion"
+    },
+    "placement": {
+      "type": "string",
+      "enum": [
+        "storefront_featured",
+        "pos_spotlight",
+        "home_banner"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green"
+      ],
+      "default": "storefront_featured",
+      "description": "Where the promotion appears"
+    },
+    "duration_days": {
+      "type": "number",
+      "default": 7
+    },
+    "price": {
+      "type": "number",
+      "description": "Amount the tenant pays for the placement"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red",
+        "gray"
+      ],
+      "default": "pending"
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "payment_reference": {
+      "type": "string",
+      "description": "How the tenant says they paid, e.g. transfer reference"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Tenant's message with the request"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Platform owner's note on approval or rejection"
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "Email of the platform owner who reviewed the request"
+    }
+  },
+  "required": [
+    "company_id",
+    "product_name",
+    "placement",
+    "price",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "$and": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "owner"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "super_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.company_id": "{{user.data.company_id}}"
+        },
+        {
+          "data.company_id": "{{user.data.tenant_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "$and": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "owner"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "$and": [
+            {
+              "data.company_id": "{{user.data.company_id}}"
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "owner"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        }
+      ]
+    }
+  }
+}

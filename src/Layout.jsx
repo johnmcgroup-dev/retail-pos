@@ -40,7 +40,9 @@ import {
   Banknote,
   BookOpen,
   CreditCard,
-  UserPlus
+  UserPlus,
+  Megaphone,
+  TrendingUp as TrendingUpIcon
 } from "lucide-react";
 import {
   Sidebar,
@@ -119,6 +121,17 @@ const navigationItems = [
     title: "Stock Transfers",
     url: createPageUrl("StockTransfers"),
     icon: ArrowLeftRight,
+  },
+  {
+    title: "Logistics",
+    url: createPageUrl("Logistics"),
+    icon: Truck,
+  },
+  {
+    title: "Promote Products",
+    url: createPageUrl("PromoteProducts"),
+    icon: Megaphone,
+    adminOnly: true
   },
   {
     title: "Stocking",
@@ -283,6 +296,18 @@ const navigationItems = [
     title: "Registration Preview",
     url: "/RegistrationPreview",
     icon: UserPlus,
+    adminOnly: true
+  },
+  {
+    title: "Featured Ads",
+    url: "/FeaturedAds",
+    icon: Megaphone,
+    adminOnly: true
+  },
+  {
+    title: "Growth",
+    url: "/Growth",
+    icon: TrendingUpIcon,
     adminOnly: true
   },
 ];

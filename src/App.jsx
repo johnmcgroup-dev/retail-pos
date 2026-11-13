@@ -37,6 +37,10 @@ import Ledger from '@/pages/Ledger';
 import Payroll from '@/pages/Payroll';
 import Subscription from '@/pages/Subscription';
 import RegistrationPreview from '@/pages/RegistrationPreview';
+import Logistics from '@/pages/Logistics';
+import PromoteProducts from '@/pages/PromoteProducts';
+import FeaturedAds from '@/pages/FeaturedAds';
+import Growth from '@/pages/Growth';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { decryptTenantId } from '@/lib/tenantToken';
@@ -179,6 +183,36 @@ const AuthenticatedApp = () => {
     staleTime: 60000,
   });
 
+  // Google Ads paid-subscription conversion — tenant payments are confirmed off
+  // the app (hosted page + webhooks), so a live paid subscription is the first
+  // moment the app can report that purchase. Fires once per subscription period.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isAuthenticated || !user?.id) return;
+    const myCompanyId = user?.company_id || user?.tenant_id;
+    const company = (myCompanyId && companies.find((c) => c.id === myCompanyId)) || companies[0];
+    if (!company || company.billing_override || company.billing_status !== 'active') return;
+    const value = Number(company.subscription_amount) || 0;
+    if (value <= 0) return;
+
+    const period = company.subscription_start_date || company.next_billing_date || 'start';
+    const key = `_aw_sub_fired_${company.id}_${period}`;
+    if (localStorage.getItem(key)) return;
+
+    let tries = 0;
+    const fire = () => {
+      if (!window.gtag) { if (tries++ < 20) setTimeout(fire, 250); return; }
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-18573763318/jUhRCPrC9LcdEPbF1JhF',
+        value,
+        currency: company.currency || 'NGN',
+        transaction_id: `${company.id}_${period}`,
+      });
+    };
+    fire();
+  }, [isAuthenticated, user, companies]);
+
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth || (isAuthenticated && isLoadingCompanies)) {
     return (
@@ -266,6 +300,10 @@ const AuthenticatedApp = () => {
         <Route path="/Payroll" element={<LayoutWrapper currentPageName="Payroll"><Payroll /></LayoutWrapper>} />
         <Route path="/Subscription" element={<LayoutWrapper currentPageName="My Subscription"><Subscription /></LayoutWrapper>} />
         <Route path="/RegistrationPreview" element={<LayoutWrapper currentPageName="Registration Preview"><DeveloperOnlyRoute><RegistrationPreview /></DeveloperOnlyRoute></LayoutWrapper>} />
+        <Route path="/Logistics" element={<LayoutWrapper currentPageName="Logistics"><Logistics /></LayoutWrapper>} />
+        <Route path="/PromoteProducts" element={<LayoutWrapper currentPageName="Promote Products"><PromoteProducts /></LayoutWrapper>} />
+        <Route path="/FeaturedAds" element={<LayoutWrapper currentPageName="Featured Ads"><DeveloperOnlyRoute><FeaturedAds /></DeveloperOnlyRoute></LayoutWrapper>} />
+        <Route path="/Growth" element={<LayoutWrapper currentPageName="Growth"><DeveloperOnlyRoute><Growth /></DeveloperOnlyRoute></LayoutWrapper>} />
         {/* All named app pages with layout */}
         {Object.entries(Pages).map(([path, Page]) => (
           <Route

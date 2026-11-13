@@ -23,6 +23,8 @@ export const DEVELOPER_ONLY_PATHS = [
   "/CRM",
   "/Settings",
   "/RegistrationPreview",
+  "/Growth",
+  "/FeaturedAds",
 ];
 
 export function isDeveloperOnlyPath(pathname) {
@@ -77,6 +79,7 @@ export const ROLE_PATHS = {
     "/Stocking",
     "/StockingReport",
     "/StockTransfers",
+    "/Logistics",
     "/Sales",
     "/SalesReport",
     "/Accounting",
