@@ -20,6 +20,7 @@ import OfflineIndicator from "../components/shared/OfflineIndicator";
 import StaffSalesWidget from "../components/dashboard/StaffSalesWidget";
 import LowStockAlerts from "../components/dashboard/LowStockAlerts";
 import RevenueChart from "../components/dashboard/RevenueChart";
+import SubscriptionTrendsSection from "../components/dashboard/SubscriptionTrendsSection";
 import ClickableCard from "../components/details/ClickableCard";
 import CardDetailDialog from "../components/details/CardDetailDialog";
 
@@ -313,6 +314,14 @@ export default function Dashboard() {
         </ClickableCard>
       </div>
       
+      {/* Subscription status + sales trend */}
+      <SubscriptionTrendsSection
+        company={selectedCompany}
+        sales={sales}
+        currency={currency}
+        showSymbol={showSymbol}
+      />
+
       {/* Daily Revenue Chart */}
       <RevenueChart
         sales={sales}

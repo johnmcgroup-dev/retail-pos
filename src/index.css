@@ -111,25 +111,25 @@ button:focus-visible {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 222 28% 7%;
+    --foreground: 210 25% 96%;
+    --card: 222 22% 11%;
+    --card-foreground: 210 25% 96%;
+    --popover: 222 22% 11%;
+    --popover-foreground: 210 25% 96%;
+    --primary: 213 94% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 18% 17%;
+    --secondary-foreground: 210 25% 96%;
+    --muted: 222 18% 17%;
+    --muted-foreground: 215 16% 68%;
+    --accent: 222 18% 17%;
+    --accent-foreground: 210 25% 96%;
+    --destructive: 0 62.8% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 222 15% 21%;
+    --input: 222 15% 21%;
+    --ring: 213 94% 60%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -258,4 +258,21 @@ button:focus-visible {
   .dark .to-slate-100 { --tw-gradient-to: hsl(222 20% 16%) var(--tw-gradient-to-position); }
   .dark .from-slate-100 { --tw-gradient-from: hsl(222 20% 16%) var(--tw-gradient-from-position); --tw-gradient-to: rgb(51 65 85 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
   .dark .to-slate-200 { --tw-gradient-to: hsl(222 16% 21%) var(--tw-gradient-to-position); }
+}
+
+/* Sales trend line draw-in — the curve sketches itself in when the period tab
+   changes. */
+@keyframes trend-draw {
+  from { stroke-dashoffset: 400; }
+  to { stroke-dashoffset: 0; }
+}
+.trend-draw {
+  stroke-dasharray: 400;
+  animation: trend-draw 1.1s cubic-bezier(0.22, 0.61, 0.36, 1) 0.1s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trend-draw {
+    animation: none;
+    stroke-dasharray: none;
+  }
 }
