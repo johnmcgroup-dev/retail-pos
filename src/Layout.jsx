@@ -73,6 +73,7 @@ import InstallPrompt from "@/components/shared/InstallPrompt";
 import LowStockAlertWatcher from "@/components/shared/LowStockAlertWatcher";
 import RealtimeSync from "@/components/shared/RealtimeSync";
 import BranchSwitcher from "@/components/branches/BranchSwitcher";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { canAccessPath, roleOf, isSuperAdmin, isDeveloperOnlyPath } from "@/lib/posAccess";
 
@@ -398,9 +399,12 @@ export default function Layout({ children, currentPageName }) {
               </div>
               <h1 className="text-sm font-bold text-slate-900">My Retailer Pro</h1>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-red-600">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button variant="ghost" size="icon" onClick={handleLogout} className="text-red-600">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           {/* Staff nav: the POS and the tenant's sales history, nothing else */}
           <div className="flex gap-2 py-2 border-t border-slate-100">
@@ -521,6 +525,8 @@ export default function Layout({ children, currentPageName }) {
               </div>
 
               <BranchSwitcher className="mr-1 flex-shrink-0" />
+
+              <ThemeToggle />
 
               <Button
                 variant="ghost"

@@ -14,7 +14,7 @@
     },
     "annual_price": {
       "type": "number",
-      "default": 95000,
+      "default": 125000,
       "description": "Yearly subscription price"
     },
     "monthly_price": {

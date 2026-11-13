@@ -258,7 +258,12 @@ export default function Products() {
                 )}
               </div>
               
-              <h3 className="font-bold text-slate-900 mb-2">{product.name}</h3>
+              <h3
+                className="text-base md:text-lg font-semibold leading-snug tracking-tight text-slate-900 mb-2 break-words"
+                title={product.name}
+              >
+                {product.name}
+              </h3>
               
               {product.category && (
                 <Badge variant="secondary" className="mb-2">

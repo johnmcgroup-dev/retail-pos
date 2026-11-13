@@ -58,6 +58,11 @@
       "description": "Footer message on receipts/invoices",
       "default": "Thank you for your business!"
     },
+    "first_active_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the store first started using the app \u2014 the anchor for its usage history, sales performance timeline and renewal countdown"
+    },
     "billing_status": {
       "type": "string",
       "enum": [

@@ -191,3 +191,71 @@ button:focus-visible {
     }
   }
 }
+
+/* ---- Dark theme ----------------------------------------------------------
+   Screens were built with light surface colours, so the dark palette alone
+   would leave white cards on a dark canvas. These screen-only remaps translate
+   the light colours used across the app into the dark palette. Printed receipts
+   and invoices keep their light colours because this block is screen only. */
+@media screen {
+  .dark body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* Surfaces */
+  .dark .bg-white { background-color: hsl(var(--card)); }
+  .dark .bg-slate-50, .dark .bg-gray-50 { background-color: hsl(222 22% 12%); }
+  .dark .bg-slate-100, .dark .bg-gray-100 { background-color: hsl(222 20% 16%); }
+  .dark .bg-slate-200, .dark .bg-gray-200 { background-color: hsl(222 16% 21%); }
+  .dark .bg-slate-900, .dark .bg-slate-800 { background-color: hsl(222 28% 10%); }
+
+  /* Text */
+  .dark .text-slate-900, .dark .text-gray-900,
+  .dark .text-slate-800, .dark .text-gray-800 { color: hsl(210 25% 96%); }
+  .dark .text-slate-700, .dark .text-gray-700,
+  .dark .text-slate-600, .dark .text-gray-600 { color: hsl(214 18% 80%); }
+  .dark .text-slate-500, .dark .text-gray-500 { color: hsl(215 14% 66%); }
+  .dark .text-slate-400 { color: hsl(215 12% 58%); }
+  .dark .text-black { color: hsl(0 0% 98%); }
+
+  /* Borders, dividers, inputs */
+  .dark .border-slate-200, .dark .border-slate-100,
+  .dark .border-gray-200, .dark .border-gray-100 { border-color: hsl(222 15% 24%); }
+  .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+  .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(222 15% 24%); }
+  .dark input, .dark textarea, .dark select { color-scheme: dark; }
+
+  /* Tinted panels — kept as deep tints so their meaning survives */
+  .dark .bg-blue-50 { background-color: hsl(217 55% 18%); }
+  .dark .bg-indigo-50, .dark .bg-purple-50 { background-color: hsl(258 40% 20%); }
+  .dark .bg-green-50, .dark .bg-emerald-50 { background-color: hsl(152 42% 15%); }
+  .dark .bg-amber-50, .dark .bg-yellow-50 { background-color: hsl(38 55% 16%); }
+  .dark .bg-red-50, .dark .bg-rose-50 { background-color: hsl(0 45% 17%); }
+  .dark .bg-blue-100 { background-color: hsl(217 50% 24%); }
+  .dark .bg-green-100, .dark .bg-emerald-100 { background-color: hsl(152 42% 20%); }
+  .dark .bg-amber-100, .dark .bg-yellow-100 { background-color: hsl(38 50% 21%); }
+  .dark .bg-red-100, .dark .bg-rose-100 { background-color: hsl(0 42% 23%); }
+  .dark .bg-purple-100, .dark .bg-indigo-100 { background-color: hsl(258 38% 25%); }
+
+  /* Text inside those tints */
+  .dark .text-blue-900, .dark .text-blue-800, .dark .text-blue-700 { color: hsl(213 90% 84%); }
+  .dark .text-green-800, .dark .text-green-700, .dark .text-emerald-700 { color: hsl(152 68% 78%); }
+  .dark .text-amber-800, .dark .text-amber-700, .dark .text-yellow-700, .dark .text-yellow-800 { color: hsl(40 92% 78%); }
+  .dark .text-red-800, .dark .text-red-700, .dark .text-rose-700 { color: hsl(0 85% 84%); }
+  .dark .text-purple-800, .dark .text-purple-700,
+  .dark .text-indigo-800, .dark .text-indigo-700 { color: hsl(258 85% 86%); }
+
+  /* Tinted borders */
+  .dark .border-blue-200, .dark .border-blue-100 { border-color: hsl(217 45% 32%); }
+  .dark .border-green-200, .dark .border-emerald-200 { border-color: hsl(152 38% 28%); }
+  .dark .border-amber-200, .dark .border-yellow-200 { border-color: hsl(38 42% 30%); }
+  .dark .border-red-200, .dark .border-rose-200 { border-color: hsl(0 42% 32%); }
+  .dark .border-purple-200, .dark .border-indigo-200 { border-color: hsl(258 35% 34%); }
+
+  /* Page backgrounds built from gradients */
+  .dark .from-slate-50 { --tw-gradient-from: hsl(222 22% 12%) var(--tw-gradient-from-position); --tw-gradient-to: rgb(30 41 59 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .dark .to-slate-100 { --tw-gradient-to: hsl(222 20% 16%) var(--tw-gradient-to-position); }
+  .dark .from-slate-100 { --tw-gradient-from: hsl(222 20% 16%) var(--tw-gradient-from-position); --tw-gradient-to: rgb(51 65 85 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .dark .to-slate-200 { --tw-gradient-to: hsl(222 16% 21%) var(--tw-gradient-to-position); }
+}

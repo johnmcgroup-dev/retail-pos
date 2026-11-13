@@ -11,7 +11,7 @@
 export const BILLING_DEFAULTS = {
   activation_fee: 0,
   first_month_price: 1500,
-  annual_price: 95000,
+  annual_price: 125000,
   monthly_price: 13500,
   trials_enabled: false,
   trial_days: 0,

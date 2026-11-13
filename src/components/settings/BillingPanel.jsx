@@ -28,6 +28,18 @@ export default function BillingPanel({ company }) {
   const state = billingState(company);
   const cycle = company?.billing_cycle || "annual";
 
+  // The store's usage history starts the day it first opened the app. Tenants
+  // created before this was recorded fall back to their sign-up date.
+  const startedOn = company?.first_active_at || company?.created_date;
+  const since = startedOn ? new Date(startedOn) : null;
+  const monthsUsed = since
+    ? Math.max(
+        0,
+        (new Date().getFullYear() - since.getFullYear()) * 12 + (new Date().getMonth() - since.getMonth())
+      )
+    : 0;
+  const usageLabel = monthsUsed < 1 ? "Less than a month" : `${monthsUsed} month${monthsUsed === 1 ? "" : "s"}`;
+
   const switchPlan = useMutation({
     mutationFn: (nextCycle) =>
       base44.entities.Company.update(company.id, {
@@ -99,7 +111,21 @@ export default function BillingPanel({ company }) {
                   : "—"}
               </p>
             </div>
+            <div>
+              <p className="text-slate-600">Using since</p>
+              <p className="font-semibold text-slate-900">
+                {since ? format(since, "MMM d, yyyy") : "—"}
+              </p>
+            </div>
           </div>
+
+          {since && (
+            <p className="text-xs text-slate-500">
+              {usageLabel} with My Retailer Pro. Your renewal countdown and sales history both run
+              from {format(since, "MMM d, yyyy")} — open Reports to track how your store has grown
+              since then.
+            </p>
+          )}
 
           {company.payment_requested_at && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">

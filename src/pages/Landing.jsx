@@ -113,7 +113,7 @@ export default function Landing() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-white text-base">Start a New Business</p>
-              <p className="text-blue-200 text-xs mt-0.5">Register your own store — pay only ₦95,000/year or ₦13,500/month, no setup fee</p>
+              <p className="text-blue-200 text-xs mt-0.5">Register your own store — pay only ₦125,000/year or ₦13,500/month, no setup fee</p>
             </div>
             <ArrowRight className="w-5 h-5 text-blue-300 group-hover:translate-x-1 transition-transform" />
           </div>

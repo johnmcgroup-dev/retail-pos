@@ -84,6 +84,8 @@ export default function TenantSetup({ onComplete, preview = false }) {
         activation_fee: config.activation_fee,
         activation_paid: false,
         subscription_plan: "none",
+        // Anchor for the store's usage history and renewal timeline.
+        first_active_at: new Date().toISOString(),
       });
 
       // Persist company_id on the user so RLS can authorize Sale creation.

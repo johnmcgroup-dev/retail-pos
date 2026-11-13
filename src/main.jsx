@@ -2,14 +2,10 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+import { initTheme } from '@/lib/theme'
 
-// Adaptive dark mode — follow system preference in real-time
-const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-const applyDarkMode = (isDark) => {
-  document.documentElement.classList.toggle('dark', isDark);
-};
-applyDarkMode(darkModeQuery.matches);
-darkModeQuery.addEventListener('change', (e) => applyDarkMode(e.matches));
+// Dark theme by default; the header toggle switches to light and remembers it.
+initTheme();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   // <React.StrictMode>
