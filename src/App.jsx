@@ -42,6 +42,39 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { decryptTenantId } from '@/lib/tenantToken';
 import { purgeStaleCache } from '@/components/utils';
 
+// Google Ads tag — bootstrapped once at module scope so a conversion fired as a
+// page mounts always finds window.gtag ready.
+if (typeof document !== 'undefined' && !window.__gads_loaded) {
+  window.__gads_loaded = true;
+  window.dataLayer = window.dataLayer || [];
+  const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  window.gtag = function gtag() {
+    window.dataLayer.push(arguments);
+    if (inIframe) {
+      try {
+        const args = Array.prototype.slice.call(arguments);
+        const cmd = args[0];
+        window.parent.postMessage({
+          type: 'base44_gtag_event',
+          event: {
+            source: 'gtag',
+            timestamp: new Date().toLocaleTimeString(),
+            command: cmd,
+            params: args.slice(1),
+            type: cmd === 'event' ? (args[1] || 'event') : cmd,
+          },
+        }, '*');
+      } catch (_e) { /* relay must not break gtag */ }
+    }
+  };
+  const s = document.createElement('script');
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18573763318';
+  s.async = true;
+  document.head.appendChild(s);
+  window.gtag('js', new Date());
+  window.gtag('config', 'AW-18573763318', { send_page_view: false });
+}
+
 // Discard any data cached by an older version of the app before the first
 // render, so a fresh load never shows stale products, stock or sales.
 purgeStaleCache();
@@ -103,6 +136,31 @@ const AuthenticatedApp = () => {
         .catch(console.error);
     }
   }, [isAuthenticated, user, queryClient]);
+
+  // Google Ads signup conversion — a brand-new account, not a returning login.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user || !user.id) return;
+    const createdDate = String(user.created_date || '');
+    const createdDateUtc = /(?:Z|[+-]\d{2}:?\d{2})$/.test(createdDate)
+      ? createdDate
+      : createdDate + 'Z';
+    const createdAtMs = Date.parse(createdDateUtc);
+    const isNewSignup = Number.isFinite(createdAtMs) &&
+      Date.now() - createdAtMs < 24 * 60 * 60 * 1000;
+    const key = '_aw_signup_fired_AW-18573763318/r-JlCNX7-rcdEPbF1JhF_' + user.id;
+    if (!isNewSignup || localStorage.getItem(key)) return;
+    let tries = 0;
+    const fire = () => {
+      if (!window.gtag) { if (tries++ < 20) setTimeout(fire, 250); return; }
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-18573763318/r-JlCNX7-rcdEPbF1JhF',
+        transaction_id: user.id,
+      });
+    };
+    fire();
+  }, [user]);
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
     queryKey: ["companies_check", user?.id],
