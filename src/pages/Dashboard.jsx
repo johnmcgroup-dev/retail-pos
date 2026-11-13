@@ -19,7 +19,7 @@ import { format, startOfMonth } from "date-fns";
 import OfflineIndicator from "../components/shared/OfflineIndicator";
 import StaffSalesWidget from "../components/dashboard/StaffSalesWidget";
 import LowStockAlerts from "../components/dashboard/LowStockAlerts";
-import RevenueChart from "../components/dashboard/RevenueChart";
+import DailySalesTrendCard from "../components/dashboard/DailySalesTrendCard";
 import SubscriptionTrendsSection from "../components/dashboard/SubscriptionTrendsSection";
 import ClickableCard from "../components/details/ClickableCard";
 import CardDetailDialog from "../components/details/CardDetailDialog";
@@ -163,18 +163,33 @@ export default function Dashboard() {
     <div className="p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       <OfflineIndicator />
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">Welcome back! Here's your business overview</p>
+      {/* Store hero */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-4 md:p-6 text-white shadow-lg">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+        <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-3 md:gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] md:text-xs font-medium uppercase tracking-[0.1em] text-white/70 truncate">
+              {selectedCompany?.store_name || selectedCompany?.name || "Your store"} · {format(new Date(), "EEE, d MMM")}
+            </p>
+            <h1 className="text-lg md:text-2xl lg:text-3xl font-bold tracking-tight mt-1">
+              {user?.full_name ? `Hi ${user.full_name.split(" ")[0]}, here's today` : "Today at a glance"}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-white/85">
+              <p className="text-base md:text-xl font-semibold text-white tracking-tight">
+                {formatCurrency(todayRevenue, currency, showSymbol)}
+              </p>
+              <p className="text-[11px] md:text-sm">
+                in sales today · {todaySales.length} transaction{todaySales.length === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
+          <Link to={createPageUrl("POS")} className="w-full sm:w-auto flex-shrink-0">
+            <Button className="w-full sm:w-auto bg-white text-blue-700 hover:bg-white/90 shadow-md font-semibold">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Open POS
+            </Button>
+          </Link>
         </div>
-        <Link to={createPageUrl("POS")} className="w-full sm:w-auto">
-          <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg w-full text-sm md:text-base">
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Open POS
-          </Button>
-        </Link>
       </div>
 
       {/* Auto low-stock alert banner */}
@@ -211,17 +226,19 @@ export default function Dashboard() {
             focus: "revenue",
           })}
         >
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl">
-            <CardHeader className="pb-2 md:pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Today's Sales</CardTitle>
-                <DollarSign className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+          <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="px-3 md:px-4 pt-3 pb-1">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-[11px] md:text-sm font-medium text-slate-500 leading-tight">Today's Sales</CardTitle>
+                <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="w-4 h-4 text-blue-600" />
+                </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(todayRevenue, currency, showSymbol)}</div>
-              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
-                {todaySales.length} transactions <ChevronRight className="w-3 h-3 ml-auto" />
+            <CardContent className="px-3 md:px-4 pt-1 pb-3">
+              <div className="text-base md:text-xl lg:text-2xl font-bold tracking-tight text-slate-900 truncate">{formatCurrency(todayRevenue, currency, showSymbol)}</div>
+              <p className="text-[10px] md:text-xs text-slate-500 mt-1 flex items-center gap-1">
+                {todaySales.length} transactions <ChevronRight className="w-3 h-3 ml-auto text-slate-400" />
               </p>
             </CardContent>
           </Card>
@@ -241,17 +258,19 @@ export default function Dashboard() {
             focus: "revenue",
           })}
         >
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl">
-            <CardHeader className="pb-2 md:pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Monthly Revenue</CardTitle>
-                <TrendingUp className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+          <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="px-3 md:px-4 pt-3 pb-1">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-[11px] md:text-sm font-medium text-slate-500 leading-tight">Monthly Revenue</CardTitle>
+                <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(monthRevenue, currency, showSymbol)}</div>
-              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
-                {monthSales.length} sales this month <ChevronRight className="w-3 h-3 ml-auto" />
+            <CardContent className="px-3 md:px-4 pt-1 pb-3">
+              <div className="text-base md:text-xl lg:text-2xl font-bold tracking-tight text-slate-900 truncate">{formatCurrency(monthRevenue, currency, showSymbol)}</div>
+              <p className="text-[10px] md:text-xs text-slate-500 mt-1 flex items-center gap-1">
+                {monthSales.length} sales this month <ChevronRight className="w-3 h-3 ml-auto text-slate-400" />
               </p>
             </CardContent>
           </Card>
@@ -270,17 +289,19 @@ export default function Dashboard() {
             showSymbol,
           })}
         >
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl">
-            <CardHeader className="pb-2 md:pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Inventory Value</CardTitle>
-                <Package className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+          <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="px-3 md:px-4 pt-3 pb-1">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-[11px] md:text-sm font-medium text-slate-500 leading-tight">Inventory Value</CardTitle>
+                <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                  <Package className="w-4 h-4 text-purple-600" />
+                </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{formatCurrency(totalInventoryValue, currency, showSymbol)}</div>
-              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
-                {products.length} products <ChevronRight className="w-3 h-3 ml-auto" />
+            <CardContent className="px-3 md:px-4 pt-1 pb-3">
+              <div className="text-base md:text-xl lg:text-2xl font-bold tracking-tight text-slate-900 truncate">{formatCurrency(totalInventoryValue, currency, showSymbol)}</div>
+              <p className="text-[10px] md:text-xs text-slate-500 mt-1 flex items-center gap-1">
+                {products.length} products <ChevronRight className="w-3 h-3 ml-auto text-slate-400" />
               </p>
             </CardContent>
           </Card>
@@ -297,17 +318,19 @@ export default function Dashboard() {
             showSymbol,
           })}
         >
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-xl">
-            <CardHeader className="pb-2 md:pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs md:text-sm font-medium opacity-90">Customers</CardTitle>
-                <Users className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
+          <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="px-3 md:px-4 pt-3 pb-1">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-[11px] md:text-sm font-medium text-slate-500 leading-tight">Customers</CardTitle>
+                <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-4 h-4 text-orange-600" />
+                </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-lg md:text-2xl lg:text-3xl font-bold">{customers.length}</div>
-              <p className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-1">
-                Active customers <ChevronRight className="w-3 h-3 ml-auto" />
+            <CardContent className="px-3 md:px-4 pt-1 pb-3">
+              <div className="text-base md:text-xl lg:text-2xl font-bold tracking-tight text-slate-900 truncate">{customers.length}</div>
+              <p className="text-[10px] md:text-xs text-slate-500 mt-1 flex items-center gap-1">
+                Active customers <ChevronRight className="w-3 h-3 ml-auto text-slate-400" />
               </p>
             </CardContent>
           </Card>
@@ -322,8 +345,8 @@ export default function Dashboard() {
         showSymbol={showSymbol}
       />
 
-      {/* Daily Revenue Chart */}
-      <RevenueChart
+      {/* Daily sales trend */}
+      <DailySalesTrendCard
         sales={sales}
         currency={currency}
         showSymbol={showSymbol}
